@@ -49,17 +49,34 @@
  */
 const MAX_ROLL_DAYS = 15;
 
+/*
+ * ★★ 日期算术一律用 UTC 锚点 + UTC getter —— 这是本模块的铁律，改动前务必先读这段。
+ *
+ * 「YYYY-MM-DD」是**日历日**，不带时刻。若把它解析成带时区的瞬间（如 `+08:00`），
+ * 再用**本机时区**的 getter/setter（`getDate`/`setDate`/`getDay`/`getFullYear`）去读写，
+ * 结果就会随**进程时区**漂移：东八区下恰好正确，跑到 UTC 就整体早一天，
+ * 跑到西半球更偏 —— 而且**不报错**，只是静默算出一个错的定价日。
+ *
+ * 2026-09-18 实测事故：首次 CI 跑在 UTC runner 上，
+ * `nominalPricingDate('2026-09-02','T')` 返回 `'2026-09-01'`，
+ * 连带 3 个校验脚本集体失败 —— 本机（GMT+8）永远复现不出来。
+ *
+ * 正确写法：`new Date(dateStr + 'T00:00:00Z')` + `getUTCDate()/setUTCDate()/getUTCDay()/...`
+ *   → 纯粹在「日历日」上做加减，与进程时区完全无关，东八区下的结果与旧实现逐字相同。
+ * 反例（禁止）：把 UTC 解析与本机 getter 混用；也不要用 `new Date(y, m, d)` 配合本机 getter
+ *   去校验日期 —— 那个组合自洽但语义是「本机时区的当地日」，与业务时区（上海）不是一回事。
+ */
 function addBusinessDays(dateStr, n) {
-  const d = new Date(dateStr + 'T00:00:00+08:00');
+  const d = new Date(dateStr + 'T00:00:00Z');
   let added = 0;
   while (added < n) {
-    d.setDate(d.getDate() + 1);
-    const day = d.getDay(); // 0=周日 6=周六
+    d.setUTCDate(d.getUTCDate() + 1);
+    const day = d.getUTCDay(); // 0=周日 6=周六
     if (day !== 0 && day !== 6) added++;
   }
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
 
@@ -101,12 +118,12 @@ function legacyConfirmDate(orderDate, market) {
 
 // 两个日期间隔的「工作日数」（含终点当天，不含起点当天）
 function businessDayDiff(fromStr, toStr) {
-  let d = new Date(fromStr + 'T00:00:00+08:00');
-  const end = new Date(toStr + 'T00:00:00+08:00');
+  let d = new Date(fromStr + 'T00:00:00Z');
+  const end = new Date(toStr + 'T00:00:00Z');
   let count = 0;
   while (d < end) {
-    d.setDate(d.getDate() + 1);
-    const day = d.getDay();
+    d.setUTCDate(d.getUTCDate() + 1);
+    const day = d.getUTCDay();
     if (day !== 0 && day !== 6) count++;
   }
   return count;
@@ -114,9 +131,11 @@ function businessDayDiff(fromStr, toStr) {
 
 // 两个日期相隔的**自然日数**（to - from，正数表示 to 在后）。
 // 口径与 MAX_ROLL_DAYS 同一量纲（自然日），故顺延天数一律用它，禁止各消费端自己减时间戳。
+// 注：本函数两个端点锚点相同，差值必是 86400000 的整数倍，故对时区本就不敏感；
+//     仍统一用 Z 锚点，是为了让「本文件全部走 UTC」这条规则没有例外可被后人模仿。
 function naturalDayDiff(fromStr, toStr) {
-  const a = new Date(fromStr + 'T00:00:00+08:00');
-  const b = new Date(toStr + 'T00:00:00+08:00');
+  const a = new Date(fromStr + 'T00:00:00Z');
+  const b = new Date(toStr + 'T00:00:00Z');
   return Math.round((b - a) / 86400000);
 }
 

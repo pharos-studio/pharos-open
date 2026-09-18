@@ -400,7 +400,10 @@ function loadYieldAnchor3y(code, windowYears, fallback) {
       const first = dates[0], last = dates[dates.length - 1];
       const spanYears = (new Date(last) - new Date(first)) / (365 * 24 * 3600 * 1000);
       const cutoff = new Date();
-      cutoff.setFullYear(cutoff.getFullYear() - years);
+      // ★ 三个调用必须同属一个时区：原来用本机 getFullYear/setFullYear 配 toISOString()（UTC），
+      //   两者差 8 小时，跨年边界会算出差一天的 cutoffStr。统一走 UTC。
+      //   （窗口是「N 年 ≥100 个点」，差一天不影响判据，但混用本身就是 bug，见 lib/tradeDate.js 铁律）
+      cutoff.setUTCFullYear(cutoff.getUTCFullYear() - years);
       const cutoffStr = cutoff.toISOString().slice(0, 10);
       const inWin = dates.filter(d => d >= cutoffStr);
       // 修复：必须真实覆盖 windowYears 年才用滚动均值，否则沿用保守常量锚（消除"数月后无声翻转"）

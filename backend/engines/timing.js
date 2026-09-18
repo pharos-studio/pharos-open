@@ -49,11 +49,13 @@ function loadSamples() {
 function saveSamples(arr) { return env.write(SAMPLES_FILE, arr); }
 
 // ---------- 小工具 ----------
+// ★ 日历日加减必须用 UTC 锚点 + UTC getter：用本机时区 getter 会随进程时区漂移
+//   （东八区恰好正确、UTC 下整体早一天）。同规则见 lib/tradeDate.js 顶部说明。
 function addDays(dateStr, n) {
-  const d = new Date(dateStr + 'T00:00:00+08:00');
-  d.setDate(d.getDate() + n);
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
   const p = (x) => String(x).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`;
 }
 function gapDaysOf(cfg) {
   const t = (cfg && cfg.timing) || {};

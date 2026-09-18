@@ -100,8 +100,11 @@ function readBody(req, maxBytes = 2 * 1024 * 1024) {
 function validateOrderDate(date) {
   if (!date || typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: 'date 格式须为 YYYY-MM-DD' };
   const [yy, mm, dd] = date.split('-').map(Number);
-  const dt = new Date(date + 'T00:00:00+08:00');
-  if (dt.getFullYear() !== yy || dt.getMonth() + 1 !== mm || dt.getDate() !== dd) return { error: 'date 不是真实日期' };
+  // ★ 用 UTC 锚点 + UTC getter 做「是否真实日期」的往返校验（如 2026-02-30 会被滚动到 03-02 → 不相等）。
+  //   若用本机时区 getter，进程跑在 UTC 时会把 2026-09-02 解析成 09-01T16:00Z，
+  //   于是拿 9/1 去比对 9/2 → **把合法日期判成非法**。铁律见 lib/tradeDate.js 顶部。
+  const dt = new Date(date + 'T00:00:00Z');
+  if (dt.getUTCFullYear() !== yy || dt.getUTCMonth() + 1 !== mm || dt.getUTCDate() !== dd) return { error: 'date 不是真实日期' };
   if (date > util.todayStr()) return { error: 'date 不能晚于今天（上海时区）' };
   return { ok: true };
 }
