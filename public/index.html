@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A1020" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>基金看板</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- 首屏前置：在 HTML 首次渲染前恢复侧栏折叠态，避免「先展开闪一下再收起」。
+       必须满足：① 同步 classic script（不能是 type="module"，module 会被 defer）；
+               ② 位于 <head>；③ key 与 public/js/ui-prefs.js 的 LS_KEY 严格一致（改一处必须改两处）。
+       隐私模式/禁用存储下 localStorage 会抛错 → 静默失败，回落默认「展开」。 -->
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('fund.frontend.ui.v1');
+        if (!raw) return;
+        var s = JSON.parse(raw);
+        if (s && s.sidebarCollapsed) document.documentElement.classList.add('sb-collapsed');
+      } catch (e) { /* 静默 */ }
+    })();
+  </script>
+  <!-- echarts 改为按需加载：仅概览页画走势图时由 js/charts/trend.js 动态注入，不再阻塞首屏 -->
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-text">基金看板</span>
+        <button class="sb-toggle" id="sidebarToggle" type="button"
+                aria-label="收起侧栏" aria-expanded="true"></button>
+      </div>
+      <nav id="nav"></nav>
+    </aside>
+
+    <div class="content">
+      <header class="topbar">
+        <div class="brand" style="font-size:17px;padding:0;">基金看板</div>
+        <button class="btn" id="refreshBtn">↻ 刷新</button>
+      </header>
+      <main id="view" class="main"></main>
+    </div>
+  </div>
+
+  <nav class="bottom-nav" id="bottomNav"></nav>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

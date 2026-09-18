@@ -1,0 +1,135 @@
+name: CI
+
+# 这是 main 分支的门禁：两个 job 都过，PR 才允许合并。
+# 全部离线 —— 不装依赖、不联网调数据源，所以不会因为第三方接口抽风而误报。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# 只读代码，不需要任何写权限
+permissions:
+  contents: read
+
+# 同一分支连推时取消上一次，省 runner 额度
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-tests:
+    name: 离线校验（Node ${{ matrix.node }}）
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 18.x 是 README 承诺的最低版本（全局 fetch），22.x 是当前 LTS。
+        # 两端都实测过：9 组脚本在两者上断言数完全一致。
+        node: ['18.x', '22.x']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # 零依赖：不需要 npm install。
+      # npm test = 生成数据文件 → 9 组离线校验 → 脱敏审计，任何一环失败即非零退出。
+      - name: npm test（setup + 离线校验 + 脱敏审计）
+        run: npm test
+
+      # 兜底：被 .gitignore 忽略、却仍被 git 跟踪的文件 = 数据文件被误提交的信号
+      - name: 检查「被忽略却仍被跟踪」的文件
+        shell: bash
+        run: |
+          hits="$(git ls-files -ci --exclude-standard)"
+          if [ -n "$hits" ]; then
+            echo "::error::下列文件已被 .gitignore 忽略，却仍被 git 跟踪 —— 多半是数据文件误入库："
+            printf '%s\n' "$hits"
+            exit 1
+          fi
+          echo "✅ 无命中"
+
+  windows-first-run:
+    name: Windows 首次运行（setup.bat + 全量校验）
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      # ★ 这一步是「本机开发者无法自动化测 .bat」的替代验证：
+      #   setup.bat 只能在真实的 cmd.exe 里跑，而本机沙箱禁止调用 cmd.exe。
+      #   PHAROS_NO_PAUSE=1 绕过末尾的 pause（否则流水线会一直挂到超时）。
+      - name: 跑 setup.bat（PHAROS_NO_PAUSE 防挂住）
+        shell: cmd
+        env:
+          PHAROS_NO_PAUSE: '1'
+        run: |
+          call setup.bat
+          if errorlevel 1 exit /b 1
+
+      - name: 断言 3 个数据文件已生成
+        shell: pwsh
+        run: |
+          $want = @(
+            'data/state/holdings.json',
+            'data/config/config.json',
+            'data/config/categories.json'
+          )
+          $miss = @($want | Where-Object { -not (Test-Path $_) })
+          if ($miss.Count -gt 0) {
+            Write-Error ("setup.bat 之后仍缺少：" + ($miss -join ' / '))
+            exit 1
+          }
+          Write-Host "✅ 3 个数据文件都在"
+
+      # 幂等性：setup.bat 的承诺是「已存在则跳过，绝不覆盖」。
+      # 破坏这个承诺 = 用户第二次双击就丢数据，属于 P0 级缺陷，必须由 CI 钉住。
+      - name: 幂等性 —— 已有文件不能被覆盖
+        shell: pwsh
+        run: |
+          $env:PHAROS_NO_PAUSE = '1'
+          Set-Content -Path 'data/state/holdings.json' -Value 'USER-EDIT' -NoNewline
+          cmd /c "setup.bat" | Out-Null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "setup.bat 退出码 $LASTEXITCODE（重复运行时本应成功退出）"
+            exit 1
+          }
+          if (-not (Select-String -Path 'data/state/holdings.json' -Pattern 'USER-EDIT' -Quiet)) {
+            Write-Error "setup.bat 覆盖了已存在的数据文件 —— 用户会丢数据"
+            exit 1
+          }
+          Write-Host "✅ 已有文件未被覆盖（幂等成立）"
+          # 幂等测试把持仓写坏了，恢复成模板，好让后面的校验跑在正常数据上
+          Copy-Item 'data/example/holdings.example.json' 'data/state/holdings.json' -Force
+
+      - name: Windows 上复跑全量校验
+        run: npm test
+
+      # 起服务 → 取首页 → 关服务。验证「Windows 上真的能起来并托管应用外壳」。
+      # 只请求静态首页（不碰任何数据接口），所以不需要联网、不会受第三方接口影响。
+      - name: 服务器冒烟（起服务 → 取首页 → 关服务）
+        shell: pwsh
+        run: |
+          $srv = Start-Process -FilePath 'node' -ArgumentList 'backend/server.js' -PassThru -WindowStyle Hidden
+          try {
+            $ok = $false
+            foreach ($i in 1..30) {
+              Start-Sleep -Milliseconds 500
+              try {
+                $r = Invoke-WebRequest -Uri 'http://localhost:3000/' -UseBasicParsing -TimeoutSec 5
+                if ($r.StatusCode -eq 200 -and $r.Content -match '<html') { $ok = $true; break }
+              } catch { }
+            }
+            if (-not $ok) {
+              Write-Error "服务没起来，或首页拿不到 200"
+              exit 1
+            }
+            Write-Host "✅ 服务已启动，首页返回 200 且是 HTML"
+          } finally {
+            if ($srv -and -not $srv.HasExited) { Stop-Process -Id $srv.Id -Force }
+          }

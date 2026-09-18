@@ -1,0 +1,249 @@
+{
+  "apiKey": "dev",
+  "currency": "¥",
+  "timezone": "Asia/Shanghai",
+  "treasury10y": 0.0169,
+  "usTreasury10y": 0.047,
+  "_usTreasury10y_note": "美债10年（小数），仅服务海外宽基(caliber=us) 的 ERP 副锚兜底。正常由 analysis 自动抓东方财富同接口 EMG00001310 列覆盖；抓取失败才用此常量。★A股宽基禁用美债、海外禁用中债，二者不可互为兜底。",
+  "categoryPolicy": {
+    "core": "buy",
+    "cycle": "buy",
+    "growth": "buy"
+  },
+  "dailyLimits": {
+    "_note": "每日限购金额（元）：0=暂停申购不可买，null=无上限（不限制）。QDII 常因外汇额度限购，需按各基金最新公告填写。下列为示例值：012920 演示「暂停申购」，其余留 null 表示不限购——请替换为你实际关注基金的限购额。",
+    "016664": null,
+    "016665": null,
+    "012920": 0,
+    "016452": null,
+    "018966": null
+  },
+  "timing": {
+    "_note": "买入时机复盘模块参数（docs/买入时机复盘模块-设计v2.md §7）。采集=访问驱动战役状态机（无定时器）；命中基准=T+30 正收益（朴素裁判）；historyStart 前买入为历史定投、仅副视图展示不重算。",
+    "holdDays": 30,
+    "previewDays": [
+      5,
+      10
+    ],
+    "gapDays": 3,
+    "weakN": 5,
+    "strongN": 10,
+    "strongHitRate": 0.65,
+    "historyStart": "2026-09-01"
+  },
+  "signals": {
+    "cooldownDays": 7,
+    "trimProfitPct": 12,
+    "allocDeviationPt": 5,
+    "calibratedAt": "2026-08-09",
+    "peFallback": {
+      "202015": 77,
+      "_note": "PE 分位锚点仅作最后兜底（蛋卷免登录列表为主源、乐咕次之，均失败才用）。纳指走蛋卷 NDX(≈52)；202015 由乐咕/蛋卷覆盖，此值仅兜底（2026-09-09 按乐咕近5年实测 76.7 更新，旧值 83 已越过贵线 80，会把兜底状态直接判成贵端）。008163 红利低波已砍 PE 分位主线（纯走股息率带），不在本表。需随市场季度更新。",
+      "016452": 52,
+      "018966": 52
+    },
+    "_note": "fundThresholds 为各基金独立校准的60日回撤触发线(单位%)，由 recalibrate.js 用近2年真实净值反解「约3~4次/年」频率得到。切勿改用统一数值：实测阈值/波动比在0.27~0.59之间，无统一系数。建议每季度重跑 recalibrate.js。",
+    "fundThresholds": {
+      "202015": -8.5,
+      "008163": -8.5,
+      "018391": -8,
+      "016664": -10.5,
+      "016665": -10.5,
+      "012920": -8.5,
+      "016452": -7.5,
+      "018966": -7.5
+    },
+    "dividendYield": {
+      "_note": "红利决策引擎：绝对股息率带(absYield)。标普红利低波50(SPCLLHCP)无免费PE历史→PE分位主线已砍(2026-09-01 定案，永不启用)；纯走中证红利000922动态股息率(蛋卷)参考带，当前基金股息率相对000922的高低判定便宜/贵。cheapMult/expensiveMult 为相对000922的便宜/贵倍率。ERP(中债10年)仅作reasons展示，非决策依据。",
+      "mode": "absYield",
+      "cheapMult": 1.1,
+      "expensiveMult": 0.9,
+      "source": "中证红利000922动态股息率(蛋卷)作参考带"
+    },
+    "ma250": {
+      "_note": "MA250=250日净值均线，趋势确认维度（不作清仓信号）。",
+      "windowDays": 250
+    },
+    "peGate": {
+      "_note": "PE初筛总闸：pe_percentile≥peGatePct 且近20日涨幅>surge20dPct 时强制「不动」，覆盖矩阵结果（宽基/科技走PE分位时生效）。红利(absYield)不传PE分位，总闸对其不生效。",
+      "peGatePct": 85,
+      "surge20dPct": 5
+    },
+    "tech": {
+      "_note": "科技成长决策引擎：进攻仓位「看长做短」，不追高不赌底只买确认过的。便宜主线=60日窗口回撤≤dipPct% 且止跌(近stopWindow日低点>前stopWindow日低点)；趋势=双均线MA20×MA60，MA20>MA60(金叉/上升路线)即趋势确认买入；两条通道任一满足→加仓。PE总闸复用 peGate。仅作信号层，金额用户自定。主动QDII(016664/016665/012920)无PE→总闸自动跳过。 2026-09-13 回测（backend/scripts/backtest_tech_stopfall.js，只读、不改生产代码）：止跌门槛验证结果 = **保留不改**。样本=3只真实基金（016664/012920/016874；016665 为同标的 C 份额不重复计，日收益相关系数 1.0000）× 120 日窗口（对齐 analysis.js:34）逐点回放 2409 点，一致性断言零不一致。整体层（主判据）：A 92 事件 R6m 27.1% vs B 103 事件 26.7% → Δ=-0.44pp（门槛 +2.0pp）；按月配对聚类 bootstrap p10=-2.42pp（nClusters=40）；留一基金检验 2 负 1 正（不稳健）；窗口 10/30 的 Δ 虽为正（+0.96/+0.11pp）但与主判据符号不一致 → P1/P2/P5 与留一基金均不过。★★ 关键发现：科技线 92 个信号里 87 个（95%）来自金叉通道（goldenState = MA20>MA60），「回撤+止跌」通道只贡献 8 个（8.7%）；goldenState=true 占回放点的 66.4% 且逐年上升（2023 46.5% → 2026 78.8%）→ 止跌门槛对科技线影响面极小；真正的问题是金叉通道长期为真导致 add 占比过高（53~75%），已列入待办（须另开一轮）。附：位置分口径撕裂——若只改决策层而不动 allocation.js:104，新增信号会出现「可加仓但位置分中位仅 5.3、87% ≤9 分」的矛盾（折扣经 square() 放大约 1/11）。 2026-09-13 回测②（backend/scripts/backtest_tech_cross.js，只读、不改生产代码）：「金叉通道改造（状态→事件/回调）」验证结果 = **不采纳**（维持现状）。六组对照、3 只真实基金 × 2409 回放点，一致性断言零不一致（重建 A 与生产 action 逐点相同）。· A 现状 `dipReady∨金叉状态`：占空比 68.6%、R6m 27.1%（全期随机入场 24.4%，超额仅 +2.7pp）· C5 `dipReady∨(金叉∧回撤≥5%)`：占空比 18.5%、R6m 31.6%、ΔR6m=+4.52pp —— 7 项判据过 6 项，唯 P1 的配对聚类 bootstrap p10=-0.89pp<0（按月聚类 nClusters=36）未达显著；P2/P3/P5/P7 均过（被筛掉的信号 R6m 25.9% < 保留 31.6%；深跌期覆盖与 A 同为 38.9%；留一基金三只同号 +5.05/+1.80/+6.75pp）· E3b `dipReady∨(独立穿越后3日)`：占空比 5.1%、R6m 16.1%、ΔR6m=-11.01pp —— P1/P2/P3 全挂· 变体：C10(回撤≥10%) Δ=+14.11pp；E5b/E3a Δ≈-11.0pp（与各自主判据同号）★ 关键发现：**E 方向（追突破）被明确否决**——把「状态」改成「事件」会删掉「趋势已确立但不在穿越窗口内」的高收益期（被筛掉的信号 R6m 27.2% > 保留的 16.1%），并造成踏空（深跌期覆盖 27.5% vs A 38.9%）。→ 说明「金叉状态长期为真」对科技线**不完全是缺陷**：趋势资产在趋势中持续给买入信号，本身有正收益。★ C 方向（趋势中逢回调买）有正向证据但未达统计显著 → 记为**观察项**（非本次采纳）。附带：位置分 allocation.js:103「金叉加成 +0.1」同因金叉常年为真而近常量；决策层不动则两层口径不变，故未改。口径澄清：cross 标记点 159 个 = **独立穿越仅 16 次**（每次被标记约 10 天，因 tech.js:35 的 back=10）。",
+      "dipPct": 15,
+      "dipWindow": 60,
+      "stopWindow": 20,
+      "ma": {
+        "short": 20,
+        "long": 60
+      }
+    },
+    "gold": {
+      "_note": "黄金(018391)多维度决策：价格分位(便宜/贵) + 三重均线位置(跌破MA120=趋势弱) + 急涨总闸(>7%强拦中性区) + 止跌确认(仅中性区要求)。信号为纯价格纪律(与仓位/资金解耦)；买多买少由统一分配引擎按配置缺口决定。 2026-09-13 回测（backend/scripts/backtest_gold_stopfall.js，只读、不改生产代码）：中性区「止跌确认」验证结果 = **保留不改**。主序列用同标的代理 518880（2013-07 起 13 年，与样本基金 018391 日收益相关系数 0.9723、10 天决策卡标签 9/10 一致）。移除止跌(B) ΔR6m=+0.03pp、站上MA20(D) +0.11pp、自低点反弹3%(E1) +0.03pp——三者均远低于 +2.0pp 门槛且 bootstrap p10 为负；D 另有两条不过（被筛掉的信号 R6m 反而更高、MA10/MA30 方向不一致）。★ 结论：该门槛在黄金线上基本不起作用（既不帮忙也不拖累），维持现状。附带发现（列入待办）：A 组在 2023-2025 连续三年零事件——黄金单边上涨期 250 日价格分位长期停在「贵」区（价格分位在趋势资产上的固有特性，与纳指 PE 分位锈死同源），该窗口错过黄金大牛市。另注：「止跌」实际语义是「低点抬高」(近N日最低>前N日最低)，并非「停止下跌」。 2026-09-13 回测（backend/scripts/backtest_gold_dip.js，只读、不改生产代码）：① **回撤通道不采纳**——并联「分位 ∨ 回撤」虽能打破天花板（-5% 档下 2023 有 1 个、2024 有 2 个事件，现状为 0/0），但代价过大：ΔR6m=+1.07pp（门槛 +2.0pp）、按自然月配对聚类 bootstrap p10=-0.36pp<0、最差 R6m 由 -9.8% 恶化到 -24.6%（浅阈值接飞刀）、且换阈值即失效（-8/-10/-15% 档 Δ 全为负，符号不一致）→ P2/P3/P5 均不过。根因矛盾：阈值浅才够触发 2023-2024（该两年最深回撤仅 7.9%/7.2%）但会接飞刀；阈值深则救不了。② **实际利率锚已实测否决**——TIPS 10年实际利率（FRED DFII10，2003 起 23 年）与 518880 日收益相关性全期仅+0.032（当日对齐）/-0.077（滞后 1 日）；分档「预测力」方向与理论相反（分位低档 R12m +4.2% vs 高档 +21.0%），且经查证为**时段伪相关**（低档集中 2016/2019-2021 横盘期，高档含 2022-2024 大牛市）→ 实际利率分位≈「年份的代理变量」，无独立择时信息。★★ 综合结论：**黄金无可靠择时锚**（估值类的价格分位有天花板 / 实际利率类实测无效 / 回撤类不可兼得）；2023-2025 零信号是「极端平稳的单边快涨期」的固有代价，而 2026 暴跌期线工作正常（4~6 个事件）。**维持现状，代码不动。**附带观察：黄金线信号的 R6m（+3.3%）低于全期任意点入场基准（+6.3%）——这是均值回归派的固有特征（买在下跌中，短期收益自然低但成本更低），非缺陷。",
+      "cheapPct": 35,
+      "expensivePct": 75,
+      "surge20dPct": 7,
+      "maWindows": [
+        60,
+        120,
+        250
+      ],
+      "stopWindow": 20,
+      "stopConfirm": "neutral"
+    },
+    "valuationTilt": {
+      "_note": "估值倾斜阈值（computeAllocation 用）：价格分位≤cheapPct 加权导向、≥expensivePct 减拨/暂缓，近20日涨>surge20dPct 防追高。与 gold 35/75、peGate 85/5 职责不同：倾斜决定每月拨多少，信号(gold/tech/dividendYield)决定买不买。",
+      "cheapPct": 30,
+      "expensivePct": 70,
+      "surge20dPct": 5,
+      "strongBuy": 1.3,
+      "reduce": 0.5
+    },
+    "allocation": {
+      "_note": "综合分信号（0~100，2026-09-08 起是引擎唯一活输出，不再分配金额）。★以下公式为 2026-09-14 前的旧位置分口径（旧位置分 = p²×100，保留 1 位小数，平方加速），现行 V/M 口径见本段末尾 2026-09-14 条：tech：p = 0.7×clamp(−回撤/fullPct) + 0.3×clamp((100−估值分位)/100)，严格先「金叉 +0.1」再「未止跌 ×confirmDiscount」（写反差一倍；未止跌时分数被压到 ≤9）。2026-09-09 方案A「相对尺」：broad/cycle/dividend 三线由离散档改为连续归一化 relScale(x, cheap, expensive) = clamp((expensive−x)/(expensive−cheap))，到便宜线=1、到贵线=0，span 可为负（股息率/ERP 越大越便宜）；broad = 0.7×PE分位尺(25/80) + 0.3×ERP尺(6.9/5.3)（★matrix.erp 是小数，入尺前 ×100；主锚 pePercentile 缺失时不降级副锚，直接 null）；cycle = 价格分位尺(35/75)；dividend = 股息率尺(cheapYield/expensiveYield)，跌破年线 +0.1。gate=block → 0 分。neutralP=无数据兜底（0.5→25 分）。注意：双锚线在「贵端垫底」时 main=0/sub=1 → 9 分（不是 0 分），属设计内。capPct / anchorMode / dividend.lo / dividend.span / cycle.full 为死参数，代码已不读取。 2026-09-14 起位置分拆为 估值分V / 动量分M 两派：V = (估值核 + wDip×dipBonus)²×100（均值回归派，含连续化的「跌破均线」超跌确认，仍加分）；M = (wavg(crossS, stopS, trendS))²×100（动量派，★所有因子已由二值改连续）；综合分 = wV×V + wM×M。中性锚统一 = 25 分（0.5²×100），缺失侧按 25 兜底并在 scoreMap.degraded 标记。gate=block 或 暂停申购 → 硬约束一票否决，综合分直接 0，不参与加权。★M 的尺度参数禁止硬编码，全部走 config（初始值，待回测标定）；★旧的 ±0.1 / ×0.3 二值补丁已废弃（旧逻辑冻结在 legacyPositionScore，仅供回测脚本复现历史证据）。",
+      "capPct": 0.1,
+      "anchorMode": "avg",
+      "neutralP": 0.5,
+      "tech": {
+        "fullPct": 30,
+        "confirmDiscount": 0.3,
+        "dipWindow": 60,
+        "stopWindow": 20
+      },
+      "dividend": {
+        "lo": 0.8,
+        "span": 0.4
+      },
+      "cycle": {
+        "full": 100
+      },
+      "broad": {
+        "wMain": 0.7
+      },
+      "broadGlobal": {
+        "wMain": 0.7
+      },
+      "composite": {
+        "_note": "综合分 = wV×V + wM×M。权重为 2026-09-14 初始值（用户拍板），后续只能由 backend/scripts/backtest_composite_weights.js 的判据驱动微调（单次 ≤0.1，须写回本 _note 与 docs/算法待办清单.md）。 2026-09-14 回测（backend/scripts/backtest_composite_weights.js，只读）：**权重保持初始值不动**。W1(初始值 wM=0.2) 的 R12m 分档差 14.01pp vs W0(纯V) 13.71pp，仅 +0.31pp（门槛 >1.0）→ 加动量未显著改善预测力；P2 分档倒挂（40-60 档 −3.45% 低于 20-40 档 +2.11%）；P4 独立集群 5/3/3 < 8 ⇒ 结论降级为描述性。P6 分时段稳健 ✓（2010-2014: 35.54→33.10；2015-2026: 7.54→7.47）。M 饱和率 42.1% ✓ 未饱和（证明真的连续化，不是换了个新二值）；V/M 缺失率均为 0。尺度参数与 wV/wM 仍为初始值，待样本更充足时重新标定。 2026-09-14 回测（backend/scripts/backtest_composite_weights.js，只读）：**权重保持初始值不动**。W1(初始值 wM=0.2) 的 R12m 分档差 14.01pp vs W0(纯V) 13.71pp，仅 +0.31pp（门槛 >1.0）→ 加动量未显著改善预测力；P2 分档倒挂（40-60 档 −3.45% 低于 20-40 档 +2.11%）；P4 独立集群 5/3/3 < 8 ⇒ 结论降级为描述性。P6 分时段稳健 ✓（2010-2014: 35.54→33.10；2015-2026: 7.54→7.47）。M 饱和率 42.1% ✓ 未饱和（证明真的连续化，不是换了个新二值）；V/M 缺失率均为 0。尺度参数与 wV/wM 仍为初始值，待样本更充足时重新标定。",
+        "hardBlock": {
+          "gate": true,
+          "suspended": true
+        },
+        "wDip": 0.1,
+        "weights": {
+          "dividend": {
+            "wV": 0.9,
+            "wM": 0.1
+          },
+          "broad": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "broadUS": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "cycle": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "tech": {
+            "wV": 0.5,
+            "wM": 0.5
+          }
+        },
+        "momentumWeights": {
+          "tech": {
+            "cross": 0.6,
+            "stopRise": 0.4,
+            "trend": 0
+          },
+          "broad": {
+            "cross": 0,
+            "stopRise": 0.5,
+            "trend": 0.5
+          },
+          "broadUS": {
+            "cross": 0,
+            "stopRise": 0.5,
+            "trend": 0.5
+          },
+          "cycle": {
+            "cross": 0,
+            "stopRise": 0.5,
+            "trend": 0.5
+          },
+          "dividend": {
+            "cross": 0,
+            "stopRise": 0,
+            "trend": 1
+          }
+        },
+        "momentum": {
+          "_note": "M 连续因子的尺度参数，单位统一为百分点(pp)。★初始值，必须由 backtest_composite_weights.js 读各因子 p10/p90 标定后覆盖；饱和率（M_raw ≤0.05 或 ≥0.95）须 <60%，否则等于换了个新二值。",
+          "crossFullPct": 5,
+          "crossZeroPct": -5,
+          "stopRiseFullPct": 3,
+          "trendDevFullPct": 10,
+          "divDevFullPct": 8,
+          "dipFullPct": 10,
+          "divDipFullPct": 3
+        }
+      }
+    },
+    "broad": {
+      "_note": "宽基决策引擎(沪深300等)+综合分共用带：双锚=PE分位×ERP(股债利差)。cheapPct/expensivePct 为 PE 纵向分位阈值（乐咕近5年滚动口径，2026-08 标定 25/80）；erpHigh/erpLow 为 ERP 横向阈值(高=股票相对债券划算)，★百分数单位，而 matrix.erp/代码里的 erp 是小数(0.0607)，综合分入尺前必须 ×100。2026-09-09 实测校准：乐咕 PE=12.9、中债10年=1.68% → ERP=6.07%；近5年 ERP 分布 min4.70/p10 5.34/p50 6.14/p90 6.87/max7.76，旧 erpHigh=4.5 近5年从未被跌破（erpZone 恒为 high，阈值已失效）→ 改为 p10/p90 = 5.3/6.9。stopWindow 止跌窗口；maWindows 三重均线(季/半年/年)。ERP 的无风险利率取中债10年（analysis 自动抓取东方财富，config.treasury10y 仅作兜底常量）。 2026-09-13 回测（backend/scripts/backtest_broad_cn_stopfall.js，联机只读）：「便宜区加止跌确认」不采纳——ΔR6m=+0.85pp（门槛+2.0pp），bootstrap p10=-4.68pp<0 不显著；B组6个历史底部覆盖 0/6（A组4/6），因「止跌」定义（近20日最低>前20日最低）在数学上必然排除真正的底部（底点当天即最低，需反弹20个交易日以上才成立，届时已涨回一截）；窗口稳健性：10日 Δ=-5.18pp（反向）、30日 +0.09pp，方向不一致。结论：便宜区维持不加止跌门槛，生产代码不动。回测一致性已验证（自算滚动分位 76.7 vs 生产 fetchLeguValuation 76.7，Δ0.03）。 2026-09-13 复验②（backend/scripts/backtest_broad_cn_threshold.js，只读）：「便宜区是否过松」结案 = **维持现状（25 / 近5年）**。①指标有效：分档在 R12m/R24m 单调（0-20 档 R36m +27.0% vs 80-100 档 R24m -5.3%），占空比 39.6% 是 A股 PE 分布右偏的自然结果（年度均值 8.8~16.9 无漂移），非缺陷；②原判据错误：§2 用 R6m 评估（四阈值极差仅 0.89pp vs R12m 5.48pp）——估值均值回归型信号须用 R12m+ 评估；③样本不足：78 点仅 5 段独立集群（其中 2 段 R36m 亏损：2010-14 磨底 51 个月 -19.7%、2022-24 -22.3%），三口径（90/182/365天）均 <8 门槛；④收紧更糟：≤10 的 R12m +12.5% 表面更优，但其触发点 80% 落在 2010-2014 磨底期（≤25 为 65%），剔除该段后排序翻转，且底部覆盖 7/9→5/9（漏 2018-12/2024-09）；⑤口径澄清：§2 的「76 次/39%」是 A组(add) 事件数（28天锚定起点合并），78 是便宜区点数——引用数字必须写明口径；事件 76 vs 独立集群 5 相差 13.8 倍。",
+      "peWindowYears": 5,
+      "cheapPct": 25,
+      "expensivePct": 80,
+      "erpHigh": 6.9,
+      "erpLow": 5.3,
+      "stopWindow": 20,
+      "maWindows": [
+        60,
+        120,
+        250
+      ]
+    },
+    "broadGlobal": {
+      "_note": "宽基·海外（caliber=us / 纳指100）决策引擎。★与 signals.broad(A股) 完全独立，两套阈值严禁互换。① 估值通道：PE 在【滚动 156 周(3年)】窗口内分位 ≤cheapPct → 便宜。必须自算滚动分位（util.rollingPercentile 读 valuation.peHistory），不能用蛋卷当期 pe_percentile——那是固定约10年口径，遇纳指 PE 台阶上移会永久失效（实测 2023 后触发 2/0/0/0 周）。② 回撤通道：PE 距近 52 周高点回撤 ≤-peDipPct → 便宜。★用 PE 回撤而非净值回撤（纳指 60 日跌 15% 极罕见，2023 起净值回撤仅触发 2 次 vs PE 回撤 24 次）；★peDipRequireStop 默认 false（回测显示加止跌会把信号后 6 月超额从 +16.7% 降到 +5.9%）。两通道并联，任一成立即 add——实测唯一覆盖 2018-12/2020-03/2022-12/2025-04 四个关键买点。③ ERP=1/PE−美债10年 仅作综合分副锚与展示，不作触发。erpHigh=2.1/erpLow=-1.5 为 2026-09-12 按纳指10年周频PE×美债10年 标定的 p90/p10；★★严禁套用 A 股 6.9/5.3（美股 ERP 结构性为负，套用会让副锚恒为 0、综合分硬顶 49）。无风险利率只认美债，失败回退根级 usTreasury10y，绝不回退中债。重标定：node backend/scripts/calibrate_broad_global.js。 2026-09-13 复验（backend/scripts/backtest_broad_global_us.js，只读）：**peDipPct 由 15 放宽至 12**（C1 组 8/8 判据全过）。实测：现状(15%) 占空比 32.6%/事件33/R6m+7.2%/底部覆盖4-7/2024 触发 0 天；C1(12%) 占空比 37.5%/事件40/R6m+8.9%/Δ+1.69pp/覆盖5-7/2024 触发 20 天。★双向证据链：放宽新增 11 信号 R6m +17.1%、收紧(20%) 被筛 9 信号 R6m +10.5% → 两方向同指「15% 偏紧」。前置断言全过（复现 2023:5/2024:0/2025:10/2026:14、无未来函数、重建=生产 action）。★本线占空比极端化首次量化：2021 57.6%/2022 100%/2024 0%（与科技线、黄金同病）。★静默降级：peHistory 抓取失败 → 550 天 add 全部静默变 hold(100%) 且无提示（待修）。★原注释中「+16.7%」与「24 次」无脚本支撑且互相矛盾，已作废。",
+      "cheapPct": 25,
+      "expensivePct": 80,
+      "peWindowWeeks": 156,
+      "peDipPct": 12,
+      "peDipWindowWeeks": 52,
+      "peDipRequireStop": false,
+      "erpHigh": 2.1,
+      "erpLow": -1.5,
+      "stopWindow": 20,
+      "maWindows": [
+        60,
+        120,
+        250
+      ]
+    }
+  },
+  "llm": {
+    "baseUrl": "",
+    "model": "hy3",
+    "apiKey": ""
+  },
+  "news": {
+    "jin10": {
+      "key": ""
+    },
+    "search": {
+      "key": ""
+    }
+  },
+  "defensive": {
+    "funds": [
+      "008163",
+      "202015",
+      "018391"
+    ],
+    "singleTradeCapPct": 0.1
+  },
+  "_exampleNote": "DEMO CONFIG — apiKey is a PLACEHOLDER (\"dev\") so a fresh clone can save data out of the box. ★ Every write endpoint (/api/save, /api/purchase, /api/theme-map, /api/backfill-pending) requires X-API-Key to equal config.apiKey, and an EMPTY apiKey makes the server reject all writes with 401 — the page would open and read fine but nothing could be saved. Set the FUND_API_KEY env var (higher priority than this file) if you'd rather not keep the key on disk, or replace \"dev\" with your own random string before exposing the instance to a LAN. The dashboard's Settings page must carry the SAME key, because the browser sends it as the X-API-Key header (reads need no key). See README \"朋友首次运行\"."
+}

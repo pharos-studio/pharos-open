@@ -1,0 +1,28 @@
+# ★ 密钥红线（切勿把真实值写进任何会被提交的文件）
+#   config.json 的 llm.apiKey / news.*.key 一律留空；本机鉴权口令走环境变量 FUND_API_KEY
+#   （backend/lib/config.js 优先读取），data/config/config.json 的 apiKey 保持占位 "dev"。
+#
+# ★ 本仓库是「开源版」，不含任何人的账户数据。
+#   下面忽略的 data/ 子目录是留给你自己的：你在本地记的账不会被提交，
+#   所以 fork 之后也不必担心把自己的数据推上公开仓库。
+
+# 依赖（本项目零依赖，理论上不存在）
+node_modules/
+
+# 临时校验脚本目录
+.tmpchk/
+
+# 运行日志
+fund_server.log
+
+# ---- 你的真实数据：由 setup.bat 从 data/example/ 生成，永不入库 ----
+data/state/
+data/series/
+data/config/config.json
+data/config/categories.json
+data/cache/
+data/state/holdings*.bak*
+
+# ---- 本地产物 / 跨平台系统垃圾 ----
+.DS_Store
+Thumbs.db

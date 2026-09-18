@@ -1,0 +1,536 @@
+/* ============================================================
+   基金看板 · 设计系统 G0 深藏蓝×鎏金（琉璃纸墨·深色）
+   单一真相源：本文件 :root 即全部设计变量。
+   ============================================================ */
+:root {
+  /* 画布：深藏蓝 + 极光贴边（靛蓝左上 / 鎏金右上） */
+  --bg:
+    radial-gradient(900px 420px at 15% -60px, rgba(124, 140, 248, 0.16), transparent 65%),
+    radial-gradient(800px 360px at 100% 0%, rgba(217, 164, 65, 0.08), transparent 60%),
+    #0A1020;
+  --panel: rgba(255, 255, 255, 0.05);
+  --panel-strong: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --gold-line: rgba(217, 164, 65, 0.22);
+
+  /* 加载态：骨架灰条填充 / 骨架扫光高光 */
+  --sk: rgba(255, 255, 255, 0.10);
+  --sk-sheen: rgba(255, 255, 255, 0.06);
+
+  --text: #EDEFF7;
+  --text-muted: #9AA3C0;
+
+  --accent: #D9A441;            /* 鎏金：主操作/强调/徽章 */
+  --accent-soft: #E8C57A;
+
+  --up: #FF8F8F;               /* 涨·红（A股惯例） */
+  --down: #6FCF97;             /* 跌·绿 */
+
+  --badge-add-bg: rgba(217, 164, 65, 0.16);
+  --badge-add-fg: #E8C57A;
+  --badge-hold-bg: rgba(154, 163, 192, 0.14);
+  --badge-hold-fg: #A9B1CC;
+  --badge-stop-bg: rgba(255, 143, 143, 0.14);
+  --badge-stop-fg: #FF8F8F;
+
+  --radius: 12px;
+  --radius-sm: 7px;
+
+  --font-display: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", Georgia, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+
+  --sidebar-w: 220px;
+  --sidebar-w-collapsed: 64px;   /* 侧栏收起后的图标窄栏宽度 */
+  --bottom-nav-h: 52px;          /* 手机底部栏高度（= 整栏可点高度） */
+  --maxw: 1080px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 数字统一等宽，避免跳动 */
+.tnum, .kpi-value, .num { font-variant-numeric: tabular-nums; }
+
+h1, h2, h3, .brand, .panel-head, .nav-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+a { color: var(--accent-soft); text-decoration: none; }
+
+/* ---------- 布局：桌面侧栏 + 主区；手机底部 Tab ---------- */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: 100vh;
+  /* 折叠动画：grid-template-columns 在现代浏览器可插值过渡（老 Safari <16 会瞬切，功能无损） */
+  transition: grid-template-columns 220ms ease;
+}
+
+.sidebar {
+  border-right: 1px solid var(--border);
+  padding: 22px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* 显式抬高：.card/.panel 的 backdrop-filter 会被提升为独立合成层，
+     仅靠「定位 vs 非定位」不足以保证窄栏 tooltip 浮在内容之上 */
+  z-index: 30;
+  /* ⚠️ 约束：本元素及其祖先链上禁止出现 overflow: hidden/auto —— 会裁掉 .nav-item::after 的气泡 */
+}
+.brand {
+  font-size: 19px;
+  padding: 4px 12px 18px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+/* 侧栏品牌行：文字与折叠按钮分居两端 */
+.sidebar .brand {
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;                        /* 图标与文字的间距（底部栏会覆盖） */
+  padding: 11px 14px 11px 8px;      /* 左内边距 8px：让图标绝对 x 恒为 24px（见下方折叠态说明） */
+  position: relative;               /* 窄栏 tooltip 的定位锚点 */
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  user-select: none;
+}
+.nav-item:hover { background: var(--panel); color: var(--text); }
+.nav-item.active {
+  color: var(--accent);
+  font-weight: 700;
+  border-left-color: var(--accent);
+}
+.nav-item.more-only { display: none; }
+/* 键盘焦点环（导航项已改为 <a>，原生可聚焦） */
+.sidebar .nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  color: var(--text);
+}
+
+/* 导航图标：尺寸由 CSS 决定，SVG 内的 width/height 仅作无 CSS 时的兜底 */
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+}
+.nav-icon svg { display: block; width: 100%; height: 100%; }
+
+/* ---------- 桌面侧栏折叠（状态类挂在 <html> 上） ----------
+   为什么挂 <html> 而不是 .app：防闪烁要求在「首屏渲染前」生效，
+   而 <head> 里的同步脚本只能写 documentElement（此时 <body>/.app 还不存在）。
+   宽度定义仍只有 --sidebar-w 一处，.app 的 grid 定义零改动。 */
+html.sb-collapsed { --sidebar-w: var(--sidebar-w-collapsed); }
+
+/* 1) 品牌文字隐藏，按钮独占窄栏顶部居中 */
+html.sb-collapsed .sidebar .brand-text { display: none; }
+html.sb-collapsed .sidebar .brand { justify-content: center; padding: 4px 0 18px; }
+
+/* 2) 文字标签平滑收起。
+   不用 display:none —— 那样无法过渡。
+   注：标签实际宽约 26px，而实际宽度 = min(26, max-width)，所以 max-width 从 160 → 0
+   时前 84% 纹丝不动、最后约 36ms 才收掉；但 opacity 在 140ms 内已把它淡到全透明，
+   这个「跳」发生在不可见之后，视觉上无感。⚠️ 不要把 max-width 起始值改小去「修」它，
+   那会在将来加 4 字页面名时把标签裁掉。 */
+.sidebar .nav-label {
+  max-width: 160px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 220ms ease, opacity 140ms ease;
+}
+html.sb-collapsed .sidebar .nav-label { max-width: 0; opacity: 0; }
+
+/* 3) 窄栏收尾：内容区 = 64 − 14×2 = 36px，而「边框2 + 左内边距8 + 图标17 + 右内边距14」
+   合计 41px 会挤出容器。右内边距归零即可（不影响图标横向位置，位置只由左侧决定）。 */
+html.sb-collapsed .sidebar .nav-item { gap: 0; padding-right: 0; }
+
+/* 4) 窄栏 tooltip：悬停或键盘聚焦时浮出页面名。
+   不用原生 title —— 有约 1s 延迟、样式不可控，且无法只在收起态出现。 */
+html.sb-collapsed .sidebar .nav-item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  padding: 5px 10px;
+  background: rgba(10, 16, 32, 0.96);
+  border: 1px solid var(--gold-line);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;             /* 不抢占 hover、不挡点击 */
+  opacity: 0;
+  z-index: 60;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+html.sb-collapsed .sidebar .nav-item:hover::after,
+html.sb-collapsed .sidebar .nav-item:focus-visible::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+/* 触屏设备没有 hover，且 :hover 可能残留 → 直接禁用气泡 */
+@media (hover: none) {
+  html.sb-collapsed .sidebar .nav-item::after { display: none; }
+}
+
+/* ---------- 折叠按钮 ---------- */
+.sb-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  flex: 0 0 26px;
+  background: var(--panel);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  font-family: var(--font-sans);
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+.sb-toggle:hover { background: var(--panel-strong); color: var(--accent); border-color: var(--gold-line); }
+.sb-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sb-toggle::before { content: '«'; }                        /* 展开态：提示「可收起」 */
+html.sb-collapsed .sb-toggle::before { content: '»'; }      /* 收起态：提示「可展开」 */
+
+.main { padding: 18px 22px 90px; max-width: var(--maxw); width: 100%; margin: 0 auto; }
+
+.topbar { display: none; }
+
+/* ---------- 卡片 / 面板 ---------- */
+.card, .panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.panel { padding: 18px; margin-bottom: 16px; }
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 15px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--gold-line);
+}
+.panel-head .sub { font-family: var(--font-sans); font-size: 12px; font-weight: 400; color: var(--text-muted); }
+
+/* ---------- KPI ---------- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.kpi { padding: 16px 18px; }
+.kpi-label { font-size: 12px; color: var(--text-muted); }
+.kpi-value { font-family: var(--font-display); font-size: 26px; font-weight: 500; margin: 4px 0 2px; letter-spacing: 0.2px; }
+.kpi-sub { font-size: 12px; color: var(--text-muted); }
+
+/* ---------- 涨跌色 ---------- */
+.up { color: var(--up); }
+.down { color: var(--down); }
+
+/* ---------- 徽章 ---------- */
+.badge { font-size: 11px; border-radius: 4px; padding: 2px 8px; white-space: nowrap; }
+.badge-add { background: var(--badge-add-bg); color: var(--badge-add-fg); }
+.badge-hold { background: var(--badge-hold-bg); color: var(--badge-hold-fg); }
+.badge-stop { background: var(--badge-stop-bg); color: var(--badge-stop-fg); }
+.badge-muted { background: var(--badge-hold-bg); color: var(--text-muted); }
+
+/* ---------- 表格 ---------- */
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th, .tbl td { text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.tbl th:first-child, .tbl td:first-child { text-align: left; }
+.tbl th { color: var(--text-muted); font-weight: 500; font-size: 12px; }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl tbody tr:hover { background: var(--panel); }
+/* 表格在窄屏内横向滚动，避免整页左右滑（手机端“要滑动”的主因） */
+.table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tbl-wide { min-width: 520px; }
+.name-cell { display: flex; flex-direction: column; }
+.name-cell .nm { font-weight: 500; }
+.name-cell .meta { font-size: 11px; color: var(--text-muted); }
+.expand-btn { cursor: pointer; color: var(--accent-soft); font-size: 12px; }
+
+/* 手机端持仓卡片（方案 A：纯纵向滚，无横滑/无缩放） */
+.fund-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
+.fc-head { margin-bottom: 10px; }
+.fc-name { font-weight: 600; font-size: 15px; }
+.fc-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.fc-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fc-metric { display: flex; flex-direction: column; }
+.fc-label { font-size: 11px; color: var(--text-muted); }
+.fc-value { font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.fc-sub { font-size: 11px; margin-top: 1px; }
+.fc-expand { margin-top: 10px; color: var(--accent-soft); font-size: 12px; cursor: pointer; }
+.fc-detail { margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+.buy-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
+.buy-row:last-child { border-bottom: none; }
+.buy-date { color: var(--text-muted); }
+.buy-amt { font-variant-numeric: tabular-nums; }
+.buy-nav { color: var(--text-muted); font-size: 11px; }
+.pen-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; }
+.pen-name { font-weight: 500; font-size: 13px; }
+.pen-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* ---------- 买入预览（2026-09-16）：原值 dim / 新值鎏金 / 前·后两档对比 ---------- */
+/* 语义提醒：这里刻意不用 --up/--down（那是涨跌语义，不是新旧语义），配色统一走鎏金 */
+.pv-old { color: var(--text-muted); font-size: 12px; }
+.pv-new { color: var(--accent-soft); font-weight: 600; font-size: 12px; }
+.pv-sub { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.pv-both { font-size: 11px; line-height: 1.5; color: var(--text-muted); white-space: nowrap; }
+.pv-both.on { color: var(--accent); font-weight: 600; border-left: 2px solid var(--accent); padding-left: 4px; }
+.pv-both.off { padding-left: 6px; }
+/* 方案 B（2026-09-18）：净值/份额列「原 / 新」两行带标签 —— 两列结构一致、左边缘严格对齐 */
+.pv-kv { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 1px 6px; text-align: left; }
+.pv-kv .k { font-size: 10.5px; color: var(--text-muted); opacity: .75; }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  font-family: var(--font-sans);
+  background: var(--panel-strong);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.btn:hover { background: var(--panel); border-color: var(--border-strong); }
+.btn-primary { background: var(--accent); color: #1A1206; border-color: var(--accent); font-weight: 600; }
+.btn-primary:hover { background: var(--accent-soft); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+
+/* ---------- 表单 ---------- */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+.input, select, textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 9px 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+.input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+/* 原生日期控件：Chromium 默认日历图标是纯黑，在深藏蓝画布上看不见 → 换成鎏金（= var(--accent) #D9A441）
+   color-scheme: dark 让弹出的日历面板也是深色，不再闪一块白。 */
+input[type="date"] { color-scheme: dark; }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: .85;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path fill='%23D9A441' d='M4.6 1.4v1.1H3.7A1.7 1.7 0 0 0 2 4.2v9.1A1.7 1.7 0 0 0 3.7 15h8.6A1.7 1.7 0 0 0 14 13.3V4.2a1.7 1.7 0 0 0-1.7-1.7h-.9V1.4h-1.3v1.1H5.9V1.4H4.6ZM3.3 5.6h9.4v7.7a.4.4 0 0 1-.4.4H3.7a.4.4 0 0 1-.4-.4V5.6Z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 15px 15px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+/* ---------- 信号卡（决策页） ---------- */
+.signals { display: flex; flex-direction: column; gap: 12px; }
+.sig {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  padding: 14px 16px;
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.sig.add { border-left-color: var(--accent); }
+.sig.hold { border-left-color: var(--text-muted); }
+.sig .sig-title { font-weight: 600; font-size: 14px; }
+.sig .sig-name { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.sig .sig-detail { font-size: 13px; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
+.sig .sig-right { text-align: right; flex-shrink: 0; }
+
+/* ---------- 复盘·每日决策链路（可解释看板，<details> 零 JS 折叠） ---------- */
+.dec-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.dec-sum {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 13px 16px;
+  cursor: pointer;
+  list-style: none;                 /* 去 Firefox 默认三角 */
+  user-select: none;
+}
+.dec-sum::-webkit-details-marker { display: none; }   /* 去 WebKit 默认三角 */
+.dec-sum::after {                    /* 自定义展开指示（右端箭头） */
+  content: '▸';
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: transform 160ms ease;
+}
+.dec-card[open] .dec-sum::after { transform: rotate(90deg); }
+.dec-name { font-weight: 600; font-size: 15px; }
+.dec-code { font-size: 11px; color: var(--text-muted); margin-left: 4px; font-weight: 400; }
+.dec-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.dec-chg { font-variant-numeric: tabular-nums; font-weight: 500; }
+.dec-body { padding: 4px 16px 16px; border-top: 1px solid var(--border); }
+.dec-sec { margin-top: 12px; }
+.dec-sec-h { font-size: 12px; color: var(--accent-soft); margin-bottom: 6px; font-weight: 600; }
+.dec-raw { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.dec-factors th, .dec-factors td { padding: 8px 10px; }
+.dec-verdict { font-size: 13px; line-height: 1.6; }
+.dec-wk { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
+.dec-changed { color: var(--accent-soft); font-weight: 600; }
+.tag-change { background: var(--badge-add-bg); color: var(--badge-add-fg); border-radius: 4px; padding: 1px 6px; margin-left: 6px; font-size: 11px; }
+.tag-planned { background: transparent; color: var(--text-muted); border: 1px solid var(--text-muted); border-radius: 4px; padding: 1px 6px; margin-left: 6px; font-size: 11px; opacity: 0.75; }
+
+/* 状态点：cheap=绿(有利买入) / expensive=红(偏贵) / neutral=灰(信息项) */
+.st-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; }
+.st-cheap { background: var(--down); }
+.st-expensive { background: var(--up); }
+.st-neutral { background: var(--text-muted); }
+
+/* ---------- 健康度（配置页） ---------- */
+.health { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.health-card { padding: 16px 18px; }
+.bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; margin-top: 10px; }
+.bar > span { display: block; height: 100%; border-radius: 4px; }
+.bar-ok > span { background: var(--down); }
+.bar-low > span { background: var(--accent); }
+.bar-high > span { background: var(--up); }
+.health-state { font-size: 12px; margin-top: 8px; }
+.state-ok { color: var(--down); }
+.state-low { color: var(--accent-soft); }
+.state-high { color: var(--up); }
+
+/* ---------- 通用 ---------- */
+.muted { color: var(--text-muted); }
+.hint { font-size: 12px; color: var(--text-muted); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.chart { width: 100%; height: 240px; }
+/* ---------- 加载态 ---------- */
+/* 1px 鎏金细线：不确定态活动指示。刻意不做成进度条 —— 只有真实进度才配显示进度，
+   绝不编造（规范 clarify.md「never invent progress」）。 */
+.thin-line { position: relative; display: block; width: 132px; height: 1px;
+  margin: 0 auto 12px; background: var(--gold-line); border-radius: 1px; overflow: hidden; }
+
+/* 扫光：全站唯一的 @keyframes。只动 transform → 走合成层，不逐帧重绘。
+   linear 而非 cubic-bezier(0.16,1,0.3,1)：匀速扫过才是光的物理直觉；
+   后者是「入场」缓动语义，套在无限循环上会每圈急停。 */
+@keyframes sk-sweep { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
+.sk-sweep { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent 38%, var(--sk-sheen) 50%, transparent 62%);
+  animation: sk-sweep 2.4s linear infinite; }
+
+/* 细线用的是鎏金高光，不是白色微光 */
+.thin-line .sk-sweep {
+  background: linear-gradient(90deg, transparent 38%, var(--accent) 50%, transparent 62%); }
+
+/* 加载占位：细线在上、文案在下（全站统一形态） */
+.loading { padding: 32px 0; text-align: center; color: var(--text-muted); }
+/* 页面内局部等待用紧凑版：同形态，只收窄上下留白（32px → 8px） */
+.loading--compact { padding: 8px 0; }
+
+/* ---------- 概览页骨架屏 ---------- */
+.sk-wrap { position: relative; }
+.sk { position: relative; overflow: hidden; }
+/* ⚠️ .sk-bar 必须保持空内容：empty inline-block 的基线取「底边」，
+   行盒高度才与真实文字一致（26px < 26px×1.7、12px < 12px×1.7）。
+   一旦塞进 &nbsp; 或任何字符，基线变成文字基线 → 行盒变高 → 零跳动失效。
+   亦不可加 vertical-align:middle：会把灰条中线对齐到 x-height，行盒长高约 3px。
+   若视觉重心偏高，可加 transform: translateY(2px) 微调（transform 不影响布局）。 */
+.sk-bar { display: inline-block; border-radius: 3px; background: var(--sk); }
+.sk-chart { background: var(--sk); border-radius: var(--radius-sm); }
+/* 文案绝对定位：不占流内高度 → 骨架高度 == 真实内容高度 → 零位移。
+   必须放在 .sk（overflow:hidden）外面，否则会被裁掉。 */
+.sk-note { position: absolute; top: 100%; left: 0; right: 0;
+  text-align: center; font-size: 12px; color: var(--text-muted); }
+
+/* 无障碍：尊重系统「减少动效」（纯 CSS 承担；扫光静止 = 一条淡金线 / 静态骨架，文案仍在） */
+@media (prefers-reduced-motion: reduce) {
+  .sk-sweep { animation: none; }
+  /* 折叠/展开、标签收起、按钮与 tooltip 全部改为瞬切 */
+  .app { transition: none; }
+  .sidebar .nav-label { transition: none; }
+  .sb-toggle { transition: none; }
+  html.sb-collapsed .sidebar .nav-item::after { transition: none; }
+}
+.error-box { padding: 14px 16px; border: 1px solid var(--up); color: var(--up); border-radius: var(--radius-sm); background: var(--badge-stop-bg); }
+
+/* ---------- 手机：底部 Tab ---------- */
+.bottom-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(10, 16, 32, 0.92);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--border);
+  /* 竖直内边距归零：原先上下各 6px 是「栏级」留白，点了不响应，白占 12px。
+     改为把高度完全交给 .nav-item，使整栏都成为可点击区域。安全区必须保留。 */
+  padding: 0 4px env(safe-area-inset-bottom);
+  grid-template-columns: repeat(4, 1fr);
+  z-index: 50;
+}
+.bottom-nav .nav-item {
+  flex-direction: column; gap: 3px; justify-content: center;
+  min-height: var(--bottom-nav-h);   /* 52px：整栏高度即触控区（原约 31px，低于 iOS 建议的 44px） */
+  padding: 4px 4px; font-size: 11px; border: none; border-radius: 0;
+}
+.bottom-nav .nav-icon { width: 16px; height: 16px; flex: 0 0 16px; }
+.bottom-nav .nav-item .nav-label { font-family: var(--font-sans); font-size: 11px; }
+.bottom-nav .nav-item.active { background: transparent; color: var(--accent-soft); }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px 6px; position: sticky; top: 0;
+    background: rgba(10,16,32,0.85); backdrop-filter: blur(10px); z-index: 20;
+  }
+  .main { padding: 10px 14px calc(var(--bottom-nav-h) + 20px + env(safe-area-inset-bottom)); }
+  .bottom-nav { display: grid; }
+  .kpi-value { font-size: 22px; }
+}

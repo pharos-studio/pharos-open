@@ -1,0 +1,165 @@
+{
+  "_comment": "DEMO DATA — NOT real holdings. Copy this file to holdings.json to run the dashboard. All amounts/shares are placeholders.",
+  "funds": [
+    {
+      "code": "016452",
+      "name": "南方纳斯达克100指数(QDII)A",
+      "category": "broad",
+      "caliber": "us",
+      "market": "QDII",
+      "estimateIndex": null,
+      "trackIndex": "NDX",
+      "purchases": [
+        {
+          "date": "2026-01-01",
+          "amount": 100,
+          "shares": 100,
+          "nav": 1,
+          "note": ""
+        },
+        {
+          "date": "2026-01-02",
+          "amount": 200,
+          "shares": null,
+          "nav": null,
+          "session": "T+1",
+          "pricingDate": "2026-01-05",
+          "settleDate": "2026-01-07",
+          "note": "15:00后买入示例：定价日 = 申请日顺延到下一交易日（01-05，按这天净值成交、算份额）；份额确认日 = 定价日 + 2 个工作日（01-07，只是份额登记到账的时间，不参与任何计算）"
+        }
+      ],
+      "feeRate": 0
+    },
+    {
+      "code": "008163",
+      "name": "南方标普红利低波50ETF联接A",
+      "category": "dividend",
+      "market": "A",
+      "estimateIndex": "sh000015",
+      "estimateLabel": "上证红利(近似)",
+      "trackIndex": "CSI930955",
+      "purchases": [
+        {
+          "date": "2026-01-01",
+          "amount": 100,
+          "shares": 100,
+          "nav": 1,
+          "note": ""
+        }
+      ],
+      "feeRate": 0
+    },
+    {
+      "code": "016664",
+      "name": "天弘全球高端制造混合(QDII)A",
+      "category": "growth",
+      "market": "QDII",
+      "estimateIndex": null,
+      "purchases": [
+        {
+          "date": "2026-01-01",
+          "amount": 100,
+          "shares": 100,
+          "nav": 1,
+          "note": ""
+        }
+      ],
+      "feeRate": 0.0015
+    },
+    {
+      "code": "018966",
+      "name": "汇添富纳斯达克100ETF发起式联接(QDII)A",
+      "category": "broad",
+      "caliber": "us",
+      "market": "QDII",
+      "estimateIndex": null,
+      "trackIndex": "NDX",
+      "penetrationProxy": "016452",
+      "purchases": [
+        {
+          "date": "2026-01-01",
+          "amount": 100,
+          "shares": 100,
+          "nav": 1,
+          "note": ""
+        }
+      ],
+      "feeRate": 0.0012
+    },
+    {
+      "code": "012920",
+      "name": "易方达全球成长精选混合(QDII)人民币A",
+      "category": "growth",
+      "market": "QDII",
+      "estimateIndex": null,
+      "purchases": [
+        {
+          "date": "2026-01-01",
+          "amount": 100,
+          "shares": 100,
+          "nav": 1,
+          "note": ""
+        }
+      ],
+      "feeRate": 0.0015
+    },
+    {
+      "code": "016665",
+      "name": "天弘全球高端制造混合(QDII)C",
+      "category": "growth",
+      "market": "QDII",
+      "estimateIndex": null,
+      "estimateLabel": null,
+      "purchases": [
+        {
+          "date": "2026-01-01",
+          "amount": 100,
+          "shares": 100,
+          "nav": 1,
+          "note": ""
+        }
+      ],
+      "feeRate": 0
+    },
+    {
+      "code": "202015",
+      "name": "南方沪深300ETF联接A",
+      "category": "broad",
+      "caliber": "cn",
+      "market": "A",
+      "estimateIndex": "sh000300",
+      "estimateLabel": "沪深300",
+      "trackIndex": "SH000300",
+      "purchases": [],
+      "feeRate": 0
+    },
+    {
+      "code": "018391",
+      "name": "南方上海金ETF发起联接A",
+      "category": "cycle",
+      "market": "A",
+      "estimateIndex": "sz159834",
+      "estimateLabel": "南方上海金ETF(159834)",
+      "purchases": [
+        {
+          "date": "2026-01-01",
+          "amount": 100,
+          "shares": 100,
+          "nav": 1,
+          "note": ""
+        }
+      ],
+      "feeRate": 0
+    },
+    {
+      "code": "016874",
+      "name": "广发远见智选混合C",
+      "category": "growth",
+      "market": "A",
+      "feeRate": 0,
+      "estimateIndex": null,
+      "estimateLabel": null,
+      "purchases": []
+    }
+  ]
+}
