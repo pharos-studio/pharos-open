@@ -1,0 +1,18 @@
+{
+  "name": "pharos-open",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pharos —— 跑在你自己电脑上的基金投资看板（零依赖 Node + 原生前端，PWA 交付）",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node backend/server.js",
+    "setup": "node backend/scripts/setup.js",
+    "test": "npm run setup && npm run test:offline && npm run audit",
+    "test:offline": "node backend/scripts/verify_caliber_routing.js && node backend/scripts/verify_dividend_reason.js && node backend/scripts/verify_nav_parallel.js && node backend/scripts/verify_trading_calendar.js && node backend/scripts/timing-smoke-test.js && node backend/scripts/verify_composite_score.js && node backend/scripts/verify_bond10y.js && node backend/scripts/verify_edit_recalc.js && node backend/scripts/verify_principal_caliber.js",
+    "audit": "node backend/scripts/audit_desensitize.js .",
+    "audit:nav": "node backend/scripts/audit_nav_caliber.js"
+  },
+  "devDependencies": {}
+}

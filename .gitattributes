@@ -1,0 +1,16 @@
+# 换行符策略
+#
+# data/**/*.json：由 Node 的 fs.writeFileSync(JSON.stringify(..., null, 2)) 写入，天然是 LF。
+#   不固定策略时，若某台机器 core.autocrlf=true，git 每次 checkout/merge 都会把工作区改写成
+#   CRLF，与程序写入的 LF 混在一起（git 比较时会归一化、不产生假 diff，但会让 diff 阅读与
+#   第三方工具解析变得不必要地混乱）。
+#   为什么用 `text eol=lf` 而不是 `-text`（当二进制）：`-text` 会让 git 放弃行级合并 ——
+#   数据真冲突时只显示 "Binary files differ"，连 diff 都看不到。
+#   ★ 旧写法是 `data/*.json`；data/ 改为按角色分区（state/config/cache/series/example）后
+#     json 都进了子目录，那条规则匹配不到任何文件，故改为 `**` 递归匹配。
+#
+# *.bat：Windows 批处理**必须**是 CRLF，这是硬约束 ——
+#   cmd 对 LF-only 批处理的 label/goto 解析不可靠；而若某台机器 core.autocrlf=false，
+#   没有这条规则时 checkout 出来就是 LF，脚本会出错。写进这里后任何平台都是 CRLF。
+*.bat            text eol=crlf
+data/**/*.json   text eol=lf

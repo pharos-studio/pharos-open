@@ -1,0 +1,31 @@
+{
+  "_comment": "categories=组合构成环形图展示线(引擎4线口径:analysis.js 逐基金按 category 汇总,勿再并桶;与 engines 段键一致,顺序=环形图排布序);engines=引擎策略线(设置页下拉与类别中文显示用,name 须与 backend/engines/registry.js REGISTRY 一致)。calibers=口径维度(2026-09-12 新增):category 之下的「用哪把尺子量」,宽基分 A股口径(cn,乐咕PE分位×中债ERP)/海外口径(us,滚动3年分位∨PE回撤),★不参与环形图分块、不影响配置桶。categoryPolicy 资金桶归并(broad/dividend→core)仍走 util.engineCategoryToBucket,与 config 的 core/growth/cycle 键共存。2026-09-12",
+  "categories": [
+    {
+      "key": "broad",
+      "name": "宽基"
+    },
+    {
+      "key": "dividend",
+      "name": "红利低波"
+    },
+    {
+      "key": "growth",
+      "name": "科技成长"
+    },
+    {
+      "key": "cycle",
+      "name": "黄金(对冲)"
+    }
+  ],
+  "engines": [
+    { "key": "broad", "name": "宽基" },
+    { "key": "dividend", "name": "红利低波" },
+    { "key": "growth", "name": "科技成长" },
+    { "key": "cycle", "name": "黄金(对冲)" }
+  ],
+  "calibers": [
+    { "key": "cn", "name": "A股口径", "note": "乐咕PE分位(近5年滚动) × 中债10年ERP" },
+    { "key": "us", "name": "海外口径", "note": "滚动3年PE分位 ∨ PE回撤15% × 美债10年ERP" }
+  ]
+}

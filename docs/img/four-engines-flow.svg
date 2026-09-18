@@ -1,0 +1,277 @@
+<svg viewBox="0 0 1478 938" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>决策分配算法模型 · 四类资产 × 五套算法流程图</title>
+<desc>宽基/红利低波/科技成长/黄金四类资产，共享同一条四步骨架（便宜判定 → 趋势 → 总闸 → 决策矩阵），差异在每步的判定口径；第五步为综合分输出（V 估值分 + M 动量分 加权，0~100）。2026-09-14 起旧「位置分」重构为 V/M 双轨：动量因子（金叉强度 / 止跌强度 / 趋势偏离）由二值改连续，add/hold 判定完全不动。宽基一个 category 内分两个口径（caliber）：A股口径走 PE 分位 × 中债 ERP，海外口径（纳指100）走 滚动156周分位 ∨ PE回撤≤−12% 双通道并联、ERP 改用美债10年且仅作综合分副锚。2026-09-09 起宽基/黄金/红利三线估值分改为「相对尺」连续归一化，科技线估值分保留原式；2026-09-12 新增海外口径列。</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect x="0" y="0" width="1478" height="938" rx="16" fill="#0A1020"/>
+<text x="40" y="34" font-size="16" font-weight="500" fill="#E8E6DF">四类资产 × 五套算法流程图</text>
+<text x="1438" y="34" text-anchor="end" font-size="12" fill="#8A93A6">决策分配算法模型 · 2026-09-14</text>
+<text x="40" y="60" font-size="12" fill="#8A93A6">同一条四步骨架（① 便宜判定 → ② 趋势 → ③ 总闸 → ④ 决策矩阵 → ⑤ 综合分 V+M）× 五套判定口径　｜　宽基是一个类别，内分 A股 / 海外 两个口径（环形图仍是 4 块）</text>
+<rect x="142" y="72" width="498" height="22" rx="6" fill="#131D36" stroke="#4C9AF0" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="391" y="83" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#8FC4F5">宽基 · 一个类别（category=broad），内分两个口径 —— 同属环形图「宽基」一块</text>
+<g>
+<rect x="142" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#4C9AF0" stroke-width="1"/>
+<text x="266" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">宽基 · A股（沪深300）</text>
+<text x="266" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">broad · caliber=cn · peErp</text>
+</g>
+<g>
+<rect x="404" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#4C9AF0" stroke-width="1"/>
+<text x="528" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">宽基 · 海外（纳指100）</text>
+<text x="528" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">broad · caliber=us · broadGlobal</text>
+</g>
+<g>
+<rect x="666" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#3FBF9F" stroke-width="1"/>
+<text x="790" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">红利低波</text>
+<text x="790" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">dividend · absYield</text>
+</g>
+<g>
+<rect x="928" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#9A8CF5" stroke-width="1"/>
+<text x="1052" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">科技成长</text>
+<text x="1052" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">growth · techDip</text>
+</g>
+<g>
+<rect x="1190" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#E3B94C" stroke-width="1"/>
+<text x="1314" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">黄金（对冲）</text>
+<text x="1314" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">cycle · pricePercentile</text>
+</g>
+<g>
+<rect x="40" y="150" width="88" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="84" y="202" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="#E8E6DF">① 便宜判定</text>
+<text x="84" y="224" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">cheapBy</text>
+</g>
+<g>
+<rect x="142" y="150" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="156" y="176" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">PE 分位 × ERP 双锚</text>
+<text x="156" y="198" dominant-baseline="central" font-size="11" fill="#8A93A6">peZone：≤25 便宜 / ≥80 贵</text>
+<text x="156" y="220" dominant-baseline="central" font-size="11" fill="#8A93A6">erpZone：≥6.9% 高 / ≤5.3% 低</text>
+<text x="156" y="242" dominant-baseline="central" font-size="11" fill="#8A93A6">ERP = 1/PE − 中债10年</text>
+</g>
+<g>
+<rect x="404" y="150" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="418" y="176" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">双通道并联（任一成立）</text>
+<text x="418" y="198" dominant-baseline="central" font-size="11" fill="#8A93A6">① 滚动156周分位 ≤25 便宜</text>
+<text x="418" y="220" dominant-baseline="central" font-size="11" fill="#8A93A6">② PE 回撤 ≤−12%（近52周）</text>
+<text x="418" y="242" dominant-baseline="central" font-size="11" fill="#8A93A6">★ 用 PE 回撤，非净值回撤</text>
+</g>
+<g>
+<rect x="666" y="150" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="680" y="176" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">绝对股息率带（无 PE）</text>
+<text x="680" y="198" dominant-baseline="central" font-size="11" fill="#8A93A6">参考 中证红利000922 动态股息率</text>
+<text x="680" y="220" dominant-baseline="central" font-size="11" fill="#8A93A6">≥ ×1.10 便宜 / ≤ ×0.90 贵</text>
+<text x="680" y="242" dominant-baseline="central" font-size="11" fill="#8A93A6">PE 分位主线已砍（永不启用）</text>
+</g>
+<g>
+<rect x="928" y="150" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="942" y="176" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">回撤通道（60 日窗口）</text>
+<text x="942" y="198" dominant-baseline="central" font-size="11" fill="#8A93A6">回撤 ≤ −15% 且止跌</text>
+<text x="942" y="220" dominant-baseline="central" font-size="11" fill="#8A93A6">→ dipReady = true</text>
+<text x="942" y="242" dominant-baseline="central" font-size="11" fill="#8A93A6">PE 对成长股失真，只当总闸</text>
+</g>
+<g>
+<rect x="1190" y="150" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="1204" y="176" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">250 日价格分位</text>
+<text x="1204" y="198" dominant-baseline="central" font-size="11" fill="#8A93A6">≤35 便宜 / ≥75 贵</text>
+<text x="1204" y="220" dominant-baseline="central" font-size="11" fill="#8A93A6">分位越低越便宜</text>
+<text x="1204" y="242" dominant-baseline="central" font-size="11" fill="#8A93A6">纯价格纪律，与仓位解耦</text>
+</g>
+<line x1="84" y1="268" x2="84" y2="288" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="266" y1="268" x2="266" y2="288" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="528" y1="268" x2="528" y2="288" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="790" y1="268" x2="790" y2="288" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1052" y1="268" x2="1052" y2="288" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1314" y1="268" x2="1314" y2="288" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g>
+<rect x="40" y="288" width="88" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="84" y="340" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="#E8E6DF">② 趋势</text>
+<text x="84" y="362" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">trend</text>
+</g>
+<g>
+<rect x="142" y="288" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="156" y="314" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">三重均线 MA60/120/250</text>
+<text x="156" y="336" dominant-baseline="central" font-size="11" fill="#8A93A6">跌破 MA120 = 趋势弱 trendWeak</text>
+<text x="156" y="358" dominant-baseline="central" font-size="11" fill="#8A93A6">止跌：近20日低点高于前20日</text>
+<text x="156" y="380" dominant-baseline="central" font-size="11" fill="#8A93A6">趋势只做确认，不作清仓信号</text>
+</g>
+<g>
+<rect x="404" y="288" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="418" y="314" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">三重均线 MA60/120/250</text>
+<text x="418" y="336" dominant-baseline="central" font-size="11" fill="#8A93A6">跌破 MA120 = 趋势弱 trendWeak</text>
+<text x="418" y="358" dominant-baseline="central" font-size="11" fill="#8A93A6">止跌：近20日低点高于前20日</text>
+<text x="418" y="380" dominant-baseline="central" font-size="11" fill="#8A93A6">与 A股宽基同款，未改动</text>
+</g>
+<g>
+<rect x="666" y="288" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="680" y="314" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">MA250 年线</text>
+<text x="680" y="336" dominant-baseline="central" font-size="11" fill="#8A93A6">跌破 → maZone = 'below'</text>
+<text x="680" y="358" dominant-baseline="central" font-size="11" fill="#8A93A6">与加仓通道②绑定</text>
+<text x="680" y="380" dominant-baseline="central" font-size="11" fill="#8A93A6">年线是最慢的一条确认</text>
+</g>
+<g>
+<rect x="928" y="288" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="942" y="314" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">双均线 MA20 × MA60</text>
+<text x="942" y="336" dominant-baseline="central" font-size="11" fill="#8A93A6">MA20 &gt; MA60 = 金叉（右侧确认）</text>
+<text x="942" y="358" dominant-baseline="central" font-size="11" fill="#8A93A6">止跌 stopFall（20 日窗口）</text>
+<text x="942" y="380" dominant-baseline="central" font-size="11" fill="#8A93A6">看长做短：只买确认过的</text>
+</g>
+<g>
+<rect x="1190" y="288" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="1204" y="314" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">三重均线 MA60/120/250</text>
+<text x="1204" y="336" dominant-baseline="central" font-size="11" fill="#8A93A6">跌破 MA120 = 趋势弱 trendWeak</text>
+<text x="1204" y="358" dominant-baseline="central" font-size="11" fill="#8A93A6">止跌确认（仅中性区要求）</text>
+<text x="1204" y="380" dominant-baseline="central" font-size="11" fill="#8A93A6">与宽基同款均线结构</text>
+</g>
+<line x1="84" y1="406" x2="84" y2="426" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="266" y1="406" x2="266" y2="426" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="528" y1="406" x2="528" y2="426" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="790" y1="406" x2="790" y2="426" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1052" y1="406" x2="1052" y2="426" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1314" y1="406" x2="1314" y2="426" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g>
+<rect x="40" y="426" width="88" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="84" y="478" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="#E8E6DF">③ 总闸</text>
+<text x="84" y="500" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">gate</text>
+</g>
+<g>
+<rect x="142" y="426" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="156" y="452" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">PE 总闸</text>
+<text x="156" y="474" dominant-baseline="central" font-size="11" fill="#8A93A6">分位 ≥85% 且近20日涨 &gt; 5%</text>
+<text x="156" y="496" dominant-baseline="central" font-size="11" fill="#8A93A6">→ gate = block，强制「不动」</text>
+<text x="156" y="518" dominant-baseline="central" font-size="11" fill="#8A93A6">硬安全阀，覆盖矩阵结果</text>
+</g>
+<g>
+<rect x="404" y="426" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="418" y="452" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">PE 总闸（改用滚动分位）</text>
+<text x="418" y="474" dominant-baseline="central" font-size="11" fill="#8A93A6">分位 ≥85% 且近20日涨 &gt; 5%</text>
+<text x="418" y="496" dominant-baseline="central" font-size="11" fill="#8A93A6">→ gate = block，强制「不动」</text>
+<text x="418" y="518" dominant-baseline="central" font-size="11" fill="#8A93A6">★ 不用蛋卷固定分位</text>
+</g>
+<g>
+<rect x="666" y="426" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="680" y="452" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">无总闸</text>
+<text x="680" y="474" dominant-baseline="central" font-size="11" fill="#8A93A6">不传 PE 分位 → 总闸不生效</text>
+<text x="680" y="496" dominant-baseline="central" font-size="11" fill="#8A93A6">纯股息率纪律，无追高拦截</text>
+<text x="680" y="518" dominant-baseline="central" font-size="11" fill="#8A93A6">（股息率本身即反追高指标）</text>
+</g>
+<g>
+<rect x="928" y="426" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="942" y="452" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">PE 总闸复用（同宽基）</text>
+<text x="942" y="474" dominant-baseline="central" font-size="11" fill="#8A93A6">主动 QDII 无 PE → 自动跳过</text>
+<text x="942" y="496" dominant-baseline="central" font-size="11" fill="#8A93A6">故 016664/016665/012920 无闸</text>
+<text x="942" y="518" dominant-baseline="central" font-size="11" fill="#8A93A6">★ 2026-09-12 纳指已迁出本线</text>
+</g>
+<g>
+<rect x="1190" y="426" width="248" height="118" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
+<text x="1204" y="452" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">急涨总闸</text>
+<text x="1204" y="474" dominant-baseline="central" font-size="11" fill="#8A93A6">近20日涨 &gt; 7%</text>
+<text x="1204" y="496" dominant-baseline="central" font-size="11" fill="#8A93A6">→ 中性区强拦（不追高）</text>
+<text x="1204" y="518" dominant-baseline="central" font-size="11" fill="#8A93A6">便宜区不拦，仍按便宜处理</text>
+</g>
+<line x1="84" y1="544" x2="84" y2="564" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="266" y1="544" x2="266" y2="564" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="528" y1="544" x2="528" y2="564" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="790" y1="544" x2="790" y2="564" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1052" y1="544" x2="1052" y2="564" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1314" y1="544" x2="1314" y2="564" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g>
+<rect x="40" y="564" width="88" height="118" rx="8" fill="#1B2A4D" stroke="#2A3A5C" stroke-width="1"/>
+<text x="84" y="616" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="#E8E6DF">④ 决策矩阵</text>
+<text x="84" y="638" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">action</text>
+</g>
+<g>
+<rect x="142" y="564" width="248" height="118" rx="8" fill="#1B2A4D" stroke="#2A3A5C" stroke-width="1"/>
+<text x="156" y="590" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">便宜 → add　｜　贵 → hold</text>
+<text x="156" y="612" dominant-baseline="central" font-size="11" fill="#8A93A6">中性：ERP 高 → hold（持有不追）</text>
+<text x="156" y="634" dominant-baseline="central" font-size="11" fill="#8A93A6">中性：ERP 低 + 趋势确认 → add</text>
+<text x="156" y="656" dominant-baseline="central" font-size="11" fill="#8A93A6">贵：ERP 高≠不贵结论，仍 hold</text>
+</g>
+<g>
+<rect x="404" y="564" width="248" height="118" rx="8" fill="#1B2A4D" stroke="#2A3A5C" stroke-width="1"/>
+<text x="418" y="590" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">① 或 ② 任一 → add</text>
+<text x="418" y="612" dominant-baseline="central" font-size="11" fill="#8A93A6">两通道都不成立 → hold</text>
+<text x="418" y="634" dominant-baseline="central" font-size="11" fill="#8A93A6">★ 回撤通道不要止跌确认</text>
+<text x="418" y="656" dominant-baseline="central" font-size="11" fill="#8A93A6">实测覆盖 4 个历史大底</text>
+</g>
+<g>
+<rect x="666" y="564" width="248" height="118" rx="8" fill="#1B2A4D" stroke="#2A3A5C" stroke-width="1"/>
+<text x="680" y="590" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">便宜 → add</text>
+<text x="680" y="612" dominant-baseline="central" font-size="11" fill="#8A93A6">中性 + 跌破年线 → add</text>
+<text x="680" y="634" dominant-baseline="central" font-size="11" fill="#8A93A6">其余 → hold</text>
+<text x="680" y="656" dominant-baseline="central" font-size="11" fill="#8A93A6">股息率是主线，优先于趋势</text>
+</g>
+<g>
+<rect x="928" y="564" width="248" height="118" rx="8" fill="#1B2A4D" stroke="#2A3A5C" stroke-width="1"/>
+<text x="942" y="590" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">便宜通道 或 金叉通道</text>
+<text x="942" y="612" dominant-baseline="central" font-size="11" fill="#8A93A6">任一成立 → add</text>
+<text x="942" y="634" dominant-baseline="central" font-size="11" fill="#8A93A6">否则 → hold</text>
+<text x="942" y="656" dominant-baseline="central" font-size="11" fill="#8A93A6">两通道并联，不要求共振</text>
+</g>
+<g>
+<rect x="1190" y="564" width="248" height="118" rx="8" fill="#1B2A4D" stroke="#2A3A5C" stroke-width="1"/>
+<text x="1204" y="590" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#E8E6DF">便宜 → add　｜　贵 → hold</text>
+<text x="1204" y="612" dominant-baseline="central" font-size="11" fill="#8A93A6">中性 + 破半年线且止跌 → add</text>
+<text x="1204" y="634" dominant-baseline="central" font-size="11" fill="#8A93A6">急涨闸命中 → 强制 hold</text>
+<text x="1204" y="656" dominant-baseline="central" font-size="11" fill="#8A93A6">（中性区不追高）</text>
+</g>
+<line x1="84" y1="682" x2="84" y2="702" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="266" y1="682" x2="266" y2="702" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="528" y1="682" x2="528" y2="702" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="790" y1="682" x2="790" y2="702" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1052" y1="682" x2="1052" y2="702" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="1314" y1="682" x2="1314" y2="702" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g>
+<rect x="40" y="702" width="88" height="118" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1"/>
+<text x="84" y="740" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="#F0D9A0">⑤ 综合分</text>
+<text x="84" y="762" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#A8965E">0~100</text>
+<text x="84" y="780" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#A8965E">wV·V+wM·M</text>
+</g>
+<g>
+<rect x="142" y="702" width="248" height="118" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1"/>
+<text x="156" y="737" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#F0D9A0">V = 0.7×尺(PE分位,25,80)</text>
+<text x="156" y="753" dominant-baseline="central" font-size="11" fill="#D9C98A">　+ 0.3×尺(ERP×100,6.9,5.3) + 0.1×超跌</text>
+<text x="156" y="769" dominant-baseline="central" font-size="11" fill="#D9C98A">M = 0.5×止跌 + 0.5×趋势偏离</text>
+<text x="156" y="785" dominant-baseline="central" font-size="11" font-weight="500" fill="#F0D9A0">综合 = 0.8×V + 0.2×M</text>
+<text x="156" y="801" dominant-baseline="central" font-size="10.5" fill="#A8965E">★ 相对尺连续化 · V/M 各自取平方</text>
+</g>
+<g>
+<rect x="404" y="702" width="248" height="118" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1"/>
+<text x="418" y="737" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#F0D9A0">V = 0.7×尺(滚动分位,25,80)</text>
+<text x="418" y="753" dominant-baseline="central" font-size="11" fill="#D9C98A">　+ 0.3×尺(美债ERP,2.1,−1.5) + 0.1×超跌</text>
+<text x="418" y="769" dominant-baseline="central" font-size="11" fill="#D9C98A">M = 0.5×止跌 + 0.5×趋势偏离</text>
+<text x="418" y="785" dominant-baseline="central" font-size="11" font-weight="500" fill="#F0D9A0">综合 = 0.8×V + 0.2×M</text>
+<text x="418" y="801" dominant-baseline="central" font-size="10.5" fill="#A8965E">★★ ERP 仅副锚 · 严禁套 A股 6.9/5.3</text>
+</g>
+<g>
+<rect x="666" y="702" width="248" height="118" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1"/>
+<text x="680" y="737" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#F0D9A0">V = 尺(股息率,便宜线,贵线)</text>
+<text x="680" y="753" dominant-baseline="central" font-size="11" fill="#D9C98A">　越高越便宜（span 为负）+ 0.1×超跌</text>
+<text x="680" y="769" dominant-baseline="central" font-size="11" fill="#D9C98A">M = 1.0×趋势偏离（年线）</text>
+<text x="680" y="785" dominant-baseline="central" font-size="11" font-weight="500" fill="#F0D9A0">综合 = 0.9×V + 0.1×M</text>
+<text x="680" y="801" dominant-baseline="central" font-size="10.5" fill="#A8965E">★ 超跌尺度 3pp（其余线 10pp）</text>
+</g>
+<g>
+<rect x="928" y="702" width="248" height="118" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1"/>
+<text x="942" y="737" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#F0D9A0">V = 0.7×(−回撤/30)</text>
+<text x="942" y="753" dominant-baseline="central" font-size="11" fill="#D9C98A">　+ 0.3×(100−价格分位)/100</text>
+<text x="942" y="769" dominant-baseline="central" font-size="11" fill="#D9C98A">M = 0.6×金叉 + 0.4×止跌</text>
+<text x="942" y="785" dominant-baseline="central" font-size="11" font-weight="500" fill="#F0D9A0">综合 = 0.5×V + 0.5×M</text>
+<text x="942" y="801" dominant-baseline="central" font-size="10.5" fill="#A8965E">★ 不加超跌项（回撤已表达）</text>
+</g>
+<g>
+<rect x="1190" y="702" width="248" height="118" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1"/>
+<text x="1204" y="737" dominant-baseline="central" font-size="11.5" font-weight="500" fill="#F0D9A0">V = 尺(价格分位,35,75)</text>
+<text x="1204" y="753" dominant-baseline="central" font-size="11" fill="#D9C98A">　+ 0.1×超跌（跌破年线）</text>
+<text x="1204" y="769" dominant-baseline="central" font-size="11" fill="#D9C98A">M = 0.5×止跌 + 0.5×趋势偏离</text>
+<text x="1204" y="785" dominant-baseline="central" font-size="11" font-weight="500" fill="#F0D9A0">综合 = 0.6×V + 0.4×M</text>
+<text x="1204" y="801" dominant-baseline="central" font-size="10.5" fill="#A8965E">★ 018391 实测：84.8（旧式，现略降）</text>
+</g>
+<text x="40" y="836" font-size="11" fill="#8A93A6">尺(x,便宜线,贵线) = clamp((贵线−x)/(贵线−便宜线),0,1)：到便宜线=1，到贵线=0（越界截断）　｜　超跌 dipBonus 留在 V（跌破均线=更便宜=加分，不放进 M 避免语义翻转）</text>
+<text x="40" y="851" font-size="11" fill="#8A93A6">V 或 M 缺失 → 该侧按中性 25 兜底并打 degraded 标记　｜　gate=block / 暂停申购 → 一票否决，综合分 = 0　｜　金叉强度·止跌强度·趋势偏离：二值 → 连续</text>
+<g>
+<rect x="40" y="860" width="1398" height="54" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1.2"/>
+<text x="739" y="880" text-anchor="middle" dominant-baseline="central" font-size="12.5" font-weight="500" fill="#F0D9A0">统一输出：dec.matrix（action + 各线因子） → V 估值分 / M 动量分 → 综合分 = wV×V + wM×M（0~100） → 决策卡（advice）与前端决策页 / 复盘页</text>
+<text x="739" y="900" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#D9C98A">综合分回答「便宜不便宜（V）+ 趋势强弱（M）」，action 回答「现在能不能买」——两者允许背离（add 却只有低分属正常，非 bug）</text>
+</g>
+</svg>
