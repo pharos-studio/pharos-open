@@ -150,7 +150,8 @@ console.log('\n【L2-1】存量数据全局不变量');
         const pd = p.pricingDate || p.navDate || null;
         if (!pd) { badSum.push(`${f.code} ${p.date} 缺定价日`); continue; }
         // ① 定价日必须是工作日（真实成交日；序列顺延的结果）
-        const dow = new Date(pd + 'T00:00:00+08:00').getDay();
+        // ★ 用 UTC getter 取星期几：本机时区 getter 会随进程时区漂移（UTC 下整体早一天）
+        const dow = new Date(pd + 'T00:00:00Z').getUTCDay();
         if (dow === 0 || dow === 6) badWeekend.push(`${f.code} ${p.date} pd=${pd}`);
         // ② 确认日不得早于「定价日 + 名义 offset」
         if (p.settleDate) {

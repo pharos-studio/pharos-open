@@ -67,9 +67,12 @@ function conclusionOf(action, score, suspended, dailyLimit, compositeLabel) {
 // 周对比：取 7 天前那天的决策快照（精确日期 → 否则 7 天窗口内最近一条 ≤ target → 都没有则 {}）
 function pickWeekAgo(history) {
   if (!Array.isArray(history) || !history.length) return {};
-  const d = new Date();
-  d.setDate(d.getDate() - 7);
-  const target = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // ★ 「7 天前」要按**上海时区**的今天算，不能用 `new Date()` + 本机 getter：
+  //   进程不在东八区时「本机今天」会与「上海今天」差一天，从而取错快照（且不报错）。
+  //   这里与 lib/tradeDate.js 同一条铁律：UTC 锚点 + UTC getter 做纯日历减法。
+  const d = new Date(util.todayStr() + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - 7);
+  const target = d.toISOString().slice(0, 10);
   const exact = history.find(e => e.date === target);
   if (exact) return exact.funds || {};
   const before = history.filter(e => e.date <= target).sort((a, b) => a.date < b.date ? 1 : -1);

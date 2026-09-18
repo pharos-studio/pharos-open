@@ -34,10 +34,12 @@ function check(name, cond, detail) {
   if (cond) { pass++; console.log('  \u2705 ' + name); }
   else { fail++; fails.push(name + (detail ? ' :: ' + detail : '')); console.log('  \u274c ' + name + (detail ? '\n       ' + detail : '')); }
 }
+// ★ 日历日助手统一走 UTC：本文件是「日期口径」的校验，若自身用本机时区 getter，
+//   进程跑到 UTC 就会整体早一天，于是**校验本身**给出错误结论。见 lib/tradeDate.js 顶部铁律。
 function fmt(d) {
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
 }
-function parse(s) { return new Date(s + 'T00:00:00+08:00'); }
+function parse(s) { return new Date(s + 'T00:00:00Z'); }
 function addDays(s, n) { return fmt(new Date(parse(s).getTime() + n * DAY)); }
 
 // ---------- 夹具：按 lsjz 协议分页喂给真实抓取代码 ----------
