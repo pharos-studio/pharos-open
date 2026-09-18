@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         # 18.x 是 README 承诺的最低版本（全局 fetch），22.x 是当前 LTS。
-        # 两端都实测过：9 组脚本在两者上断言数完全一致。
+        # 两端都实测过：8 组脚本在两者上断言数完全一致。
         node: ['18.x', '22.x']
     steps:
       - uses: actions/checkout@v4
@@ -35,9 +35,26 @@ jobs:
           node-version: ${{ matrix.node }}
 
       # 零依赖：不需要 npm install。
-      # npm test = 生成数据文件 → 9 组离线校验 → 脱敏审计，任何一环失败即非零退出。
+      # npm test = 生成数据文件 → 8 组离线校验 → 脱敏审计，任何一环失败即非零退出。
+      #
+      # ★ 为什么不用一行 `run: npm test`：失败时把日志末尾转成注解。
+      #   注解是**免凭据可读**的（check-runs API），日志不是 —— 出问题时不必再来回要日志。
+      #
+      # ★ 为什么只有 8 组：唯一需要联网的 `verify_bond10y` 已摘到 `npm run test:network`。
+      #   境外 runner 连不上东财/蛋卷，把它放进 CI 会稳定误报失败（本项目踩过这个坑）。
       - name: npm test（setup + 离线校验 + 脱敏审计）
-        run: npm test
+        shell: bash
+        run: |
+          set +e
+          npm test 2>&1 | tee "$RUNNER_TEMP/npm-test.log"
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            echo "::error title=npm test 失败（退出码 $rc）::下面把日志末尾转成注解，便于直接定位"
+            tail -12 "$RUNNER_TEMP/npm-test.log" | tr -d '\r' | while IFS= read -r line; do
+              if [ -n "$line" ]; then echo "::error::$line"; fi
+            done
+            exit "$rc"
+          fi
 
       # 兜底：被 .gitignore 忽略、却仍被 git 跟踪的文件 = 数据文件被误提交的信号
       - name: 检查「被忽略却仍被跟踪」的文件
@@ -108,7 +125,18 @@ jobs:
           Copy-Item 'data/example/holdings.example.json' 'data/state/holdings.json' -Force
 
       - name: Windows 上复跑全量校验
-        run: npm test
+        shell: bash
+        run: |
+          set +e
+          npm test 2>&1 | tee "$RUNNER_TEMP/npm-test.log"
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            echo "::error title=npm test 失败（退出码 $rc，Windows）::下面把日志末尾转成注解"
+            tail -12 "$RUNNER_TEMP/npm-test.log" | tr -d '\r' | while IFS= read -r line; do
+              if [ -n "$line" ]; then echo "::error::$line"; fi
+            done
+            exit "$rc"
+          fi
 
       # 起服务 → 取首页 → 关服务。验证「Windows 上真的能起来并托管应用外壳」。
       # 只请求静态首页（不碰任何数据接口），所以不需要联网、不会受第三方接口影响。
