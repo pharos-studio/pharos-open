@@ -70,6 +70,7 @@ npm test          # 生成数据文件 → 8 组离线校验 → 脱敏审计，
 | `npm start` | 启动本地服务（`PORT` 环境变量可改端口） |
 | `npm test` | 全量自检：setup + 离线校验 + 脱敏审计 |
 | `npm run test:offline` | 只跑 8 组离线校验（**需先 `npm run setup`**） |
+| `npm run check:offline` | 证明那 8 组**真不联网**（给离线链加脚本前先跑它） |
 | `npm run test:network` | 检查数据源连通性（**要联网**，所以不参与 CI） |
 | `npm run audit` | 脱敏审计：确认仓库里没有私人路径、密钥、真实数值 |
 | `npm run audit:nav` | 净值口径审计（只读报告，不参与门禁） |
