@@ -109,7 +109,7 @@ function settleNominalDate(pricingRealDate, market) {
  * 【冻结的历史口径，切勿与新口径混用】
  * ★ 它的真实语义是「**份额确认日 offset**」被误用成了「定价日」—— A 股 +1 / QDII +2
  *   恰恰就是份额登记到账的节奏。2026-09 之前的 backfill 拿它当定价日去取净值，
- *   于是 QDII 白白多取一天 —— 这是历史 10 笔 nav 记错的根因（见 docs/历史买入核对清单.md）。
+ *   于是 QDII 白白多取一天 —— 这是历史 10 笔 nav 记错的根因（见内部文档《历史买入核对清单》，未随开源发布）。
  * 仅供复现那批历史记录与 backfill 兜底，**勿动**。新代码一律走 nominalPricingDate。
  */
 function legacyConfirmDate(orderDate, market) {

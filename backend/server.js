@@ -7,6 +7,7 @@
  */
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 // 引擎与基础模块
@@ -18,7 +19,7 @@ const analysis = require('./engines/analysis');
 const allocation = require('./engines/alloc/allocation');
 const decisions = require('./engines/decisions');
 const advice = require('./engines/advice');
-const timing = require('./engines/timing'); // 买入时机复盘：战役采集/buy 补扫/统计（见 docs/买入时机复盘模块-设计v2.md）
+const timing = require('./engines/timing'); // 买入时机复盘：战役采集/buy 补扫/统计（见内部设计文档《买入时机复盘模块-设计v2》，未随开源发布）
 const backfill = require('./engines/backfill'); // 在途买入记录自动补填（买入确认日净值 → 份额）
 const tradeDate = require('./lib/tradeDate'); // 交易时段口径引擎：成交净值日推算
 const buyPlan = require('./lib/buyPlan'); // 买入方案推导：口径→净值→份额（唯一实现，预览/保存共用）
@@ -29,6 +30,10 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const DATA_DIR = store.DATA_DIR;
 const PORT = process.env.PORT || 3000;
+// 监听地址：默认不传 host（Node 默认双栈全网卡），保持「手机同一 WiFi 可直接访问」这一既有能力不变。
+// 只想本机访问时设 HOST=127.0.0.1。★ 这里刻意不写死 '0.0.0.0' —— 只绑 IPv4 会让部分系统上
+// 解析到 ::1 的 http://localhost 连不上，属于「改了不报错、只打不开」的那类坑。
+const HOST = process.env.HOST || '';
 
 // /api/fund-list 序列化缓存：2.7 万行只 stringify 一次（刷新名单时重建），避免每次请求烧 CPU
 let fundListCacheStr = null;
@@ -574,11 +579,28 @@ if (require.main === module) {
     }
   }
 
-  server.listen(PORT, () => {
+  const onReady = () => {
     console.log(`基金看板已启动: http://localhost:${PORT}`);
+    if (!HOST) {
+      // 打印局域网地址：手机/平板要用它（README「手机连不上」一节指的就是这里）
+      const lan = [];
+      const nics = os.networkInterfaces();
+      for (const name of Object.keys(nics)) {
+        for (const a of (nics[name] || [])) {
+          if (a && a.family === 'IPv4' && !a.internal) lan.push(a.address);
+        }
+      }
+      if (lan.length) {
+        console.log('手机访问（需同一 WiFi，填进看板「设置 → 连接」）：');
+        for (const ip of lan) console.log(`  http://${ip}:${PORT}`);
+      }
+    } else {
+      console.log(`（已按 HOST=${HOST} 限定监听地址：仅该地址可访问）`);
+    }
     // 买入时机复盘：启动即幂等补扫历史 purchases（buy 样本进池，含战役外/历史定投标注；失败不致命）
     try { timing.buyScan(); } catch (e) { console.warn('[timing] 启动 buyScan 失败:', e && e.message || e); }
-  });
+  };
+  if (HOST) server.listen(PORT, HOST, onReady); else server.listen(PORT, onReady);
 }
 
 // 透传导出（保持与原 server.js 同名符号，供 require 调用方不报错）

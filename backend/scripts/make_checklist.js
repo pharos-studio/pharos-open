@@ -1,9 +1,9 @@
 'use strict';
 /*
- * 生成《历史买入核对清单》
+ * 生成《历史买入核对清单》（内部文档，未随开源发布）
  * ------------------------------------------------------------
  * 只读：读 data/state/holdings.json + 联网取各基金官方净值序列，输出
- *   docs/历史买入核对清单.md
+ *   （内部文档，未随开源发布）
  *
  * 判据（2026-09-17 起）—— 分两种记录，**不再问用户任何问题**，只做事实陈述：
  *   ① 已带 pricingDate 的记录（2026-09-17 批量回填后应全部如此）：
@@ -306,6 +306,8 @@ function newestBak() {
   L.push('- 份额只依赖 `pricingDate` 的净值，与 `settleDate` 完全无关（改 `settleDate` 份额一个字节不变，有单测锁定）。');
   L.push('');
 
+  // ★ 输出物是**内部文档**（未随开源发布），只在私有「数据机」仓入库。
+  //   公开仓的 docs/ 走白名单（audit_desensitize.js 的 DOCS_ALLOWED），把它提交到公开仓会被审计判 FAIL。
   const outPath = path.join(__dirname, '..', '..', 'docs', '历史买入核对清单.md');
   fs.writeFileSync(outPath, L.join('\n') + '\n', 'utf8');
   console.log('');
