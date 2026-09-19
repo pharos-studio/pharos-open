@@ -1,4 +1,5 @@
 {
+  "_schemaVersion": 1,
   "_comment": "DEMO DATA — NOT real holdings. Copy this file to holdings.json to run the dashboard. All amounts/shares are placeholders.",
   "funds": [
     {
