@@ -12,13 +12,26 @@ let _root = null;    // 当前渲染容器（录入/编辑成功后重绘用）
 let _expanded = null; // 记住展开买入记录的基金 code（整页重绘后仍保持展开）
 let _mobile = false;  // 渲染期判定的客户端形态（桌面/手机），决定录入/编辑表单用 <tr> 还是 <div> 包裹
 
-// 引擎四线兜底常量：仅当 state.categories.engines 缺失时降级用（文案须与 data/config/categories.json engines 一致，正常路径永远读下发段）
+// 展示线兜底常量：仅当 state.categories.engines 缺失时降级用
+// （文案须与 data/config/categories.json 的 engines 一致，正常路径永远读下发段）
+// 2026-09-19：bond/cash 是**待建设**类别——能选、能记市值，但不给买卖结论。
 const CATS_FALLBACK = [
   { key: 'broad', name: '宽基' },
-  { key: 'dividend', name: '红利低波' },
-  { key: 'growth', name: '科技成长' },
-  { key: 'cycle', name: '黄金(对冲)' },
+  { key: 'dividend', name: '红利·低波' },
+  { key: 'growth', name: '主题·行业（高波动）' },
+  { key: 'cycle', name: '商品·对冲' },
+  { key: 'bond', name: '债券' },
+  { key: 'cash', name: '现金' },
 ];
+// 每条展示线的「适用于哪类基金」提示（选类别时显示，避免用户把医药基金放进宽基）
+const CAT_HINTS = {
+  broad: '适用：跟踪 A股/海外宽基指数的指数基金。★必须填对跟踪指数，否则估值锚缺失、判定会降级',
+  dividend: '适用：**仅 A 股红利 / 低波类**。海外红利没有免费估值源，挂这条线会走常量兜底',
+  growth: '适用：任何**高波动**资产 —— 医药/消费/新能源/军工/半导体/主动偏股都算，不只科技',
+  cycle: '适用：任何**商品**类 —— 黄金/白银/原油/豆粕。本线只看自身净值，不绑黄金',
+  bond: '★ 债券的决策算法**待建设**：现在只记录市值与占比，不给买卖结论',
+  cash: '★ 现金/货币的决策算法**待建设**：现在只记录市值与占比，不给买卖结论',
+};
 // 盘中估算指数选项：value=指数代码（写入 estimateIndex），label 与 data/state/holdings.json 存量 estimateLabel 逐字对齐
 const EST_OPTIONS = [
   { value: 'sh000300', label: '沪深300' },
@@ -30,21 +43,39 @@ const EST_OPTIONS = [
 // 模块级：名单同会话只拉一次；_lastAutoName 防自动值覆盖用户手改的名称
 let _fundListPromise = null;
 let _lastAutoName = '';
+let _trackIdxListPromise = null;
+
+// 跟踪指数白名单（来自后端 lib/trackIndex.js 的唯一真相源）：懒加载一次，失败静默降级为纯手填
+function ensureTrackIndexList() {
+  if (!_trackIdxListPromise) {
+    _trackIdxListPromise = api.getTrackIndex()
+      .then(d => (d && d.ok && Array.isArray(d.list)) ? d.list : null)
+      .catch(() => null);
+  }
+  return _trackIdxListPromise;
+}
 
 // 市场判定：类型文本含 QDII/海外 → QDII（与 backend fetchers.marketOfType 同规则）
 function marketOfType(typeText) { return /QDII|海外/.test(typeText || '') ? 'QDII' : 'A'; }
-// 类别预选（可改、不锁定；优先级自上而下，仅建议）
-// 2026-09-12：新增海外宽基指数关键词（纳指/标普等此前会兜底成 growth——分类错误，宽基指数应归 broad）
+// 类别预选（可改、不锁定；仅建议）。
+// ★★ 2026-09-19 关键修复：兜底从 `return 'growth'` 改为 **return null（不猜）**。
+//   旧实现在名称匹配不到时一律归成「主题·行业」线，于是用户加一只债基/消费基金会被
+//   套上"60日回撤抄底"算法算出一个看起来正常的错结论 —— 不报错，最危险。
+//   现在改为：拿不到确定的判断就不预选，由界面提示用户自己选（后端 /api/fund-lookup 会
+//   用东财的 FTYPE 给出确定建议，那条路径优先）。
 function suggestCategory(nameText) {
-  if (/红利|低波/.test(nameText)) return 'dividend';
-  if (/黄金|上海金|金ETF/.test(nameText)) return 'cycle';
-  if (/纳斯达克|纳指|标普\d*00|标普500|日经|恒生|道琼斯|德国DAX|法国CAC/.test(nameText)) return 'broad';
-  if (/沪深300|中证500|中证800|中证A500|中证1000|上证50|创业板指|深证|中证100/.test(nameText)) return 'broad';
-  return 'growth'; // 兜底默认（QDII 主动/行业主题等）
+  const s = String(nameText || '');
+  if (/货币|现金宝|活期/.test(s)) return 'cash';
+  if (/债券|纯债|信用债|利率债|可转债|双利|增利/.test(s)) return 'bond';
+  if (/红利|低波/.test(s)) return 'dividend';
+  if (/黄金|上海金|白银|原油|豆粕|商品/.test(s)) return 'cycle';
+  if (/纳斯达克|纳指|标普\d*00|标普500|日经|恒生|道琼斯|德国DAX|法国CAC/.test(s)) return 'broad';
+  if (/沪深300|中证500|中证800|中证A500|中证1000|上证50|创业板指|深证|中证100/.test(s)) return 'broad';
+  return null; // ★ 不猜 —— 由 /api/fund-lookup 的 FTYPE 建议或用户手选
 }
-// 指数映射提示表（2026-09-12 一键添加）：按基金名称关键词 → trackIndex（估值/决策用）+ 盘中估算指数。
-// 仅收录已验证在现有数据源链路有效的映射（提炼自现有 9 只持仓经验）；匹配不到留空走兜底，不阻塞添加。
-// 注意顺序：长关键词在前（「红利低波」须先于「上证红利」匹配）。
+// 指数映射提示表：**仅作最后兜底**。正常路径是后端 /api/fund-lookup 用东财档案的
+// INDEXCODE 精确给出 trackIndex（见 backend/lib/trackIndex.js 的 INDEX_CODE_TO_TRACK）。
+// 这张表只在档案抓不到、而用户又先填了名称时有帮助；匹配不到留空，不阻塞添加。
 const INDEX_HINTS = [
   { re: /纳斯达克|纳指/, trackIndex: 'NDX' },
   { re: /沪深300/, trackIndex: 'SH000300', est: 'sh000300', estLabel: '沪深300' },
@@ -585,7 +616,7 @@ function renderDesktop(root, live, state) {
   const panel = el('div', { class: 'panel' });
   panel.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '持仓基金' }), el('span', { class: 'sub', text: `${funds.length} 只` })]));
   if (!funds.length) {
-    panel.appendChild(el('div', { class: 'hint', text: '还没有基金，用下方表单添加第一只。' }));
+    panel.appendChild(el('div', { class: 'hint', text: '还没有基金。在下方表单添加第一只——填好代码后，名称、类别、跟踪指数都会自动带出来。' }));
     root.appendChild(panel);
     root.appendChild(addFundPanel()); // 空仓时也把添加表单放下方
     return;
@@ -748,7 +779,7 @@ function renderMobile(root, live, state) {
   const panel = el('div', { class: 'panel' });
   panel.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '持仓基金' }), el('span', { class: 'sub', text: `${funds.length} 只` })]));
   if (!funds.length) {
-    panel.appendChild(el('div', { class: 'hint', text: '还没有基金，用下方表单添加第一只。' }));
+    panel.appendChild(el('div', { class: 'hint', text: '还没有基金。在下方表单添加第一只——填好代码后，名称、类别、跟踪指数都会自动带出来。' }));
     root.appendChild(panel);
     root.appendChild(addFundPanel()); // 空仓时也把添加表单放下方
     return;
@@ -941,14 +972,21 @@ function labeled(label, input) {
 // 桌面/手机两处 render 共用本函数；单一 150ms 防抖按输入长度分流：1~5 联想 / 6 查询带出
 function addFundPanel() {
   const state = store.getState();
-  const engines = (state.categories && state.categories.engines && state.categories.engines.length)
-    ? state.categories.engines : CATS_FALLBACK;
-  const code = el('input', { class: 'input', placeholder: '基金代码 如 016452', autocomplete: 'off', spellcheck: 'false' });
+  // 类别下拉的选项源 = categories.json 的 **categories（展示线）**，不是 engines。
+  // ★ 两者含义不同：engines 是「可绑定的算法」（只有 4 条），categories 是「能挂到哪个类别」
+  //   （含债券/现金这两个待建设类别）。用 engines 当选项源会让用户**选不到**债券/现金。
+  const engines = ((state.categories && state.categories.categories && state.categories.categories.length)
+    ? state.categories.categories
+    : ((state.categories && state.categories.engines && state.categories.engines.length)
+      ? state.categories.engines : CATS_FALLBACK));
+  const code = el('input', { class: 'input', placeholder: '基金代码（6 位数字）', autocomplete: 'off', spellcheck: 'false' });
   const name = el('input', { class: 'input', placeholder: '基金名称（自动带出，可改）' });
   const cat = el('select', {}, [
     el('option', { value: '', text: '请选择类别' }),
     ...engines.map(c => el('option', { value: c.key, text: c.name })),
   ]);
+  // 适用提示：明确告诉用户「这类基金该不该挂这条线」，避免把医药基金放进宽基、把债基放进主题线
+  const catHint = el('div', { class: 'hint', style: 'margin-top:4px', text: '' });
   const market = el('select', {}, [
     el('option', { value: 'A', text: 'A股' }),
     el('option', { value: 'QDII', text: 'QDII' }),
@@ -965,7 +1003,20 @@ function addFundPanel() {
     calField.style.display = isBroad ? '' : 'none';
     if (isBroad && market.value === 'QDII' && cal.value === 'cn') cal.value = 'us'; // QDII 默认海外口径（可改）
   };
-  cat.addEventListener('change', syncCaliberVisibility);
+  // 类别适用提示：选到哪条线，就把「这条线适用什么基金」直接显示出来。
+  // 这是「用户加自己的基金」最容易出错的一步 —— 选错类别会套错算法且不会报错。
+  const syncCatHint = () => {
+    // 自建分类（custom:xxx）本身没有提示，要折算到它绑定的内置算法去看适用说明
+    const st0 = store.getState();
+    const cust = (st0.categories && Array.isArray(st0.categories.customCategories)) ? st0.categories.customCategories : [];
+    const hit = cust.find(x => x && x.key === cat.value);
+    const baseKey = hit ? hit.category : cat.value;
+    const t = CAT_HINTS[baseKey] || '';
+    catHint.textContent = (hit ? '自建分类（绑定算法：' + baseKey + '）—— ' : '') + t;
+    catHint.style.color = /待建设/.test(t) ? '#8a6d3b' : '';
+  };
+  cat.addEventListener('change', () => { syncCaliberVisibility(); syncCatHint(); });
+  syncCatHint();
   const est = el('select', {}, [
     el('option', { value: '', text: '不估算' }),
     ...EST_OPTIONS.map(o => el('option', { value: o.value, text: o.label })),
@@ -1023,28 +1074,41 @@ function addFundPanel() {
     if (!v) showMsg('');
   }
 
-  // L1 自动带出：名称(覆盖保护)/市场(触发估算联动)/类别预选(可改)
-  let autoTrack = null; // 2026-09-12 一键添加：当前解析出的 trackIndex（INDEX_HINTS 命中时非空），提交时随 addFund 落库
-  function fillMeta(c, n, t, source) {
+  // L1 自动带出：名称(覆盖保护)/市场(触发估算联动)/类别 + 跟踪指数
+  let autoTrack = null;      // 当前解析出的 trackIndex（后端档案精确给出，或 INDEX_HINTS 兜底），提交时随 addFund 落库
+  let autoAnchorNote = '';   // 估值锚提示：跟踪了指数但我们没有估值源 → 判定会降级
+  function fillMeta(c, n, t, source, meta) {
     if (name.value === '' || name.value === _lastAutoName) { name.value = n || ''; _lastAutoName = n || ''; }
     const mk = marketOfType(t);
     if (market.value !== mk) { market.value = mk; market.dispatchEvent(new Event('change')); }
+    autoAnchorNote = '';
+    // 类别：后端的建议是**确定值**（来自东财 FTYPE；红利类还会被跟踪指数身份覆盖），优先用它。
+    // ★ 拿不到确定建议时**不预选、不猜** —— 旧实现一律兜成「主题·行业」，会把债基/消费基金
+    //   套上"60日回撤抄底"算法算出一个看起来正常的错结论（不报错，最危险）。
     if (!cat.value) {
-      const sug = suggestCategory(n || '');
-      cat.value = sug;
-      const cName = (cat.selectedOptions[0] && cat.selectedOptions[0].text) || sug;
-      if (sug === 'growth') showMsg('未识别类别关键词，已默认预选「科技成长」，可改', '#8a6d3b');
-      else showMsg('已按名称预选类别：' + cName + '（可改）', '#888');
+      const sug = (meta && meta.suggestedCategory) || suggestCategory(n || '');
+      if (sug) {
+        cat.value = sug;
+        if (meta && meta.suggestedPending) showMsg('已识别为「' + sug + '」类 —— 该类别算法待建设，先只记市值、不出买卖信号', '#8a6d3b');
+        else showMsg('已自动选好类别（可改）' + (meta && meta.suggestedBy === 'index' ? '：按跟踪指数判定' : ''), '#888');
+      } else {
+        showMsg('未能自动识别类别，请手动选择 —— 选错会套错算法，而且不会报错', '#c0392b');
+      }
     }
-    // 一键添加：按名称命中 INDEX_HINTS → trackIndex + 盘中估算指数（仅用户未选时自动填，A 股才有估算）
-    autoTrack = null;
+    // 跟踪指数：后端档案 INDEXCODE 精确映射优先，INDEX_HINTS 仅作最后兜底
+    autoTrack = (meta && meta.trackIndex) || null;
     const hint = INDEX_HINTS.find(h => h.re.test(n || ''));
-    if (hint) {
-      autoTrack = hint.trackIndex || null;
-      if (hint.est && !est.value && market.value === 'A') est.value = hint.est;
-      showMsg('已自动补齐：' + (hint.trackIndex ? '估值指数 ' + hint.trackIndex : '') + (hint.trackIndex && hint.est ? ' · ' : '') + (hint.est && !est.disabled ? '估算 ' + hint.est : ''), '#888');
+    if (!autoTrack && hint) autoTrack = hint.trackIndex || null;
+    if (hint && hint.est && !est.value && market.value === 'A') est.value = hint.est;
+    if (meta && meta.indexName && !meta.trackIndex) {
+      autoTrack = null;
+      autoAnchorNote = '该基金跟踪「' + meta.indexName + '」，但我们没有它的指数估值源 → 判定会降级为价格分位（不会给加仓信号）';
+      showMsg(autoAnchorNote, '#8a6d3b');
+    } else if (autoTrack) {
+      showMsg('已自动带入跟踪指数：' + autoTrack + '（估值锚可用）', '#888');
     }
     syncCaliberVisibility();   // 类别/预选变化后同步「口径」栏的显隐与默认值
+    syncCatHint();
   }
 
   // 6 位精确查询：本地名单优先，miss → /api/fund-lookup（B 兜底）
@@ -1052,11 +1116,20 @@ function addFundPanel() {
     const rows = await ensureFundList();
     if (code.value !== v) return;
     const local = rows && rows.find(r => r[0] === v);
-    if (local) { fillMeta(v, local[1], local[2], 'list'); updateGuard(v); return; }
+    if (local) {
+      // 本地名单只有 [code,name,type]，**没有**跟踪指数与确定类别 —— 那些要问后端档案。
+      // 非阻塞补齐：失败不影响继续添加，用户仍可手选。
+      fillMeta(v, local[1], local[2], 'list', null);
+      api.getFundLookup(v).then(d => {
+        if (code.value !== v || !d || !d.ok || !d.found) return;
+        fillMeta(v, d.name || local[1], d.type || local[2], 'archive', d);
+      }).catch(() => { /* 档案不可用时静默，不影响添加 */ });
+      updateGuard(v); return;
+    }
     let d = null;
     try { d = await api.getFundLookup(v); } catch (e) { d = null; }
     if (code.value !== v) return; // 过期响应丢弃
-    if (d && d.ok && d.found && d.name) { fillMeta(v, d.name, d.type || '', (d.source || 'suggest')); }
+    if (d && d.ok && d.found && d.name) { fillMeta(v, d.name, d.type || '', (d.source || 'suggest'), d); }
     else { showMsg('未匹配到该代码，可手动填写', '#c0392b'); }
     updateGuard(v);
   }
@@ -1105,7 +1178,9 @@ function addFundPanel() {
   const p = el('div', { class: 'panel' });
   p.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '添加基金' })]));
   p.appendChild(el('div', { style: 'margin-top:8px;display:grid;gap:10px;grid-template-columns:1fr 1fr' }, [
-    labeled('代码', codeWrap), labeled('名称', name), labeled('类别', cat), labeled('市场', market), calField,
+    labeled('代码', codeWrap), labeled('名称', name),
+    el('div', { class: 'field' }, [el('label', { text: '类别' }), cat, catHint]),
+    labeled('市场', market), calField,
   ]));
   p.appendChild(msg);
   p.appendChild(labeled('盘中估算指数', est));

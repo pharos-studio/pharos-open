@@ -20,37 +20,37 @@ function mk(code, action, extra) {
 }
 
 console.log('== 首采日基线（不记样本）==');
-let r = timing.onDecide({ '016664': mk('016664', 'add') }, cfg);
+let r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'add') }, cfg);
 ok('首采日返回 baseline=true', r.baseline === true && r.opened === 0);
 ok('无样本产生', timing.loadSamples().length === 0);
 
 console.log('== 次日 open（hold→add 开战役）==');
 NOW = '2026-09-07';
-r = timing.onDecide({ '016664': mk('016664', 'add') }, cfg);
+r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'add') }, cfg);
 const s1 = timing.loadSamples();
 ok('次日 add → 开 1 条 advice-open', r.opened === 1 && s1.length === 1 && s1[0].type === 'advice-open');
-ok('campaign id = code#date', s1[0].campaign.id === '016664#2026-09-07');
+ok('campaign id = code#date', s1[0].campaign.id === 'DEMO01#2026-09-07');
 
 console.log('== 同日重入免疫 ==');
-r = timing.onDecide({ '016664': mk('016664', 'add') }, cfg);
+r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'add') }, cfg);
 ok('同日二次调用不重复开样本', timing.loadSamples().length === 1 && r.opened === 0);
 
 console.log('== 容忍窗（hold 1-3 天不 close；恢复 add 续延）==');
 NOW = '2026-09-08';
-timing.onDecide({ '016664': mk('016664', 'hold') }, cfg); // gap=1
+timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold') }, cfg); // gap=1
 NOW = '2026-09-09';
-timing.onDecide({ '016664': mk('016664', 'add') }, cfg); // 续延（容忍内恢复）
+timing.onDecide({ 'DEMO01': mk('DEMO01', 'add') }, cfg); // 续延（容忍内恢复）
 NOW = '2026-09-10';
-timing.onDecide({ '016664': mk('016664', 'hold') }, cfg); // gap(lastAdd 09-09)=1
+timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold') }, cfg); // gap(lastAdd 09-09)=1
 NOW = '2026-09-11';
-timing.onDecide({ '016664': mk('016664', 'hold') }, cfg); // gap=2
+timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold') }, cfg); // gap=2
 NOW = '2026-09-12';
-timing.onDecide({ '016664': mk('016664', 'hold') }, cfg); // gap=3 ≤3 仍容忍
+timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold') }, cfg); // gap=3 ≤3 仍容忍
 ok('容忍窗内 hold 不产生 close，样本仍 1', timing.loadSamples().length === 1);
 
 console.log('== 断链 >3 天 → close（每日连续访问，无漏访 → 不标 approx）==');
 NOW = '2026-09-13';
-r = timing.onDecide({ '016664': mk('016664', 'hold') }, cfg); // gap=4 >3 → close
+r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold') }, cfg); // gap=4 >3 → close
 ok('断链 >3 天 → close 记 1 条', r.closed === 1);
 const s2 = timing.loadSamples();
 ok('样本变 2 条（open+close 成对共享 id）', s2.length === 2 && s2[1].type === 'advice-close');
@@ -61,20 +61,20 @@ ok('close path = 收回日 matrix 子集（无 _type）', s2[1].path._type === u
 
 console.log('== 战役结束后再 add → 开新战役 ==');
 NOW = '2026-09-20';
-r = timing.onDecide({ '016664': mk('016664', 'add') }, cfg);
+r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'add') }, cfg);
 ok('开新战役', r.opened === 1 && timing.loadSamples().length === 3);
-ok('新战役 id 用新日期', timing.loadSamples()[2].campaign.id === '016664#2026-09-20');
+ok('新战役 id 用新日期', timing.loadSamples()[2].campaign.id === 'DEMO01#2026-09-20');
 
 console.log('== 多基金互不干扰 ==');
 NOW = '2026-09-21';
-r = timing.onDecide({ '016664': mk('016664', 'hold'), '008163': mk('008163', 'add', { category: 'dividend', matrix: { _type: 'dividend', yieldZone: 'cheap', maZone: 'below', gate: 'pass' } }) }, cfg);
+r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold'), '008163': mk('008163', 'add', { category: 'dividend', matrix: { _type: 'dividend', yieldZone: 'cheap', maZone: 'below', gate: 'pass' } }) }, cfg);
 const s3 = timing.loadSamples();
 ok('008163 独立开战役', s3.some(x => x.code === '008163' && x.type === 'advice-open'));
 
 console.log('== buyScan 幂等 + 战役匹配 + 历史跳过 ==');
 mem['holdings.json'] = {
   funds: [
-    { code: '016664', name: 'A基', category: 'growth',
+    { code: 'DEMO01', name: 'A基', category: 'growth',
       purchases: [
         { date: '2026-09-25', amount: 100 },   // 落在活跃战役 09-20 内
         { date: '2026-09-15', amount: 200 },   // 战役窗口外（早于 09-20 open）
@@ -86,10 +86,10 @@ mem['holdings.json'] = {
 const added = timing.buyScan(cfg);
 const buys = timing.loadSamples().filter(x => x.type === 'buy');
 ok('新增 4 条 buy', added === 4 && buys.length === 4);
-const bIn = buys.find(b => b.code === '016664' && b.eventDate === '2026-09-25');
-ok('战役内 buy attach campaignId', !!bIn && bIn.campaign.id === '016664#2026-09-20');
-ok('战役外 buy campaign=null', buys.find(b => b.code === '016664' && b.eventDate === '2026-09-15').campaign === null);
-const bHis = buys.find(b => b.code === '016664' && b.eventDate === '2026-08-20');
+const bIn = buys.find(b => b.code === 'DEMO01' && b.eventDate === '2026-09-25');
+ok('战役内 buy attach campaignId', !!bIn && bIn.campaign.id === 'DEMO01#2026-09-20');
+ok('战役外 buy campaign=null', buys.find(b => b.code === 'DEMO01' && b.eventDate === '2026-09-15').campaign === null);
+const bHis = buys.find(b => b.code === 'DEMO01' && b.eventDate === '2026-08-20');
 ok('历史 buy 标 skip+history', bHis.backfill === 'skip' && bHis.history === true);
 ok('buyScan 幂等（重复跑不加）', timing.buyScan(cfg) === 0 && timing.loadSamples().filter(x => x.type === 'buy').length === 4);
 
@@ -99,7 +99,7 @@ ok('progress 计数正确', st.progress.open === 3 && st.progress.close === 1 &&
 ok('openLedger 未回填时 rate=null、total=3', st.openLedger.total === 3 && st.openLedger.n === 0 && st.openLedger.hitRate === null);
 ok('closeLedger 未回填时 earlyRate=null、total=1', st.closeLedger.total === 1 && st.closeLedger.n === 0 && st.closeLedger.earlyRate === null);
 ok('候选空（未回填，命中率不可判）', Array.isArray(st.candidates) && st.candidates.length === 0);
-ok('rows.buy 战役内偏差 = 09-25 − 09-20 = 5', st.rows.buy.some(b => b.code === '016664' && b.date === '2026-09-25' && b.deviation === 5));
+ok('rows.buy 战役内偏差 = 09-25 − 09-20 = 5', st.rows.buy.some(b => b.code === 'DEMO01' && b.date === '2026-09-25' && b.deviation === 5));
 ok('rows.close 含 open path join 标签', st.rows.close.length === 1 && st.rows.close[0].openPathLabel.indexOf('深跌') >= 0);
 ok('sampling note 带访问驱动声明', st.sampling.mode.indexOf('访问驱动') >= 0);
 

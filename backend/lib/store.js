@@ -30,6 +30,8 @@ const LAYOUT = {
   'fundlist_cache.json': 'cache',
   'holdings_cache.json': 'cache',
   'stock_industry_cache.json': 'cache',
+  // 基金档案（跟踪标的 / 基金类型 / 申购状态）：TTL 30 天，删了下次抓取时自动重建
+  'fund_archive_cache.json': 'cache',
   // series/  自建时序序列：增量累积，删了要重新攒
   'yield_history.json': 'series',
   // example/ 脱敏模板：给「从零建一个新组合」的人起步用

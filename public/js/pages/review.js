@@ -76,7 +76,7 @@ async function renderDaily(body, live, state, mobile) {
   const funds = [...heldFunds, ...plannedFunds];
 
   if (!funds.length) {
-    panel.appendChild(el('div', { class: 'hint', text: '暂无持仓基金。' }));
+    panel.appendChild(el('div', { class: 'hint', text: '暂无持仓基金。先去「持仓」页添加第一只。' }));
     mount(panel);
     return;
   }

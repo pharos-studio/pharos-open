@@ -1,31 +1,45 @@
 {
-  "_comment": "categories=组合构成环形图展示线(引擎4线口径:analysis.js 逐基金按 category 汇总,勿再并桶;与 engines 段键一致,顺序=环形图排布序);engines=引擎策略线(设置页下拉与类别中文显示用,name 须与 backend/engines/registry.js REGISTRY 一致)。calibers=口径维度(2026-09-12 新增):category 之下的「用哪把尺子量」,宽基分 A股口径(cn,乐咕PE分位×中债ERP)/海外口径(us,滚动3年分位∨PE回撤),★不参与环形图分块、不影响配置桶。categoryPolicy 资金桶归并(broad/dividend→core)仍走 util.engineCategoryToBucket,与 config 的 core/growth/cycle 键共存。2026-09-12",
+  "_comment": "categories=组合构成环形图展示线（analysis.js 逐基金按 category 汇总市值；键集即环形图分块，顺序=排布序）。engines=可绑定的算法线（设置页下拉与类别中文显示用，name 须与 backend/engines/registry.js 的 REGISTRY.label 一致）。calibers=口径维度：category 之下的「用哪把尺子量」，宽基分 A股口径(cn)/海外口径(us)，★不参与环形图分块、不影响配置桶。presets=给用户看的预设清单（新增基金时可一键选，避免自己猜该挂哪条线）；supported=false 表示该类别的算法「待建设」，能选能记市值但不给买卖结论。customCategories=用户自建分类，key 形如 custom:xxx，category 必须指向一条内置算法（它决定用哪套算法，不是新的算法）。categoryPolicy 资金桶归并（broad/dividend→core）仍走 util.engineCategoryToBucket。2026-09-19",
   "categories": [
-    {
-      "key": "broad",
-      "name": "宽基"
-    },
-    {
-      "key": "dividend",
-      "name": "红利低波"
-    },
-    {
-      "key": "growth",
-      "name": "科技成长"
-    },
-    {
-      "key": "cycle",
-      "name": "黄金(对冲)"
-    }
+    { "key": "broad", "name": "宽基" },
+    { "key": "dividend", "name": "红利·低波" },
+    { "key": "growth", "name": "主题·行业（高波动）" },
+    { "key": "cycle", "name": "商品·对冲" },
+    { "key": "bond", "name": "债券" },
+    { "key": "cash", "name": "现金" }
   ],
   "engines": [
     { "key": "broad", "name": "宽基" },
-    { "key": "dividend", "name": "红利低波" },
-    { "key": "growth", "name": "科技成长" },
-    { "key": "cycle", "name": "黄金(对冲)" }
+    { "key": "dividend", "name": "红利·低波" },
+    { "key": "growth", "name": "主题·行业（高波动）" },
+    { "key": "cycle", "name": "商品·对冲" }
   ],
   "calibers": [
     { "key": "cn", "name": "A股口径", "note": "乐咕PE分位(近5年滚动) × 中债10年ERP" },
     { "key": "us", "name": "海外口径", "note": "滚动3年PE分位 ∨ PE回撤15% × 美债10年ERP" }
-  ]
+  ],
+  "presets": [
+    { "id": "broad-cn", "name": "A股宽基", "category": "broad", "caliber": "cn", "supported": true,
+      "applies": "跟踪 A 股宽基指数的基金：沪深300 / 中证500 / 中证1000 / A500 / 创业板 / 科创50",
+      "note": "估值锚 = 该指数自己的 PE 分位 × 中债 ERP，所以**必须填对跟踪指数**，否则判定会降级" },
+    { "id": "broad-us", "name": "海外宽基", "category": "broad", "caliber": "us", "supported": true,
+      "applies": "跟踪海外宽基指数的基金：标普500 / 纳斯达克100 / 日经 / 恒生 / DAX",
+      "note": "锚 = 滚动156周PE分位 ∨ PE回撤，× 美债 ERP" },
+    { "id": "dividend-cn", "name": "红利·低波（A股）", "category": "dividend", "supported": true,
+      "applies": "**仅适用 A 股红利/低波类基金**",
+      "note": "参考带是中证红利 000922 的动态股息率。海外红利没有免费估值源，挂这条线会走常量兜底带" },
+    { "id": "theme", "name": "主题·行业", "category": "growth", "supported": true,
+      "applies": "任何**高波动**资产：医药 / 消费 / 新能源 / 军工 / 半导体 / 港股科技 / 主动偏股基金",
+      "note": "算法本质是「深度回撤抄底」，只看基金自身净值，**不需要跟踪指数、也不看行业**" },
+    { "id": "commodity", "name": "商品·对冲", "category": "cycle", "supported": true,
+      "applies": "任何**商品**类基金：黄金 / 白银 / 原油 / 豆粕 / 有色 ETF",
+      "note": "只看自身净值的 250 日价格分位与三重均线，**不绑黄金这一种标的**" },
+    { "id": "bond", "name": "债券", "category": "bond", "supported": false, "pending": true,
+      "applies": "纯债 / 一级债基 / 二级债基 / 可转债基金",
+      "note": "★ 决策算法**待建设**：这类基金的锚应是「国债利率分位 + 信用利差」，与现有五条线完全不同。当前只记录市值与占比，不给买卖结论" },
+    { "id": "cash", "name": "现金", "category": "cash", "supported": false, "pending": true,
+      "applies": "货币基金 / 现金管理类",
+      "note": "★ 决策算法**待建设**：货币基金没有净值波动、也没有估值锚，本质上不需要买入信号，只应计入总资产与占比" }
+  ],
+  "customCategories": []
 }

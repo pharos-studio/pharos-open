@@ -31,15 +31,18 @@ t('null 输入不抛错', util.caliberOf(null), null);
 t('DEFAULT_CALIBER 表正确', JSON.stringify(util.DEFAULT_CALIBER), JSON.stringify({ broad: 'cn' }));
 
 console.log('\n--- resolveRegistry 三段解析（key / type / caliber / label）---');
+// ⚠️ code 只是占位（本脚本验证的是 category/caliber 路由，REGISTRY 没有按 code 注册的条目，
+//    所以 code 取什么都不影响断言）。label 断言**钉住** REGISTRY.label ——
+//    将来若再改类别显示名，这里会先红，提醒你同步改 data/example/categories.example.json。
 const CASES = [
-  { f: { code: '202015', category: 'broad' },                     key: 'broad',     type: 'broad',    label: '宽基',      hasCal: 'cn' },
-  { f: { code: '016452', category: 'broad', caliber: 'us' },       key: 'broad:us',  type: 'broad',    label: '宽基·海外', hasCal: 'us' },
-  { f: { code: '018966', category: 'broad', caliber: 'us' },       key: 'broad:us',  type: 'broad',    label: '宽基·海外', hasCal: 'us' },
-  { f: { code: '202015', category: 'broad', caliber: 'cn' },       key: 'broad',     type: 'broad',    label: '宽基',      hasCal: 'cn' },
-  { f: { code: '008163', category: 'dividend' },                   key: 'dividend',  type: 'dividend', label: '红利低波',  hasCal: null },
-  { f: { code: '016664', category: 'growth' },                     key: 'growth',    type: 'tech',     label: '科技成长',  hasCal: null },
-  { f: { code: '016874', category: 'growth' },                     key: 'growth',    type: 'tech',     label: '科技成长',  hasCal: null },
-  { f: { code: '018391', category: 'cycle' },                      key: 'cycle',     type: 'cycle',    label: '黄金(对冲)', hasCal: null }
+  { f: { code: 'DEMO01', category: 'broad' },                  key: 'broad',     type: 'broad',    label: '宽基',              hasCal: 'cn' },
+  { f: { code: 'DEMO02', category: 'broad', caliber: 'us' },   key: 'broad:us',  type: 'broad',    label: '宽基·海外',          hasCal: 'us' },
+  { f: { code: 'DEMO03', category: 'broad', caliber: 'us' },   key: 'broad:us',  type: 'broad',    label: '宽基·海外',          hasCal: 'us' },
+  { f: { code: 'DEMO04', category: 'broad', caliber: 'cn' },   key: 'broad',     type: 'broad',    label: '宽基',              hasCal: 'cn' },
+  { f: { code: 'DEMO05', category: 'dividend' },               key: 'dividend',  type: 'dividend', label: '红利·低波',          hasCal: null },
+  { f: { code: 'DEMO06', category: 'growth' },                 key: 'growth',    type: 'tech',     label: '主题·行业（高波动）', hasCal: null },
+  { f: { code: 'DEMO07', category: 'growth' },                 key: 'growth',    type: 'tech',     label: '主题·行业（高波动）', hasCal: null },
+  { f: { code: 'DEMO08', category: 'cycle' },                  key: 'cycle',     type: 'cycle',    label: '商品·对冲',          hasCal: null }
 ];
 CASES.forEach(c => {
   const hit = resolveRegistry(c.f);

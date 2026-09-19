@@ -23,6 +23,7 @@ const backfill = require('./engines/backfill'); // 在途买入记录自动补�
 const tradeDate = require('./lib/tradeDate'); // 交易时段口径引擎：成交净值日推算
 const buyPlan = require('./lib/buyPlan'); // 买入方案推导：口径→净值→份额（唯一实现，预览/保存共用）
 const schema = require('./lib/schema'); // 数据结构版本与迁移（唯一版本口径，见 lib/schema.js 顶部说明）
+const trackIndex = require('./lib/trackIndex'); // 指数白名单与类别推断（唯一真相源）
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -32,14 +33,28 @@ const PORT = process.env.PORT || 3000;
 // /api/fund-list 序列化缓存：2.7 万行只 stringify 一次（刷新名单时重建），避免每次请求烧 CPU
 let fundListCacheStr = null;
 
-// 引擎四线（fund.category 合法值）：以 data/config/categories.json 的 engines 为准，读取失败回退硬编码
-const ALLOWED_CATEGORIES = (() => {
+// 合法类别（fund.category）：**实时读取** categories.json 的 engines + 用户自建分类。
+// ★ 这里必须是「函数」而不是启动时算一次的常量：用户在看板里自建分类后要立刻能保存，
+//   不能等重启进程。（旧实现启动时只读一次，自建分类会被 400 拦下，且用户看不出原因。）
+//   5 秒 TTL 只是为了别每次请求都读盘。
+const BASE_CATEGORIES = ['broad', 'dividend', 'growth', 'cycle', 'bond', 'cash'];
+let _catCache = null, _catCacheAt = 0;
+function allowedCategories() {
+  if (_catCache && (Date.now() - _catCacheAt) < 5000) return _catCache;
+  const base = new Set(BASE_CATEGORIES);
   try {
     const cats = store.readJSON('categories.json');
-    if (cats && Array.isArray(cats.engines) && cats.engines.length) return cats.engines.map(e => e.key);
-  } catch (e) {}
-  return ['broad', 'dividend', 'growth', 'cycle'];
-})();
+    const eng = (cats && Array.isArray(cats.engines)) ? cats.engines : [];
+    for (const e of eng) { if (e && e.key) base.add(e.key); }
+    const cus = (cats && Array.isArray(cats.customCategories)) ? cats.customCategories : [];
+    // 自建分类要登记 **它的 key**（用户实际存进 fund.category 的就是这个），
+    // 而不是它绑定的算法 key —— 否则用户自建的类别会被 400 拦下。
+    for (const e of cus) { if (e && e.key) base.add(e.key); }
+  } catch (e) { /* 读不到就以内置六类兜底 */ }
+  _catCache = Array.from(base);
+  _catCacheAt = Date.now();
+  return _catCache;
+}
 
 function json(res, obj, code = 200) {
   const s = JSON.stringify(obj);
@@ -217,12 +232,17 @@ const server = http.createServer(async (req, res) => {
       }));
     }
     if (p === '/api/fund-lookup') {
-      // 添加基金自动带出：单只查询（A 本地名单 + B 搜索接口兜底），只读免鉴权
+      // 添加基金自动带出：单只查询。除名称/类型外，还给出**跟踪标的与建议策略线**，
+      // 让用户不必自己猜「该挂哪条线」。只读免鉴权。
       const code = (u.searchParams.get('code') || '').trim();
       if (!/^\d{6}$/.test(code)) return json(res, { ok: false, error: 'code 须为 6 位数字' }, 400);
       try {
-        return json(res, Object.assign({ ok: true }, await fetchers.fundMetaLookup(code)));
+        return json(res, Object.assign({ ok: true }, await fetchers.fundAutoFill(code)));
       } catch (e) { return json(res, { ok: false, error: (e && e.message) || String(e) }, 500); }
+    }
+    if (p === '/api/track-index') {
+      // 支持「指数估值锚」的指数白名单（前端下拉 + 手填用）。只读免鉴权。
+      return json(res, { ok: true, list: trackIndex.listTrackIndexes() });
     }
     if (p === '/api/fund-list') {
       // 添加基金联想：全量精简名单 [code,name,type]，只读免鉴权；字符串缓存避免重复序列化
@@ -273,10 +293,15 @@ const server = http.createServer(async (req, res) => {
       const fails = [];
       const okCaliber = (v) => v === undefined || v === null || v === 'cn' || v === 'us';
       const okFund = (f) => f && typeof f.code === 'string' && typeof f.name === 'string' &&
-        Array.isArray(f.purchases || []) && typeof f.category === 'string' && ALLOWED_CATEGORIES.includes(f.category) &&
+        Array.isArray(f.purchases || []) && typeof f.category === 'string' && allowedCategories().includes(f.category) &&
         okCaliber(f.caliber);
       const okHoldings = (h) => h && Array.isArray(h.funds) && h.funds.every(okFund);
-      const okCategories = (c) => c && Array.isArray(c.categories) && c.categories.every(x => x && typeof x.key === 'string' && typeof x.name === 'string');
+      // categories 结构校验。presets / customCategories（2026-09-19 新增）都是**可选段**，
+      // 出现时每一项的 category 必须能挂到一条内置算法上 —— 否则自建分类会变成"选了但算不了"的黑洞。
+      const okBind = (x) => x && typeof x.name === 'string' && typeof x.category === 'string' && BASE_CATEGORIES.includes(x.category);
+      const okCategories = (c) => c && Array.isArray(c.categories) && c.categories.every(x => x && typeof x.key === 'string' && typeof x.name === 'string')
+        && (c.presets === undefined || (Array.isArray(c.presets) && c.presets.every(okBind)))
+        && (c.customCategories === undefined || (Array.isArray(c.customCategories) && c.customCategories.every(x => okBind(x) && typeof x.key === 'string')));
       const okConfig = (c) => c && typeof c === 'object';
       if (data.holdings !== undefined && !okHoldings(data.holdings)) fails.push('holdings 结构不合法');
       if (data.categories !== undefined && !okCategories(data.categories)) fails.push('categories 结构不合法');
