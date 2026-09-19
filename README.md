@@ -61,7 +61,7 @@ npm start         # 打开 http://localhost:3000
 改完代码想确认没把算法弄坏：
 
 ```bash
-npm test          # 生成数据文件 → 8 组离线校验 → 脱敏审计，全程不联网
+npm test          # 生成数据文件 → 9 组离线校验 → 脱敏审计，全程不联网
 ```
 
 | 命令 | 作用 |
@@ -69,8 +69,8 @@ npm test          # 生成数据文件 → 8 组离线校验 → 脱敏审计，
 | `npm run setup` | 从模板生成数据文件（已存在则跳过，不覆盖） |
 | `npm start` | 启动本地服务（`PORT` 环境变量可改端口） |
 | `npm test` | 全量自检：setup + 离线校验 + 脱敏审计 |
-| `npm run test:offline` | 只跑 8 组离线校验（**需先 `npm run setup`**） |
-| `npm run check:offline` | 证明那 8 组**真不联网**（给离线链加脚本前先跑它） |
+| `npm run test:offline` | 只跑 9 组离线校验（**需先 `npm run setup`**） |
+| `npm run check:offline` | 证明那 9 组**真不联网**（给离线链加脚本前先跑它） |
 | `npm run test:network` | 检查数据源连通性（**要联网**，所以不参与 CI） |
 | `npm run audit` | 脱敏审计：确认仓库里没有私人路径、密钥、真实数值 |
 | `npm run audit:nav` | 净值口径审计（只读报告，不参与门禁） |
@@ -78,6 +78,20 @@ npm test          # 生成数据文件 → 8 组离线校验 → 脱敏审计，
 > `test:offline` 里的校验以 `data/config/config.json` 的阈值为对照基准，所以**必须先 `npm run setup`**；懒得分步就直接 `npm test`，它会按顺序替你跑完。
 >
 > `test:network` 是唯一需要联网的校验（它要真的去请求东财与蛋卷接口）。**它不进 CI** —— 境外 runner 连不上国内数据源，会误报失败。怀疑净值/估值数据不对时，在本机手动跑它。
+
+---
+
+## 升级须知
+
+已经在用了？升级只需要一条命令：
+
+```bash
+git pull
+```
+
+- 你的数据全部在本地 `data/` 下，**不在 git 管理范围内**，升级不会碰它
+- 若某次更新改了数据结构，程序会在**启动时自动处理**，处理前先自动备份一份到 `data/` 下的 `*.bak-时间戳` 文件 —— 你不需要做任何事，也不需要会备份
+- 每次更新改了什么，见 [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
