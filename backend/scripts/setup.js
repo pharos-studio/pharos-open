@@ -66,10 +66,10 @@ if (failed.length) {
 console.log('完成：新建 ' + created + ' 个 · 跳过 ' + skipped + ' 个（已存在的一律不覆盖）');
 console.log('');
 if (created > 0) {
-  console.log('刚生成的文件里是**示例数据**，请换成你自己的：');
-  console.log('  · data/state/holdings.json   你的买入记录');
-  console.log('  · data/config/config.json    你的运行配置');
-  console.log('  （这两个文件以及 data/state/ 整目录都不会被提交，放心填）');
+  console.log('已生成一份**空看板**（funds 为空数组），不需要你手改任何 json：');
+  console.log('  · data/state/holdings.json   空的持仓文件，等你在页面上添加基金');
+  console.log('  · data/config/config.json    运行配置（阈值已给通用默认值）');
+  console.log('  （这两个文件以及 data/state/ 整目录都不会被提交，放心用）');
   console.log('');
 }
 console.log('下一步：');

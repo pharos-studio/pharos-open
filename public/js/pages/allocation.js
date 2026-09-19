@@ -7,8 +7,13 @@ import * as api from '../api.js';
 import { el, fmtMoney, tableWrap, loadingHTML } from '../util.js';
 import { loadEcharts } from '../charts/trend.js';
 
-// 引擎 4 线配色（G0 深藏蓝×鎏金衍生：蓝=宽基 / 青=红利低波 / 紫=科技成长 / 金=黄金对冲，暗底友好；未知 key 灰兜底）
-const BUCKET_COLORS = { broad: '#4C9AF0', dividend: '#3FBF9F', growth: '#9A8CF5', cycle: '#E3B94C' };
+// 展示线配色（G0 深藏蓝×鎏金衍生：蓝=宽基 / 青=红利·低波 / 紫=主题·行业 / 金=商品·对冲 / 灰蓝=债券 / 浅金=现金；
+// 未知 key 与“未归类”走 FALLBACK_COLOR 灰兜底）。2026-09-19 新增 bond/cash：它们是**待建设**类别，
+// 有独立分块（不再被算成“未归类”），只是暂时不给买卖结论。
+const BUCKET_COLORS = {
+  broad: '#4C9AF0', dividend: '#3FBF9F', growth: '#9A8CF5', cycle: '#E3B94C',
+  bond: '#6E8AB8', cash: '#C9B47A'
+};
 const FALLBACK_COLOR = '#8A8F98';
 // 上一次渲染的旭日图实例（页面切换 / 自动更新重复渲染时先 dispose，防 ECharts 实例泄漏）
 let _lastSunburstChart = null;
@@ -56,6 +61,113 @@ function legendRows(rows) {
   return box;
 }
 
+// ── 类别管理（2026-09-19）──
+// 让用户在前端增删「自建分类」。★ 自建分类**不是新算法**，只是给某条内置线起个别名
+// （例如把「主题·行业」叫成「我的医药」），所以新增时必须选一条内置算法去绑定。
+// 保存走 /api/save 的 categories 键；后端的 okCategories 会校验绑定的算法必须在册。
+// 为什么必须同时写进 categories 段：环形图的分块是按 categories 来的，
+// 只写 customCategories 的话，该基金在配置页会落到「未归类」那一块。
+async function appendCategoryManager(root) {
+  const st = store.getState();
+  const cats = st.categories || {};
+  const presets = Array.isArray(cats.presets) ? cats.presets : [];
+  const customs = Array.isArray(cats.customCategories) ? cats.customCategories.slice() : [];
+  const engines = Array.isArray(cats.engines) ? cats.engines : [];
+  const engineName = (k) => { const e = engines.find(x => x.key === k); return e ? e.name : k; };
+
+  const panel = el('div', { class: 'panel' });
+  panel.appendChild(el('div', { class: 'panel-head' }, [
+    el('span', { text: '类别管理' }),
+    el('span', { class: 'sub', text: '预设 + 自建分类' }),
+  ]));
+
+  // ① 内置预设（只读）：把「这条线适用于哪类基金」摆出来，避免用户挂错线
+  const presetBox = el('div', { class: 'hint', style: 'line-height:1.9' });
+  if (!presets.length) {
+    presetBox.appendChild(el('div', { text: '没有预设段。可在 data/config/categories.json 里补 presets，或删掉该文件后重跑 npm run setup。' }));
+  } else {
+    presets.forEach(p => {
+      const line = el('div');
+      line.appendChild(el('b', { text: p.name }));
+      if (p.supported === false) {
+        line.appendChild(el('span', { style: 'color:#8a6d3b', text: '（待建设 · 暂不给买卖结论）' }));
+      }
+      if (p.applies) line.appendChild(el('span', { text: '　适用：' + p.applies }));
+      presetBox.appendChild(line);
+    });
+  }
+  panel.appendChild(el('div', { class: 'field' }, [el('label', { text: '内置预设（不可删除）' }), presetBox]));
+
+  // ② 自建分类列表 + 删除
+  const listBox = el('div');
+  const msg = el('div', { class: 'hint' });
+  const renderList = () => {
+    listBox.innerHTML = '';
+    if (!customs.length) {
+      listBox.appendChild(el('div', { class: 'hint', text: '还没有自建分类。' }));
+      return;
+    }
+    customs.forEach((c, i) => {
+      const row = el('div', { style: 'display:flex;align-items:center;gap:10px;padding:3px 0;flex-wrap:wrap' });
+      row.appendChild(el('span', { text: c.name + '（绑定算法：' + engineName(c.category) + '）' }));
+      const del = el('button', { class: 'btn', text: '删除' });
+      del.addEventListener('click', () => { customs.splice(i, 1); renderList(); });
+      row.appendChild(del);
+      listBox.appendChild(row);
+    });
+  };
+  renderList();
+  panel.appendChild(el('div', { class: 'field' }, [el('label', { text: '自建分类' }), listBox]));
+
+  // ③ 新增：名字 + 绑定的内置算法
+  const nameInput = el('input', { class: 'input', placeholder: '分类名，例如「我的医药」' });
+  const baseSel = el('select', {}, engines.map(e => el('option', { value: e.key, text: e.name })));
+  const addBtn = el('button', { class: 'btn btn-primary', text: '新增分类' });
+  addBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    if (!name) { msg.textContent = '请先填分类名'; msg.style.color = '#c0392b'; return; }
+    if (!baseSel.value) { msg.textContent = '没有可选的内置算法，无法绑定'; msg.style.color = '#c0392b'; return; }
+    if ((cats.categories || []).some(x => x && x.name === name)) {
+      msg.textContent = '已有同名分类'; msg.style.color = '#c0392b'; return;
+    }
+    // key 用时间戳生成，避开中文名无法做 slug 的问题，也避免与内置 key 撞车
+    const key = 'custom:' + Date.now().toString(36).slice(-6);
+    const next = Object.assign({}, cats, {
+      categories: (cats.categories || []).concat([{ key, name }]),
+      customCategories: customs.concat([{
+        key, name, category: baseSel.value, createdAt: new Date().toISOString().slice(0, 10),
+      }]),
+    });
+    addBtn.disabled = true;
+    try {
+      const r = await api.save({ categories: next });
+      if (!r || !r.ok) throw new Error((r && r.error) || '保存失败');
+      await store.reloadState();          // 重新拉 /api/state，让新类别立刻出现在「添加基金」的下拉里
+      msg.style.color = '#3fbf9f';
+      msg.textContent = '已新增「' + name + '」—— 到「持仓」页添加基金时就能选到它了';
+      nameInput.value = '';
+      const st2 = store.getState();
+      cats.categories = (st2.categories || {}).categories || cats.categories;
+      cats.customCategories = (st2.categories || {}).customCategories || cats.customCategories;
+      customs.length = 0;
+      (cats.customCategories || []).forEach(x => customs.push(x));
+      renderList();
+    } catch (e) {
+      msg.style.color = '#c0392b';
+      msg.textContent = '保存失败：' + ((e && e.message) || String(e));
+    } finally {
+      addBtn.disabled = false;
+    }
+  });
+  panel.appendChild(el('div', { class: 'field' }, [
+    el('label', { text: '新增自建分类' }),
+    el('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;align-items:center' }, [nameInput, baseSel, addBtn]),
+    el('div', { class: 'hint', style: 'margin-top:4px', text: '自建分类只是给内置算法起个别名（选哪条算法决定用哪套买卖规则）。删除后，已挂在该分类上的基金会变成「未归类」，需要到「持仓」页改类别。' }),
+  ]));
+  panel.appendChild(msg);
+  root.appendChild(panel);
+}
+
 export async function render(root) {
   const live = store.getLive();
   const rows = live.allocation || [];
@@ -69,8 +181,9 @@ export async function render(root) {
   ]));
 
   if (!rows.length) {
-    panel.appendChild(el('div', { class: 'hint', text: '暂无配置数据。' }));
+    panel.appendChild(el('div', { class: 'hint', text: '暂无配置数据。先去「持仓」页添加第一只基金，这里会显示各类资产的占比与穿透。' }));
     root.appendChild(panel);
+    await appendCategoryManager(root); // ★ 空看板时恰恰最需要它：这时候用户正要去建自己的分类
     return;
   }
 
@@ -102,6 +215,9 @@ export async function render(root) {
     box.appendChild(el('div', { class: 'error-box', text: '穿透分析加载失败：' + err.message }));
     penSlot.appendChild(box);
   });
+
+  // 类别管理（放在最后：它是设置型面板，不该抢在「钱怎么分的」前面）
+  await appendCategoryManager(root);
 }
 
 // ---------- 穿透分析（2026-09-05 重写：科技赛道透视，仅 growth 基金）----------

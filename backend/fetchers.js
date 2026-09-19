@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const httpBase = require('./lib/http'); // UA / LEGU_UA / fetchText
 const util = require('./lib/util');    // todayStr / decodeFetchBody
 const store = require('./lib/store');  // readJSON / writeJSON / writeJSONSafe
+const ti = require('./lib/trackIndex'); // 指数白名单 + 类别推断（唯一真相源）
 
 const { UA, LEGU_UA, fetchText } = httpBase;
 const { todayStr, decodeFetchBody } = util;
@@ -17,7 +18,7 @@ const fetch = globalThis.fetch;
 
 // 键控单飞（in-flight 去重）：同一 key 的并发调用合并成**同一次**网络请求，完成后立刻释放 key。
 // 只负责「去重」，不承担结果缓存 —— 缓存语义仍由各自的 cache 负责（TTL、失败重试时机都不变）。
-// 为什么必须按 key 分：分析层并行化后，016452/018966 同享 NDX 估值、3 只宽基同享中债表；
+// 为什么必须按 key 分：分析层并行化后，跟踪同一指数的多只基金共享同一次估值请求、多只宽基共享中债表；
 // 若用全局单飞，不同 trackIndex（如 NDX 与 SH000300）会串到同一次结果上。
 function once(inflightMap, key, run) {
   if (inflightMap[key]) return inflightMap[key];
@@ -32,17 +33,17 @@ function once(inflightMap, key, run) {
 // ---------- 估值信号（便宜/贵，供 computeAllocation 类别内倾斜）----------
 // 数据源链（从上往下取第一个可用的）：
 //  ① 蛋卷免登录估值列表 index_eva/dj（一次返回 63 指数，含 NDX/CSIH30269/SH000300/SH000905/SH000993，每日更新）
-//  ② 乐咕乐股 index-basic-pe（A 股指数，全自动：token=md5(上海日期) + cookie/_csrf 两步，兜底 202015）
+//  ② 乐咕乐股 index-basic-pe（A 股指数，全自动：token=md5(上海日期) + cookie/_csrf 两步，作 A 股宽基兜底）
 //  ③ 蛋卷基金 index_eva 单指数（需登录，留作将来）
 //  兜底：PE 分位拿不到 → peFallback 人工锚点（在 config.signals） → 净值历史价格分位（黄金 250 日、其余 120 日）。
 const valuationCache = {}; // trackIndex -> { updated, value }
 // 蛋卷免登录列表映射：holdings.trackIndex → 蛋卷列表 index_code
-//   CSI930955(008163 红利低波50) → CSIH30269 红利低波（用户确认的因子代理；标普指数无免费源）
-//     ⚠️ 红利 PE 分位线已砍（用户2026-09-01拍板，永不启用）：该映射仅取 dyr（股息率），不取 pe/pePercentile
-//   NDX(016452/018966 纳指100) → NDX（精确）
-//   SH000922(000922 中证红利) → SH000922（股息率参考带）
+//   CSI930955(红利低波50) → CSIH30269 红利低波（因子代理；标普指数无免费源）
+//     ⚠️ 红利 PE 分位线已砍（2026-09-01 定案，永不启用）：该映射仅取 dyr（股息率），不取 pe/pePercentile
+//   NDX(纳指100) → NDX（精确）
+//   SH000922(中证红利) → SH000922（股息率参考带）
 //   SH000993(全指信息,行业代理) → SH000993（蛋卷列表同名直取；原 SH000905 中证500 代理已弃，2026-09-02 换源；映射保留供行业代理复用）
-//   SH000300(202015 沪深300) 无蛋卷映射 → 走乐咕 000300.SH（见 LEGU_INDEX）
+//   SH000300(沪深300) 无蛋卷映射 → 走乐咕 000300.SH（见 LEGU_INDEX）
 const DANJUAN_INDEX = {
   'CSI930955': 'CSIH30269',
   'NDX': 'NDX',
@@ -74,9 +75,9 @@ async function fetchDanjuanEvaList() {
     } catch (e) { return null; } // 失败 → 调用方降级乐咕/锚点
   });
 }
-// 乐咕只映射"有准确对应指数"的基金（代理会误判估值）：
-//   202015 沪深300 → 000300.SH（乐咕直取）。
-//   008163 红利低波50 乐咕无对应指数 → 由蛋卷 CSIH30269 代理（见 DANJUAN_INDEX）。
+// 乐咕只映射"有准确对应指数"的标的（用代理指数会误判估值）：
+//   SH000300 沪深300 → 000300.SH（乐咕直取）。
+//   红利低波50 乐咕无对应指数 → 由蛋卷 CSIH30269 代理（见 DANJUAN_INDEX）。
 const LEGU_INDEX = {
   'SH000300': '000300.SH'
 };
@@ -129,7 +130,7 @@ async function fetchLeguValuation(indexCode, windowYears = 10) {
 }
 // peWindowYears：宽基乐咕滚动分位窗口年数（2026-09-13 提为配置项 config.signals.broad.peWindowYears，
 // 与海外线 broadGlobal.peWindowWeeks 对齐；缺省 5，行为与提配置前完全一致）。
-const valuationInflight = {}; // trackIndex -> Promise（单飞：016452/018966 同享 NDX，避免重复请求）
+const valuationInflight = {}; // trackIndex -> Promise（单飞：跟踪同一指数的多只基金共享一次请求，避免重复）
 async function fetchValuation(trackIndex, peWindowYears) {
   if (!trackIndex) return null;
   const c = valuationCache[trackIndex];
@@ -188,7 +189,7 @@ async function fetchNavPage(code, pageNo) {
     const url = `https://api.fund.eastmoney.com/f10/lsjz?fundCode=${code}&pageIndex=${pageNo}&pageSize=${NAV_PER}`;
     const json = JSON.parse(await fetchText(url, NAV_HEADERS));
     const list = (json.Data && json.Data.LSJZList) || [];
-    // TotalCount 由接口顶层返回（实测 008163=1600 / 202015=4252），用于算出真实页数上限
+    // TotalCount 由接口顶层返回（实测：老红利基金约 1600 条 / 老宽基约 4200 条），用于算出真实页数上限
     const total = json.TotalCount != null ? Number(json.TotalCount) : null;
     return { ok: true, list, total };
   } catch (e) { return { ok: false, list: null, total: null }; }
@@ -245,7 +246,7 @@ async function fetchNavOnDate(code, targetDate) {
   //   故本页一旦出现 <= targetDate 的记录，其最大值即**全局答案**，后续页日期只会更早。
   //   数学依据：设 best = max{r ∈ 本页 | r.date <= target}，minPage = min{本页日期}；
   //   存在 r.date <= target ⟹ best >= minPage；后续页所有日期 <= minPage <= best ⟹ 不可能更优。
-  //   收益：016452 这类 1600+ 条历史的基金，原实现每次要翻 45 页 —— 现在 1 页。
+  //   收益：1600+ 条历史的基金，原实现每次要翻 45 页 —— 现在 1 页。
   //   已用 probe_nav_reqcount.js 对 6 组 (code,date) 做过新旧实现对拍，quote 逐位相同。
   const PER = NAV_PER;
   let best = null;
@@ -314,7 +315,7 @@ async function fetchNavOnOrAfter(code, nominalDate) {
 }
 
 // ---------- 天天基金：前十大持仓 ----------
-// 结构（实测 016452 等）：td[0]=序号 td[1]=代码(NVDA/6位A股/285A) td[2]=名称 td[3..4]=-- td[5]=股吧行情 td[6]=占净值比例% td[7..]=其他
+// 结构（实测多只联接基金一致）：td[0]=序号 td[1]=代码(NVDA/6位A股/285A) td[2]=名称 td[3..4]=-- td[5]=股吧行情 td[6]=占净值比例% td[7..]=其他
 // 注意：占比列索引必须基于**原始 td 数组**（过滤噪声单元格会左移导致错位）。
 function parseHoldingsContent(content) {
   const rows = [];
@@ -390,7 +391,7 @@ async function fetchHoldings(code) {
 //   - 抓取失败返回 null 交由调用方回退各自常量，绝不降级到另一种债。
 // ps=5 起逐行回扫「最近非空」是必需的：东财表格实测存在最新日美债列为空的情况（如 2026-09-07 美债全空）。
 const bond10yCache = { updated: 0, value: null }; // 会话内缓存 12h（日频数据）
-const bond10yInflight = {}; // 单飞：3 只宽基（202015 / 016452 / 018966）并发时共享同一次请求
+const bond10yInflight = {}; // 单飞：多只宽基并发时共享同一次请求（中债表与具体基金无关）
 async function fetchBond10Y() {
   if (bond10yCache.value != null && Date.now() - bond10yCache.updated < 12 * 3600 * 1000) return bond10yCache.value;
   // 注意：本接口走原生 fetch（见下方 doFetchBond10Y），不受 lib/http 全局闸门约束 —— 单次仅 1 个请求，无需约束
@@ -527,8 +528,101 @@ async function getFundListMeta() {
   return { updated: fundListMem.updated, total: rows.length, list: rows.map(r => [r[0], r[2], r[3] || '']) };
 }
 
+// ---------- 东财：基金档案（跟踪标的 / 基金类型 / 申购状态）----------
+// 用途：用户填一个基金代码，就能自动带出「该挂哪条策略线」与「跟踪什么指数」，
+//   不再靠名称正则猜（旧实现猜不出就一律归成「主题·行业」，会套错算法且不报错）。
+// 缓存 data/cache/fund_archive_cache.json（TTL 30 天，按代码分桶）；该路径属 data/cache/** → 永不外传。
+// ★ 缺值是字符串 "--"（不是 null），统一交给 trackIndex.normalizeArchiveValue 归一，
+//   否则会被当成合法指数名去匹配。
+// ★★ 这个接口**会拦桌面浏览器 UA**：用项目默认的桌面 Chrome UA 请求会稳定返回
+//   `{"Datas":null,"ErrCode":61136403,"ErrMsg":"网络繁忙，请稍后重试！"}` —— 看起来像"接口挂了"，
+//   其实只是 UA 不对（实测：iPhone / Android / curl / 空 UA 全部放行，唯独桌面 Chrome 被拦）。
+//   所以这里**必须显式传移动端 UA**，不能沿用 lib/http 的共享 UA。
+const ARCHIVE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
+const ARCHIVE_TTL = 30 * 24 * 3600 * 1000;
+const ARCHIVE_URL = 'https://fundmobapi.eastmoney.com/FundMNewApi/FundMNNBasicInformation';
+let fundArchiveDisk = null; // { updated, map: { code: { updated, data } } }
+async function ensureFundArchiveDisk() {
+  if (fundArchiveDisk) return fundArchiveDisk;
+  try { fundArchiveDisk = store.readJSON('fund_archive_cache.json'); } catch (e) { fundArchiveDisk = null; }
+  if (!fundArchiveDisk || typeof fundArchiveDisk.map !== 'object') fundArchiveDisk = { updated: 0, map: {} };
+  return fundArchiveDisk;
+}
+// 返回 { ftype, indexCode, indexName, subscribeState, riskLevel, name } 或 null（抓不到）。
+// ★ 失败不写缓存（下次重试），只有抓取成功才落盘 —— 避免一次瞬时抖动把 null 固化 30 天。
+async function fetchFundArchive(code) {
+  const key = String(code == null ? '' : code).trim();
+  if (!/^\d{6}$/.test(key)) return null;
+  const disk = await ensureFundArchiveDisk();
+  const ent = disk.map[key];
+  if (ent && ent.updated && (Date.now() - ent.updated < ARCHIVE_TTL)) return ent.data;
+  try {
+    const url = ARCHIVE_URL + '?FCODE=' + key
+      + '&deviceid=Wap&version=2.0.0&product=EFund&plat=iPhone&osVersion=16.6&appType=iPhone';
+    const txt = await fetchText(url, { 'User-Agent': ARCHIVE_UA, Referer: 'https://mpservice.com/' });
+    const j = JSON.parse(txt) || {};
+    const D = j.Datas || {};
+    if (!D.FCODE) {
+      // 命中风控（ErrCode 非空）时只告警一次，便于排查"为什么自动识别不生效"
+      if (j.ErrCode && !fundArchiveWarned) {
+        fundArchiveWarned = true;
+        console.warn('[fund-archive] 档案接口返回业务错误，自动识别降级为手动填写：', j.ErrCode, j.ErrMsg || '');
+      }
+      return null;
+    }
+    const data = {
+      ftype: ti.normalizeArchiveValue(D.FTYPE),
+      indexCode: ti.normalizeArchiveValue(D.INDEXCODE),
+      indexName: ti.normalizeArchiveValue(D.INDEXNAME),
+      subscribeState: ti.normalizeArchiveValue(D.SGZT),
+      riskLevel: ti.normalizeArchiveValue(D.RISKLEVEL),
+      name: ti.normalizeArchiveValue(D.SHORTNAME),
+    };
+    disk.map[key] = { updated: Date.now(), data };
+    disk.updated = Date.now();
+    try { store.writeJSONSafe('fund_archive_cache.json', { updated: disk.updated, map: disk.map }); } catch (e) { /* 写失败下次再写 */ }
+    return data;
+  } catch (e) { return null; }
+}
+let fundArchiveWarned = false;
+
+// 前端「添加基金」的一键自动补全：基金名单 + 档案 + 指数白名单 + 类别推断，合成一份结果。
+// 返回的每个推断字段都带"来源"，让前端能区分「确定的」与「只是启发式」的（by=name 时须让用户确认）。
+async function fundAutoFill(code) {
+  const base = await fundMetaLookup(code);
+  if (!base || !base.found) return { found: false, code: String(code == null ? '' : code) };
+  const archive = await fetchFundArchive(code);
+  const ftype = (archive && archive.ftype) || base.type || null;
+  const indexCode = archive ? archive.indexCode : null;
+  const indexName = archive ? archive.indexName : null;
+  const trackIndex = ti.resolveTrackIndex(indexCode, indexName);
+  const line = ti.suggestLine(ftype, base.name, trackIndex);
+  return {
+    found: true,
+    code: String(code),
+    name: base.name,
+    type: ftype,
+    market: base.market,
+    source: base.source,
+    // 跟踪标的（记录性字段：即使我们没有估值源也照样回给用户看）
+    indexCode, indexName,
+    // 我方支持的内部指数键；null = 没有估值源，前端必须显示「缺估值锚·降级」
+    trackIndex,
+    trackedButUnpriced: !!(indexName && !trackIndex),
+    // 建议策略线
+    suggestedCategory: line ? line.category : null,
+    suggestedCaliber: line ? (line.caliber || null) : null,
+    suggestedPending: line ? line.pending === true : false,
+    suggestedBy: line ? line.by : null,          // 'type'=确定 / 'index'=由指数身份覆盖 / 'name'=启发式，须用户确认
+    needsTrackIndex: line ? ti.needsTrackIndex(line.category) : false,
+    // 白送的现成信息
+    subscribeState: archive ? archive.subscribeState : null,  // 例：'限大额' / '暂停申购'
+    riskLevel: archive ? archive.riskLevel : null,
+  };
+}
+
 // ---------- 东财：A股个股行业（穿透补词典向导的赛道预选用）----------
-// 数据源：push2.eastmoney.com/api/qt/stock/get?secid={mkt}.{code}&fields=f57,f58,f100,f127 → f127=东财行业名（实测 016874 九只重仓 9/9 命中，免鉴权）。
+// 数据源：push2.eastmoney.com/api/qt/stock/get?secid={mkt}.{code}&fields=f57,f58,f100,f127 → f127=东财行业名（实测主动基金九只重仓 9/9 命中，免鉴权）。
 // secid 前缀：6 开头 → 1.（沪市）；0/3 开头 → 0.（深市）。海外/含字母码跳过（返回 null，仍走 theme_map 词典）。
 // 缓存 data/cache/stock_industry_cache.json（TTL 7 天）+ 会话内 Map；并行抓取 + 单码容错。
 const INDUSTRY_TTL = 7 * 24 * 3600 * 1000;
@@ -609,6 +703,6 @@ module.exports = {
   fetchNavHistory, fetchNavOnDate, fetchNavOnOrAfter,
   parseHoldingsContent, fetchHoldings,
   fetchSinaIndex, fetchCNBond10Y, fetchBond10Y, fetchIndexPeHistory,
-  fundMetaLookup, getFundListMeta,
+  fundMetaLookup, getFundListMeta, fetchFundArchive, fundAutoFill,
   fetchStockIndustryBatch
 };

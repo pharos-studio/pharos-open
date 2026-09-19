@@ -40,10 +40,22 @@ function setIfMissing(obj, key, value) {
   if (obj[key] === undefined) obj[key] = value;
 }
 
+// 「这是示例数据」的判据 —— 与 audit_desensitize.js / verify_edit_recalc.js /
+// verify_principal_caliber.js 三处共用同一个正则，改这里必须四处同改。
+const DEMO_MARK_RX = /DEMO DATA|NOT real holdings|placeholder/i;
+
 // ── 归一：读路径与写路径都走这里。只补业务缺省值，绝不注入 _schemaVersion（铁律 1）──
-// 现在为空：存量默认值一律不动（零行为变化）。以后加字段在下面加 setIfMissing 行。
+// 唯一的例外是下面那条「剥离示例标记」—— 它必须删除一个字段，原因见行内注释。
+// 以后加字段在下面加 setIfMissing 行。
 function normalizeHoldings(h) {
   if (!h || typeof h !== 'object' || Array.isArray(h)) return h;
+  // ★ 一旦装进真实持仓，就必须摘掉「示例数据」标记，否则脱敏审计会永久停在 Mode B
+  //   （Mode B 只查关键词、不跑数值指纹），等于门禁静默失效 —— 判据见 audit_desensitize.js:102-106。
+  //   funds 为空时保留标记：此刻它确实是空模板，审计本就该走 Mode B。
+  if (Array.isArray(h.funds) && h.funds.length > 0
+      && typeof h._comment === 'string' && DEMO_MARK_RX.test(h._comment)) {
+    delete h._comment;
+  }
   // 示例（将来加字段时照这样写）：setIfMissing(h, 'someFutureField', defaultValue);
   return h;
 }

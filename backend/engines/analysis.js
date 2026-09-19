@@ -11,6 +11,8 @@ const util = require('../lib/util');
 const config = require('../lib/config');
 const buyPlan = require('../lib/buyPlan');
 const allocation = require('./alloc/allocation');
+const trackIndex = require('../lib/trackIndex'); // 指数白名单与"这条线能不能用锚"（唯一真相源）
+const { baseCategoryOf } = require('./registry'); // 自建分类(custom:xxx) → 绑定的内置算法
 
 // ---------- 分析计算（纯计算，供 /api/refresh 与 /api/advice 复用）----------
 async function buildAnalysis(opts) {
@@ -81,11 +83,20 @@ async function buildAnalysis(opts) {
     const profit = currentValue == null ? null : currentValue - netInvested;
     const profitPct = (netInvested && profit != null) ? profit / netInvested * 100 : null;
 
-    // 估值信号：有 trackIndex → 优先抓估值；抓不到/无 trackIndex → 价格分位兜底
+    // 估值信号：只有「这条策略线允许用指数锚」且拿得到 trackIndex 时才抓指数估值；
+    // 否则（商品线 / 主动基金 / 抓失败）走价格分位兜底。
     // 注意：dividend 类即使无 pePercentile（红利 PE 线已砍，只返回 dyr）也须挂载，否则 dyr 丢失
     const recent20dChange = history.length ? util.recentChangePct(history, 20) : 0;
+    // ★★ 判据是「策略线要不要锚」，**绝不是「有没有 trackIndex」**。
+    //   商品线(cycle)/债券/现金刻意不读指数 PE；而东财会给黄金基金返回指数代码（上海金 SHAU）。
+    //   若沿用旧的 `if (f.trackIndex)`，自动抓取一填锚就会把商品线的行为改掉（静默回归）。
+    //   所以「能不能用锚」永远由策略线决定 —— 见 lib/trackIndex.js 的 usesIndexAnchor。
+    //   ★ 用 baseCategoryOf 折算：用户自建的类别（custom:xxx）只是别名，能不能用锚
+    //     要看它绑定的那条内置算法，不能因为是别名就当成"不能用锚"。
+    const _baseCat = baseCategoryOf(f.category);
+    const useIndexAnchor = trackIndex.usesIndexAnchor(_baseCat);
     let valuation = null;
-    if (f.trackIndex) {
+    if (f.trackIndex && useIndexAnchor) {
       // 宽基乐咕滚动分位窗口 = config.signals.broad.peWindowYears（缺省 5，与提配置前一致）
       const peWinYears = (cfg.signals && cfg.signals.broad && cfg.signals.broad.peWindowYears) || 5;
       const ev = await fetchers.fetchValuation(f.trackIndex, peWinYears);
@@ -94,12 +105,17 @@ async function buildAnalysis(opts) {
       }
     }
     const pricePercentile = history.length ? util.percentileOf(history) : null;
-    const isGoldOrActive = !f.trackIndex; // 黄金(商品)与主动QDII：无指数 PE，价格分位弱信号
+    // weak 的语义 = 「最终用的是价格分位兜底（拿不到指数口径估值）」。
+    // 它只用于透传展示（全仓无消费者），改成语义正确的算法不影响任何判定。
+    const usedPriceFallback = valuation == null;
     valuation = valuation || {
       pricePercentile, recent20dChange,
-      weak: isGoldOrActive,
+      weak: usedPriceFallback,
       source: 'price'
     };
+    // 给前端一个「这只基金的估值锚是否降级」的显式标记，替代过去"偷偷显示 ? 且恒 hold"的静默行为。
+    const anchorDegraded = trackIndex.needsTrackIndex(_baseCat)
+      && !(f.trackIndex && useIndexAnchor && !usedPriceFallback);
 
     // 宽基：按「口径」补充无风险利率锚（ERP 第二锚用）——★中债只给 A 股、美债只给海外，二者不可互为兜底。
     //   cn(A股)：v.treasury10y ← 中债10年，失败回退 config.treasury10y 常量；
@@ -155,6 +171,14 @@ async function buildAnalysis(opts) {
         caliber: util.caliberOf(f),  // ★口径（broad 下 cn/us）：computeAllocation/advice 的路由依据，缺它两层解析失效
         estimateIndex: f.estimateIndex, estimateLabel: f.estimateLabel || null,
         trackIndex: f.trackIndex || null,
+        // ★ 估值锚状态（2026-09-19 新增）：让前端能**显式**告诉用户「这只基金缺估值锚、判定已降级」，
+        //   替代过去"界面显示 ? 且恒定建议持仓不动"的静默误导。
+        valuationAnchor: {
+          hasTrackIndex: !!f.trackIndex,
+          usable: !!(f.trackIndex && useIndexAnchor),
+          degraded: anchorDegraded,
+          reason: anchorDegraded ? (f.trackIndex ? 'fetch_failed' : 'no_track_index') : null,
+        },
         latestNav: latest ? latest.nav : null, latestDate: latest ? latest.date : null,
         dayChange: latest ? latest.dayChange : null,
         totalShares, principal, netInvested, fee, currentValue, profit, profitPct,
@@ -202,6 +226,19 @@ async function buildAnalysis(opts) {
     value: byCat[c.key] || 0,
     pct: totalValue ? (byCat[c.key] || 0) / totalValue * 100 : 0
   }));
+  // ★ 兜底补行（2026-09-19）：基金实际用到的 category 若不在 categories 里
+  //   （手改 json、或自建分类没登记），旧实现会让它的市值**从环形图里静默消失** ——
+  //   但 totalValue 仍然含它，于是各段占比之和 <100%，用户只会看到"钱数对不上"。
+  //   这里为每个漏网的类别补一行，保证「各段之和 ≡ 100%」这条不变量恒成立。
+  const _seenCats = new Set(catList.map(c => c.key));
+  for (const cat of Object.keys(byCat)) {
+    if (_seenCats.has(cat)) continue;
+    allocationRows.push({
+      key: cat, name: '未归类', value: byCat[cat],
+      pct: totalValue ? byCat[cat] / totalValue * 100 : 0,
+      unsupported: true
+    });
+  }
 
   // 单一分配引擎结果（随 /api/refresh 下发，前端 renderAllocation 与 buildAdvice 共用）
   // 预算/分配金额机制已移除：computeAllocation 仅产出 scoreMap 综合分信号，catch 回退保留对象形态供 advice 取 plan.scoreMap 兼容
@@ -284,7 +321,7 @@ async function buildPenetration(fundDefs, funds, totalValue) {
   // ⚠️ metas 空但 pending 非空（全科技基金均未买入）也要把 pending 带出去，不能直接丢
   if (!metas.length || !(totalValue > 0)) return Object.assign({}, empty, { pending });
 
-  // 抓取去重：同 acGroupKey（A/C 等份额）只抓一次、份额间共享；联接基金代理（018966→016452）由 fetchers 内部处理
+  // 抓取去重：同 acGroupKey（A/C 等份额）只抓一次、份额间共享；联接基金代理（holdings 里的 penetrationProxy）由 fetchers 内部处理
   const groups = new Map();
   for (const m of metas) {
     const gk = util.acGroupKey(m.fd.name, m.fd.category);

@@ -40,25 +40,36 @@ async function fill(root) {
     const alerts = advice.alerts || []; // 非常规信号（trim/statementOnly）
     list.innerHTML = '';
     if (!funds.length && !alerts.length) { // D4: 两源均空才显示兜底，避免 alerts 非空被吞
-      list.appendChild(el('div', { class: 'hint', text: '今日无触发信号。' }));
+      list.appendChild(el('div', { class: 'hint', text: '暂无判定结果。若还没有基金，先去「持仓」页添加第一只。' }));
       return;
     }
     // alerts 无 score/suspended 字段：同 code 若在 funds[] 中则复用其综合分/暂停标记（贴近旧 scoreMap 全量取分行为）
     const fundsByCode = new Map(funds.map(x => [x.code, x]));
 
     const appendCard = (sig, verdict, score, suspended) => {
-      const vBadgeCls = suspended ? 'badge-hold' : VERDICT_BADGE[verdict];
-      const vBadgeTxt = suspended ? '暂停申购' : VERDICT_TXT[verdict];
+      // ★ 待建设 / 未归类（2026-09-19）：后端现在会为「没有对应算法的类别」也产出一条记录，
+      //   而不是像以前那样静默丢弃（那会让整只基金在决策页凭空消失、用户看不出原因）。
+      //   这类卡片不给综合分、不给买卖判定，只显式说明状态。
+      const unsupported = !!(sig && sig.unsupported);
+      const pending = unsupported && sig.unsupportedReason === 'pending';
+      const vBadgeCls = unsupported ? 'badge-hold' : (suspended ? 'badge-hold' : VERDICT_BADGE[verdict]);
+      const vBadgeTxt = unsupported
+        ? (pending ? '待建设' : '未归类')
+        : (suspended ? '暂停申购' : VERDICT_TXT[verdict]);
       const posCls = (!suspended && verdict === 'add') ? 'badge-add' : 'badge-hold';
       // 综合分 = 估值分V×wV + 动量分M×wM；两派拆开展示，避免混成一个数看不懂
       const vs = (sig && sig.valueScore != null) ? sig.valueScore : null;
       const ms = (sig && sig.momentumScore != null) ? sig.momentumScore : null;
-      const vmTxt = (vs != null || ms != null)
+      const vmTxt = (!unsupported && (vs != null || ms != null))
         ? `估${vs != null ? vs : '—'} · 动${ms != null ? ms : '—'}` : null;
+      // ★ 估值锚降级（2026-09-19）：缺跟踪指数时判定会退化成"恒定建议持仓不动"，
+      //   看着像在正常工作 —— 必须显式标出来，否则用户会把降级结果当成真结论。
+      const anchorDeg = !unsupported && !!(sig && sig.valuationAnchor && sig.valuationAnchor.degraded);
       const right = el('div', { class: 'sig-right' }, [
         el('div', { style: 'display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap' }, [
-          score != null ? el('span', { class: 'badge ' + posCls, text: `综合分 ${score}` }) : null,
+          (!unsupported && score != null) ? el('span', { class: 'badge ' + posCls, text: `综合分 ${score}` }) : null,
           vmTxt ? el('span', { class: 'badge', text: vmTxt }) : null,
+          anchorDeg ? el('span', { class: 'badge badge-hold', text: '缺估值锚·降级' }) : null,
           el('span', { class: 'badge ' + vBadgeCls, text: vBadgeTxt }),
         ]),
       ]);
@@ -68,8 +79,14 @@ async function fill(root) {
           el('span', { class: 'dec-code', text: sig.code }),
         ]),
       ]);
-      const cardCls = suspended ? 'hold' : verdict === 'add' ? 'add' : verdict === 'stop' ? 'stop' : 'hold';
-      list.appendChild(el('div', { class: 'sig ' + cardCls }, [left, right]));
+      const cardCls = unsupported ? 'hold' : (suspended ? 'hold' : verdict === 'add' ? 'add' : verdict === 'stop' ? 'stop' : 'hold');
+      const card = el('div', { class: 'sig ' + cardCls }, [left, right]);
+      if (unsupported && sig.detail) {
+        card.appendChild(el('div', { class: 'hint', text: sig.detail }));
+      } else if (anchorDeg) {
+        card.appendChild(el('div', { class: 'hint', text: '该基金缺「跟踪指数」，估值锚不可用，判定已降级为价格分位 —— 不会给加仓信号。可在「持仓」页编辑补上跟踪指数。' }));
+      }
+      list.appendChild(card);
     };
 
     // funds：verdict/score/suspended 直接用（机器判定值，不再靠 title 推断）

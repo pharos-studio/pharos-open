@@ -72,6 +72,7 @@ export const getPurchasePreview = (code, date, session, amount) =>
     + '&amount=' + encodeURIComponent(amount));
 export const getFundLookup = (code) => request('/api/fund-lookup?code=' + encodeURIComponent(code)); // 添加基金：单只带出（A名单+B兜底）
 export const getFundList = () => request('/api/fund-list'); // 添加基金：全量精简名单（联想下拉）
+export const getTrackIndex = () => request('/api/track-index'); // 添加基金：支持的跟踪指数白名单（下拉 + 手填）
 export const getThemeMap = () => request('/api/theme-map'); // 穿透：theme_map.json（themeNames/industryThemes/entries）
 export const getStockIndustry = (codes) => request('/api/stock-industry?codes=' + encodeURIComponent(codes.join(','))); // 穿透：A股码批量 → 东财行业
 export const postThemeMap = (addArr) => request('/api/theme-map', { method: 'POST', body: JSON.stringify({ add: addArr }) }); // 穿透：追加词典词条（股票→赛道）

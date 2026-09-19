@@ -10,7 +10,7 @@
  */
 const analysis = require('./analysis');
 const allocation = require('./alloc/allocation');
-const { REGISTRY, resolveRegistry } = require('./registry');
+const { REGISTRY, resolveRegistry, isPendingCategory } = require('./registry');
 const store = require('../lib/store');
 const util = require('../lib/util');
 const config = require('../lib/config');
@@ -273,7 +273,40 @@ async function buildAdvice(session = 'am') {
 
   for (const f of a.funds) {
     const hit = resolveRegistry(f);
-    if (!hit) continue; // 类别外基金不进 funds[]（净值行由复盘页 live.funds 兜底，见 A6/R4 护栏）
+    if (!hit) {
+      // ★ 类别没有对应算法 → **不再静默丢弃**。
+      //   旧实现这里是 `continue`，该基金在决策页整只消失，用户只会觉得"少了一只"、看不出原因
+      //   （净值行虽有复盘页 live.funds 兜底，决策页没有任何兜底）。
+      //   现在改为产出显式卡片：待建设的类别说明「暂不判定」，未归类的类别提示去改类别。
+      const pending = isPendingCategory(f.category);
+      funds.push({
+        code: f.code, name: f.name, category: f.category,
+        caliber: util.caliberOf(f) || null,
+        categoryName: pending ? '待建设' : '未归类',
+        unsupported: true,
+        unsupportedReason: pending ? 'pending' : 'unknown',
+        verdict: null,
+        title: (pending ? '暂不支持：' : '未归类：') + f.name,
+        detail: pending
+          ? '该类别的决策算法尚未开放（待建设），不参与买卖判定；市值仍计入总资产与配置占比。'
+          : '该类别没有对应算法，请到「配置」页把它改到已有类别上；市值仍计入总资产与配置占比。',
+        factors: [], matrix: null,
+        score: null, scoreLabel: null,
+        valueScore: null, momentumScore: null,
+        compositeLabel: pending ? '待建设' : '未归类',
+        weights: null, degraded: [],
+        conclusion: pending ? '待建设 · 暂不判定' : '未归类 · 暂不判定',
+        suspended: false, dailyLimit: null,
+        currentValue: f.currentValue != null ? f.currentValue : 0,
+        latestNav: f.latestNav,
+        dayChange: f.dayChange != null ? +f.dayChange.toFixed(2) : null,
+        latestDate: f.latestDate,
+        profitPct: f.profitPct != null ? +f.profitPct.toFixed(2) : null,
+        eligible: false,
+        valuationAnchor: f.valuationAnchor || null
+      });
+      continue;
+    }
 
     // ⚠ 副作用①（R2 保留）：红利基金每日把当天 dyr 写入自建序列（积累 ≥windowYears 年后算真 3 年滚动均值锚）。
     // 独立于 builder 调用（不放则删 L2 循环后 loadYieldAnchor3y 的序列断供）——reg.type==='dividend' 即触发。
@@ -309,10 +342,17 @@ async function buildAdvice(session = 'am') {
     const score = sm.marketScore != null ? sm.marketScore : null; // 真实市场分（0~100, toFixed(1)）；与决策页旧 scoreMap 同源
     const suspended = !!(sm && sm.suspended);
     const dailyLimit = dailyLimits[f.code] != null ? dailyLimits[f.code] : null;
+    // ★ 估值锚降级提示（2026-09-19）：缺跟踪指数（或抓取失败）时判定会退化成「价格分位弱信号」，
+    //   外在表现就是恒定建议持仓不动 —— 必须显式说出来，否则用户会以为它在正常工作。
+    const anchorWarn = (f.valuationAnchor && f.valuationAnchor.degraded)
+      ? '⚠ 缺估值锚（跟踪指数），当前按价格分位降级判定，不会给加仓信号。'
+      : '';
     funds.push({
       code: f.code, name: f.name, category: f.category,
       caliber: reg.caliber || null,  // 口径（仅 broad 下有值：cn/us），供前端展示「宽基 · 海外口径」
-      categoryName: reg.label, // = REGISTRY.label（引擎类别中文名：红利低波/科技成长/黄金(对冲)/宽基/宽基·海外）；⚠ 非分配桶名
+      categoryName: reg.label, // = REGISTRY.label（引擎类别中文名：宽基/宽基·海外/红利·低波/主题·行业(高波动)/商品·对冲）；⚠ 非分配桶名
+      unsupported: false,
+      valuationAnchor: f.valuationAnchor || null,
       verdict: card.verdict,   // 机器判定值 'add'|'hold'（= kernel dec.action）
       title: card.title, detail: card.detail, factors: card.factors,
       matrix: (dec && dec.matrix) || null,
@@ -324,9 +364,9 @@ async function buildAdvice(session = 'am') {
       compositeLabel: sm.compositeLabel || null,                          // 拦截/降级说明
       weights: sm.weights || null,                                        // { wV, wM }
       degraded: sm.degraded || [],                                        // ['V'] / ['M'] / ['V','M']
-      conclusion: conclusionOf(dec.action, score, suspended, dailyLimit, sm.compositeLabel), // ★ 两维派生；compositeLabel 用于区分「硬约束归零」与「估值真贵」
+      conclusion: anchorWarn + conclusionOf(dec.action, score, suspended, dailyLimit, sm.compositeLabel), // ★ 两维派生；compositeLabel 用于区分「硬约束归零」与「估值真贵」；anchorWarn 见上
       suspended, dailyLimit,
-      currentValue: f.currentValue != null ? f.currentValue : 0, // 未建仓（如 202015）为 0；净值缺失为 0（live.funds 兜底见 A6）
+      currentValue: f.currentValue != null ? f.currentValue : 0, // 未建仓为 0；净值缺失为 0（live.funds 兜底见 A6）
       latestNav: f.latestNav,
       dayChange: f.dayChange != null ? +f.dayChange.toFixed(2) : null,
       latestDate: f.latestDate,
