@@ -1,6 +1,6 @@
 'use strict';
 /*
- * 买入时机复盘模块 — 战役状态机 + 校准统计（design v2.8, docs/买入时机复盘模块-设计v2.md）
+ * 买入时机复盘模块 — 战役状态机 + 校准统计（design v2.8，内部设计文档，未随开源发布）
  *
  * 职责（只读评价系统自己的判定事件 × 客观净值，不碰金额/不碰用户买入的校准语义）：
  *   ① 战役状态机：advice.js am 决策刷新时喂 decMap → 判 open(hold→add)/close(add→hold 断链>gapDays)，

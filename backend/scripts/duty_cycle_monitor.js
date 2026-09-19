@@ -128,7 +128,7 @@ function replay(navs, build, cfg) {
     console.log('  ✓ 各线信号占空比均在合理区间，无告警。');
   } else {
     alarms.forEach(a => console.log(`  ⚠ ${a.line} ${a.code}：${a.tags}`));
-    console.log('\n  处置建议：占空比异常的线，参考 docs/算法待办清单.md §1（状态型条件的改造方法论）');
+    console.log('\n  处置建议：占空比异常的线，参考内部维护文档《算法待办清单》§1（未随开源发布）（状态型条件的改造方法论）');
     console.log('    · 灯常亮 → 该通道加反向约束（如"趋势中逢回调"）或改事件型');
     console.log('    · 灯常灭 → 该条件改用"变化量/回撤"而非"绝对状态"');
     console.log('    · 改造前必须走回测（scripts/backtest_*.js 范式）+ P0~P7 判据，不得凭感觉改。');

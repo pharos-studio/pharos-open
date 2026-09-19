@@ -259,7 +259,7 @@ async function fetchLeguRows() {
   console.log('\n=== 结论 ===');
   if (p1 && p2 && p4 && p6) {
     console.log('  ✅ 数据支持调高动量权重 +0.1（单次上限）');
-    console.log('     须同时写回三处：config.signals.allocation.composite.weights、其 _note、docs/算法待办清单.md');
+    console.log('     须同时写回三处：config.signals.allocation.composite.weights、其 _note、内部维护文档《算法待办清单》（未随开源发布）');
   } else {
     console.log('  ❌ **权重保持初始值不动**（默认结论）');
     const why = [];
@@ -268,7 +268,7 @@ async function fetchLeguRows() {
     if (!p4) why.push('P4 独立样本不足（结论降级为描述性）');
     if (!p6) why.push('P6 分时段方向不一致');
     console.log('     理由：' + (why.length ? why.join('；') : '判据未全过'));
-    console.log('     处置：把本结论与日期写入 config 的 composite._note 与 docs/算法待办清单.md，代码不动。');
+    console.log('     处置：把本结论与日期写入 config 的 composite._note 与 内部维护文档《算法待办清单》（未随开源发布），代码不动。');
   }
   console.log('\n  提示：本脚本只读，未修改任何文件/生产代码。');
 })().catch(e => { console.error('\n✗ 运行异常：', e && e.stack ? e.stack : e); process.exit(1); });
