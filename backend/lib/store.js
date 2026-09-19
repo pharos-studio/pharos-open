@@ -3,6 +3,7 @@
 // 其他引擎/路由统一经本模块读写，避免 DATA_DIR 散落多处。
 const fs = require('fs');
 const path = require('path');
+const schema = require('./schema');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
 
@@ -60,15 +61,22 @@ const nap = (ms) => { const end = Date.now() + ms; while (Date.now() < end) {} }
 // 进程唯一后缀：多进程并发写同一文件时，避免共享 .tmp 互相覆盖
 const _pidSuffix = '_' + process.pid + '_' + Date.now().toString(36) + '.tmp';
 
+// 读：挂 schema 归一（只补业务缺省值；版本号不经此路径 —— 见 lib/schema.js 铁律 1/2）。
+// 需要磁盘真值（迁移、字节级比对）时用 readJSONRaw。
 function readJSON(file) {
+  return schema.apply(file, JSON.parse(fs.readFileSync(dataPath(file), 'utf8')));
+}
+function readJSONRaw(file) {
   return JSON.parse(fs.readFileSync(dataPath(file), 'utf8'));
 }
 function writeJSON(file, obj) {
+  schema.apply(file, obj); // 写路径也归一：第三方写入（/api/save、curl）不能洗掉约定字段
   const target = dataPath(file);
   ensureParent(target);
   fs.writeFileSync(target, JSON.stringify(obj, null, 2), 'utf8');
 }
 function writeJSONSafe(file, obj, retries = 4) {
+  schema.apply(file, obj); // 写路径也归一（同 writeJSON）
   const target = dataPath(file);
   ensureParent(target);
   const tmp = target + _pidSuffix;
@@ -128,4 +136,4 @@ function writeDecisionHistory(entry) {
   return true;
 }
 
-module.exports = { DATA_DIR, LAYOUT, dataPath, readJSON, writeJSON, writeJSONSafe, readHistory, lastSnapshotFundValue, appendSnapshot, readDecisionHistory, writeDecisionHistory };
+module.exports = { DATA_DIR, LAYOUT, dataPath, readJSON, readJSONRaw, writeJSON, writeJSONSafe, readHistory, lastSnapshotFundValue, appendSnapshot, readDecisionHistory, writeDecisionHistory };

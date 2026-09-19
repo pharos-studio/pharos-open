@@ -36,6 +36,7 @@ const fs = require('fs');
 
 const ROOT = path.join(__dirname, '..', '..');
 const buyPlan = require(path.join(ROOT, 'backend', 'lib', 'buyPlan'));
+const store = require(path.join(ROOT, 'backend', 'lib', 'store')); // 统一走数据访问层（归一 + 单一路径真相源）
 
 let pass = 0, fail = 0;
 function t(name, cond, actual) {
@@ -48,7 +49,6 @@ function t(name, cond, actual) {
 //   · 真实持仓          → 全量断言
 //   · 示例数据 / 缺文件 / 缺夹具 → SKIP（不 FAIL）
 // ══════════════════════════════════════════════════════════════
-const HOLDINGS_PATH = path.join(ROOT, 'data', 'state', 'holdings.json');
 const FIXTURE_PATH = path.join(ROOT, 'data', 'state', 'regression_cases.json');
 
 // 「我跑在示例数据上吗」的判据 = holdings.example.json 的顶层 _comment 标记。
@@ -56,7 +56,7 @@ const DEMO_RX = /DEMO DATA|NOT real holdings|placeholder/i;
 
 function loadRealHoldings() {
   let h;
-  try { h = JSON.parse(fs.readFileSync(HOLDINGS_PATH, 'utf8')); }
+  try { h = store.readJSON('holdings.json'); } // 走数据访问层：与生产同一入口（含 schema 归一），测试/生产输入不分叉
   catch (e) { return { ok: false, reason: '读不到 data/state/holdings.json（还没跑 setup？）' }; }
   if (!h || !Array.isArray(h.funds)) return { ok: false, reason: 'holdings.json 结构异常（无 funds 数组）' };
   if (typeof h._comment === 'string' && DEMO_RX.test(h._comment))

@@ -22,6 +22,7 @@ const timing = require('./engines/timing'); // 买入时机复盘：战役采集
 const backfill = require('./engines/backfill'); // 在途买入记录自动补填（买入确认日净值 → 份额）
 const tradeDate = require('./lib/tradeDate'); // 交易时段口径引擎：成交净值日推算
 const buyPlan = require('./lib/buyPlan'); // 买入方案推导：口径→净值→份额（唯一实现，预览/保存共用）
+const schema = require('./lib/schema'); // 数据结构版本与迁移（唯一版本口径，见 lib/schema.js 顶部说明）
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -519,6 +520,35 @@ if (require.main === module) {
     };
     sweep(DATA_DIR);
   } catch (e) { /* 清理非致命 */ }
+
+  // L9: 数据结构版本检查与迁移（全项目唯一会写用户数据文件的地方；启动时跑一次）。
+  // 只对「用户数据」文件；派生状态（timing_state 等）由各自模块自管，不经这里（见 lib/schema.js）。
+  // 失败分两类：版本超前（用户回退了程序）→ 警告并以兼容模式继续；
+  // 其余（缺迁移函数/迁移自身抛错）属程序 bug → fail fast —— 数据已自动备份，
+  // 绝不能带着旧结构静默跑新代码（本项目最忌讳「不报错只算错」）。
+  try {
+    for (const f of ['holdings.json', 'config.json']) {
+      const full = store.dataPath(f);
+      if (!fs.existsSync(full)) continue; // 尚未 setup 的新装环境，没有可迁移的东西
+      const raw = store.readJSONRaw(f);
+      const r = schema.migrateIfNeeded(f, raw, { dataDir: store.DATA_DIR });
+      if (r.changed) {
+        store.writeJSONSafe(f, r.obj);
+        console.log('[schema] ' + f + ' 已迁移到 v' + schema.SCHEMA_VERSION
+          + (r.backup ? '（迁移前数据已备份：' + path.basename(r.backup) + '）' : ''));
+      }
+    }
+  } catch (e) {
+    if (e && e.code === 'SCHEMA_VERSION_AHEAD') {
+      console.warn('[schema] ⚠ ' + (e && e.message || e) + '（继续以兼容模式启动）');
+    } else {
+      console.error('[schema] ✖ 数据迁移失败，拒绝启动：');
+      console.error('         ' + (e && e.message || e));
+      console.error('         数据备份位于 data/ 下 *.bak-* 文件；修复后重新启动。');
+      process.exit(1);
+    }
+  }
+
   server.listen(PORT, () => {
     console.log(`基金看板已启动: http://localhost:${PORT}`);
     // 买入时机复盘：启动即幂等补扫历史 purchases（buy 样本进池，含战役外/历史定投标注；失败不致命）
