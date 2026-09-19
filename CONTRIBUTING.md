@@ -16,7 +16,7 @@ npm start         # http://localhost:3000
 改完代码一定跑一遍：
 
 ```bash
-npm test          # 生成数据文件 → 8 组离线校验 → 脱敏审计，全程不联网
+npm test          # 生成数据文件 → 9 组离线校验 → 脱敏审计，全程不联网
 ```
 
 `npm test` 全绿是提 PR 的前提。

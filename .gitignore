@@ -21,7 +21,8 @@ data/series/
 data/config/config.json
 data/config/categories.json
 data/cache/
-data/state/holdings*.bak*
+# 迁移/工具产生的备份：任何分区都可能生成，一律不入库
+data/**/*.bak*
 
 # ---- 本地产物 / 跨平台系统垃圾 ----
 .DS_Store
