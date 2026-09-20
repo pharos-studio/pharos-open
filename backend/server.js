@@ -25,6 +25,7 @@ const tradeDate = require('./lib/tradeDate'); // 交易时段口径引擎：成�
 const buyPlan = require('./lib/buyPlan'); // 买入方案推导：口径→净值→份额（唯一实现，预览/保存共用）
 const schema = require('./lib/schema'); // 数据结构版本与迁移（唯一版本口径，见 lib/schema.js 顶部说明）
 const trackIndex = require('./lib/trackIndex'); // 指数白名单与类别推断（唯一真相源）
+const categories = require('./lib/categories'); // 内置类别/算法/口径/预设（唯一真相源 + 启动补齐）
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -42,7 +43,11 @@ let fundListCacheStr = null;
 // ★ 这里必须是「函数」而不是启动时算一次的常量：用户在看板里自建分类后要立刻能保存，
 //   不能等重启进程。（旧实现启动时只读一次，自建分类会被 400 拦下，且用户看不出原因。）
 //   5 秒 TTL 只是为了别每次请求都读盘。
-const BASE_CATEGORIES = ['broad', 'dividend', 'growth', 'cycle', 'bond', 'cash'];
+// ★ 内置六类来自 lib/categories.js（唯一真相源）—— 只增不改地补齐用户文件时用的是同一份定义。
+//   ⚠ 这里必须是**六条展示线**，不能改成 lib/categories.js 的四条 engines：
+//     下面 /api/save 的 okBind 用这六条做「预设/自建分类能绑定到哪些内置算法」的白名单，
+//     而 bond/cash 两个预设的 category 正是 bond/cash —— 换成四条会把它们判成非法。
+const BASE_CATEGORIES = categories.BASE_CATEGORY_KEYS;
 let _catCache = null, _catCacheAt = 0;
 function allowedCategories() {
   if (_catCache && (Date.now() - _catCacheAt) < 5000) return _catCache;
@@ -577,6 +582,38 @@ if (require.main === module) {
       console.error('         数据备份位于 data/ 下 *.bak-* 文件；修复后重新启动。');
       process.exit(1);
     }
+  }
+
+  // L9.5: 只增不改地补齐 categories.json 里缺失的内置项（2026-09-20）。
+  // 为什么需要：内置项原先只存在于 data/example/categories.example.json，而它**只在 setup 时**被整份拷成
+  //   正式文件；setup 又是幂等的（已存在即跳过），用户升级只 git pull + 重启、不会重跑 setup ——
+  //   于是新版本新增的内置类别（债券/现金）与 presets 段永远进不去，表现为「添加基金选不到债券/现金」
+  //   「环形图里这类基金的市值落进『未归类』」，而且不报错。这里把缺的补上。
+  // 与 L9 的区别：categories.json 没有 _schemaVersion、不归 schema 管辖（它是**用户配置**，不是"用户数据文件"），
+  //   所以单独一步、独立日志前缀 [categories]。
+  // ★ 失败只 warn 不退出：L9 那条 fail fast 的前提是「带着旧结构静默跑新代码 → 会算错」；而这里失败的后果
+  //   仅仅是「仍然看不到债券/现金」，与补齐前逐位相同、不产生任何错误结论，且已明确打印告警（不是静默）。
+  //   写失败天然幂等，下次启动会重试。
+  try {
+    const full = store.dataPath('categories.json');
+    if (fs.existsSync(full)) { // 不存在 = 尚未 setup → 什么都不做（setup 会生成完整的一份）
+      const r = categories.ensureBuiltins(store.readJSONRaw('categories.json'));
+      if (r.changed) {
+        const bak = schema.backupFile(full); // 要改用户配置，先按迁移的同一约定备份
+        if (store.writeJSONSafe('categories.json', r.obj)) {
+          console.log('[categories] 已补齐内置项：' + categories.describeAdded(r.added)
+            + '（原文件已备份：' + path.basename(bak) + '）');
+        } else {
+          console.warn('[categories] ⚠ 补齐写入失败，本次跳过（下次启动会重试）；备份在 ' + path.basename(bak));
+        }
+      }
+      if (r.skipped && r.skipped.length) {
+        console.warn('[categories] ⚠ 以下段不是数组，已按原值保留、不做补齐：'
+          + r.skipped.map((s) => s.seg).join('、'));
+      }
+    }
+  } catch (e) {
+    console.warn('[categories] ⚠ 补齐内置项失败（不影响启动）：' + (e && e.message || e));
   }
 
   const onReady = () => {

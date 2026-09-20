@@ -7,6 +7,9 @@
  *   ② broad + caliber='us' → 命中 'broad:us'（海外宽基，滚动分位 ∨ PE回撤）
  *   ③ 其他三条线（dividend/growth/cycle）不受口径维度影响
  *   ④ type 保持 'broad'（决策卡/矩阵/综合分分流靠 caliber，而非新 type）
+ * 2026-09-20 追加：内置类别/预设的「只增不改」补齐（lib/categories.js 的 ensureBuiltins）——
+ *   老用户升级时 categories.json 不会被 setup 覆盖，靠启动补齐把 bond/cash 与 presets 补进去；
+ *   这里同时钉住「代码常量 == data/example/categories.example.json」防漂移。
  * 用法：node backend/scripts/verify_caliber_routing.js
  */
 const { resolveRegistry } = require('../engines/registry');
@@ -65,6 +68,89 @@ t('cn / us 用同一个 type（综合分靠 caliber 分流，不靠 type）', cn
 t('cn / us 是不同的 builder（算法不同）', cnHit.reg.builder !== usHit.reg.builder, true);
 t('cn builder 名 = buildCoreDecision', cnHit.reg.builder.name, 'buildCoreDecision');
 t('us builder 名 = buildBroadGlobalDecision', usHit.reg.builder.name, 'buildBroadGlobalDecision');
+
+console.log('\n--- 内置项补齐 ensureBuiltins（修「升级后看不到债券/现金」）---');
+const fs = require('fs');
+const path = require('path');
+const catLib = require('../lib/categories');
+const REGISTRY = require('../engines/registry').REGISTRY;
+
+// 键排序序列化：结构比较用它，避免「键顺序不同就假红」
+function canon(v) {
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (v && typeof v === 'object') {
+    return '{' + Object.keys(v).sort().map((k) => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  }
+  return JSON.stringify(v);
+}
+const example = JSON.parse(fs.readFileSync(
+  path.join(__dirname, '..', '..', 'data', 'example', 'categories.example.json'), 'utf8'));
+
+// ① 老用户的文件：4 条展示线、没有 presets / customCategories 段
+const legacy = {
+  _comment: 'legacy file',
+  categories: catLib.BUILTIN_CATEGORIES.slice(0, 4).map((c) => ({ key: c.key, name: c.name })),
+  engines: catLib.BUILTIN_ENGINES.map((e) => ({ key: e.key, name: e.name })),
+  calibers: catLib.BUILTIN_CALIBERS.map((c) => ({ key: c.key, name: c.name, note: c.note })),
+};
+const r1 = catLib.ensureBuiltins(legacy);
+t('老文件 → changed=true', r1.changed, true);
+t('老文件 → 展示线补成 6 条，顺序 = 内置序（= 环形图排布序）',
+  r1.obj.categories.map((x) => x.key).join(','), 'broad,dividend,growth,cycle,bond,cash');
+t('老文件 → presets 段补成 7 条', r1.obj.presets.length, 7);
+t('老文件 → 补的正是展示线 bond/cash',
+  r1.added.filter((a) => a.seg === 'categories').map((a) => a.key).join(','), 'bond,cash');
+
+// ② 幂等：再跑一次必须无事可做（否则每次启动都会重写用户的配置文件）
+t('幂等：复跑 changed=false', catLib.ensureBuiltins(r1.obj).changed, false);
+
+// ③ 只增不改：用户改过的显示名 / 自建分类 / _comment / 未知段，一个字节都不许动
+const mine = {
+  _comment: 'user edited',
+  categoryPolicy: { custom: 'keep me' },
+  categories: [{ key: 'broad', name: '我的大盘' }, { key: 'custom:ab12', name: '我的医药' }],
+  engines: [{ key: 'broad', name: '宽基' }],
+  calibers: [],
+  presets: [],
+  customCategories: [{ key: 'custom:ab12', name: '我的医药', category: 'growth' }],
+};
+const mineBefore = canon(mine);
+const r3 = catLib.ensureBuiltins(mine);
+t('只增不改：改过的显示名保持「我的大盘」', r3.obj.categories[0].name, '我的大盘');
+t('只增不改：自建分类仍在展示线里', r3.obj.categories.some((x) => x.key === 'custom:ab12'), true);
+const custSame = canon(r3.obj.customCategories) === canon(mine.customCategories);
+t('只增不改：customCategories 一字未动', custSame ? '一致' : canon(r3.obj.customCategories), '一致');
+t('只增不改：_comment 保留', r3.obj._comment, 'user edited');
+t('只增不改：未知段保留', canon(r3.obj.categoryPolicy), canon({ custom: 'keep me' }));
+const argSame = canon(mine) === mineBefore;
+t('纯函数：不修改入参', argSame ? '一致' : canon(mine) + ' ≠ ' + mineBefore, '一致');
+t('只增不改：已有条目按原引用带入（未被重建）', r3.obj.categories[0] === mine.categories[0], true);
+
+// ④ 完整文件（= 模板）不该有任何变化
+t('完整文件 → changed=false', catLib.ensureBuiltins(example).changed, false);
+
+// ⑤ 防漂移：代码常量必须与 data/example/categories.example.json 的对应段一致。
+//    两处都是「内置项」的定义，一旦分叉就会出现「新装用户看得到、老用户补不到」的怪状态。
+const fresh = catLib.ensureBuiltins({}).obj;
+['categories', 'engines', 'calibers', 'presets'].forEach((seg) => {
+  const same = canon(fresh[seg]) === canon(example[seg]);
+  // 通过时只打印「一致」，不一致才把两边完整展开（这几段 JSON 很长，别刷屏）
+  t('防漂移：' + seg + ' 与模板逐项一致', same ? '一致' : canon(fresh[seg]) + ' ≠ ' + canon(example[seg]), '一致');
+});
+
+// ⑥ 算法显示名必须与 REGISTRY.label 一致（否则「类别管理」里的名字和决策卡上的对不上）
+catLib.BUILTIN_ENGINES.forEach((e) => {
+  t('引擎名钉住 REGISTRY.label：' + e.key, e.name, REGISTRY[e.key].label);
+});
+
+// ⑦ 畸形输入一律不抛错（用户的文件被手改坏也不能让启动挂掉）
+let threw = null;
+[null, undefined, [], 'x', 42, {}, { categories: 'x' }, { presets: 'x' }, { categories: [] }].forEach((bad) => {
+  try { catLib.ensureBuiltins(bad); } catch (e) { threw = JSON.stringify(bad) + ' → ' + e.message; }
+});
+t('畸形输入不抛错', threw, null);
+t('某段不是数组 → 记 skipped 且保留原值',
+  catLib.ensureBuiltins({ categories: 'x' }).skipped.map((s) => s.seg).join(','), 'categories');
 
 console.log(`\n结果：PASS=${pass} FAIL=${fail}`);
 process.exit(fail ? 1 : 0);
