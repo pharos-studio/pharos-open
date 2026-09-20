@@ -80,6 +80,15 @@ function bakStamp() {
     + '-' + String(d.getMilliseconds()).padStart(3, '0');
 }
 
+// 备份一个数据文件，返回备份路径。命名约定 `.bak-<时间戳>`（`.gitignore` 已忽略 data/**/*.bak*）。
+// ★ 只此一份实现：迁移（下面）与启动时的类别补齐（server.js）都调它 ——
+//   备份命名一旦出现第二份实现，迟早会分叉。调用方自己判断「要不要备份」。
+function backupFile(full) {
+  const bak = full + '.bak-' + bakStamp();
+  fs.copyFileSync(full, bak);
+  return bak;
+}
+
 // raw 必须经 store.readJSONRaw 拿（磁盘真值，未经 apply）。返回 { obj, changed, backup? }。
 // 只做内存迁移 + 创建备份文件；写回由调用方负责 —— 失败时原文件未动，下次启动再试，天然幂等。
 // 迁移中途抛错：原文件同样未动（备份保留，便于排查），错误向上抛。
@@ -102,8 +111,7 @@ function migrateIfNeeded(file, raw, opts) {
   const full = o.dataDir ? path.join(o.dataDir, file) : null;
   let backup = null;
   if (full) {
-    backup = full + '.bak-' + bakStamp();
-    fs.copyFileSync(full, backup);
+    backup = backupFile(full);
   }
   let obj = raw;
   for (let i = v + 1; i <= target; i++) {
@@ -135,5 +143,5 @@ assertConsistent();
 module.exports = {
   SCHEMA_VERSION, MIGRATIONS,
   setIfMissing, normalizeHoldings, normalizeConfig,
-  apply, migrateIfNeeded, assertConsistent,
+  apply, migrateIfNeeded, assertConsistent, backupFile,
 };

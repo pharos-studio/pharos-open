@@ -84,7 +84,7 @@ async function appendCategoryManager(root) {
   // ① 内置预设（只读）：把「这条线适用于哪类基金」摆出来，避免用户挂错线
   const presetBox = el('div', { class: 'hint', style: 'line-height:1.9' });
   if (!presets.length) {
-    presetBox.appendChild(el('div', { text: '没有预设段。可在 data/config/categories.json 里补 presets，或删掉该文件后重跑 npm run setup。' }));
+    presetBox.appendChild(el('div', { text: '没有预设段。重启一次服务即可 —— 程序会在启动时自动把缺失的内置项补齐（补前会备份 categories.json）。' }));
   } else {
     presets.forEach(p => {
       const line = el('div');
