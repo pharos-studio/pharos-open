@@ -31,7 +31,7 @@
 <g>
 <rect x="40" y="148" width="720" height="48" rx="8" fill="#1B2A4D" stroke="#D9A441" stroke-width="1"/>
 <text x="400" y="164" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">registry · 按类别 + 口径(caliber) 命中信号线</text>
-<text x="400" y="183" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#B8C0D0">宽基(cn) / 宽基(us) / 红利 / 科技成长 / 黄金(对冲) —— 5 条策略注册，宽基两口径同属一个类别</text>
+<text x="400" y="183" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#B8C0D0">宽基(cn) / 宽基(us) / 红利·低波 / 主题·行业（高波动） / 商品·对冲 —— 5 条策略注册，宽基两口径同属一个类别</text>
 </g>
 <line x1="400" y1="196" x2="400" y2="216" stroke="#4A5A80" stroke-width="1.5"/>
 <line x1="108" y1="216" x2="692" y2="216" stroke="#4A5A80" stroke-width="1.5"/>
@@ -57,21 +57,21 @@
 </g>
 <g>
 <rect x="332" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="400" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">红利低波</text>
+<text x="400" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">红利·低波</text>
 <text x="342" y="273" font-size="11" fill="#B8C0D0">① 股息率带(000922)</text>
 <text x="342" y="289" font-size="11" fill="#B8C0D0">② MA250年线偏离</text>
 <text x="342" y="305" font-size="11" fill="#8A93A6">③ 无总闸</text>
 </g>
 <g>
 <rect x="478" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="546" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">科技成长</text>
+<text x="546" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">主题·行业（高波动）</text>
 <text x="488" y="273" font-size="11" fill="#B8C0D0">① 回撤+止跌</text>
 <text x="488" y="289" font-size="11" fill="#B8C0D0">② 双均线金叉</text>
 <text x="488" y="305" font-size="11" fill="#8A93A6">③ PE闸(无PE跳过)</text>
 </g>
 <g>
 <rect x="624" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="692" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">黄金(对冲)</text>
+<text x="692" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">商品·对冲</text>
 <text x="634" y="273" font-size="11" fill="#B8C0D0">① 250日价格分位</text>
 <text x="634" y="289" font-size="11" fill="#B8C0D0">② 三重均线+止跌</text>
 <text x="634" y="305" font-size="11" fill="#8A93A6">③ 急涨闸·涨&gt;7%</text>
