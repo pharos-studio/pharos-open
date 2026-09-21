@@ -100,7 +100,7 @@ function buildCard(f, dec, dailyLimits, cfg) {
     const matrixTxt = `股息率带：${zoneTxt}（股息率 ${yieldTxt}% ｜ 参考带 ${bandTxt}%，000922参考 ${refTxt}%）｜MA250：${maTxt}（${m.devPct != null ? m.devPct + '%' : '—'}）`;
     return {
       level: 'L2', type: 'dividend', code: f.code, name: f.name,
-      title: `红利低波 决策：${actLabel}`,
+      title: `红利·低波 决策：${actLabel}`,
       detail: matrixTxt + '。' + (dec.reasons.length ? dec.reasons.join('；') : ''),
       factors: [
         { dim: '股息率锚', value: zoneTxt, status: m.yieldZone },
@@ -120,7 +120,7 @@ function buildCard(f, dec, dailyLimits, cfg) {
     const detail = `回撤 ${dipTxt}（阈值≤-${tCfg.dipPct || 15}%）｜止跌 ${m.stopFall ? '是' : '否'}｜双均线 ${maTxt}｜PE闸 ${gateTxt}${limitTxt}。${dec.reasons.length ? dec.reasons.join('；') : ''}`;
     return {
       level: 'L2', type: 'tech', code: f.code, name: f.name,
-      title: `科技成长 决策：${f.name} → ${actLabel}`,
+      title: `主题·行业（高波动） 决策：${f.name} → ${actLabel}`,
       detail,
       factors: [
         { dim: '回撤', value: dipTxt, status: m.drawdown != null && m.drawdown <= -(tCfg.dipPct || 15) ? 'cheap' : 'neutral' },
@@ -183,7 +183,7 @@ function buildCard(f, dec, dailyLimits, cfg) {
     const detail = `250日分位 ${pctTxt}｜趋势 ${trendTxt}（${m.trendGrade || '—'}）｜止跌 ${stopTxt}｜急涨闸 ${surgeTxt}。${dec.reasons.length ? dec.reasons.join('；') : ''}`;
     return {
       level: 'L2', type: 'cycle', code: f.code, name: f.name,
-      title: `黄金(对冲) 决策：${f.name} → ${actLabel}`,
+      title: `商品·对冲 决策：${f.name} → ${actLabel}`,
       detail,
       factors: [
         { dim: '250日分位', value: pctTxt, status: m.pctZone },

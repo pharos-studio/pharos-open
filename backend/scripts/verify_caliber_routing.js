@@ -143,7 +143,46 @@ catLib.BUILTIN_ENGINES.forEach((e) => {
   t('引擎名钉住 REGISTRY.label：' + e.key, e.name, REGISTRY[e.key].label);
 });
 
-// ⑦ 畸形输入一律不抛错（用户的文件被手改坏也不能让启动挂掉）
+// ⑦ 决策卡 title 前缀 / 时机诊断类别名 也钉住 REGISTRY.label（2026-09-21 全面正名后的防漂移）。
+//    这两处是「同一类别的另一份手写显示名」，2026-09-19 的改名就漏过：registry 与类别管理是新名，
+//    决策卡 title 仍是旧名，复盘页又从这个 title 里剥类别名显示 → 同一类别两套名字并存且不报错。
+//    规则：title 里「决策：」之前的部分必须逐字等于对应 REGISTRY.label；
+//    唯一例外是宽基 A 股口径的「(双锚)」限定词（区分海外口径，见 advice.js 内注释）。
+//    其它不带「决策：」的 title（减仓信号、回撤播报等）不收进前缀表，新增时不会误红。
+const adviceSrc = fs.readFileSync(path.join(__dirname, '..', 'engines', 'advice.js'), 'utf8');
+const titlePrefixes = [];
+adviceSrc.replace(/title:\s*`([^`]*)`/g, (all, s) => {
+  const cut = s.indexOf('决策：');
+  if (cut > 0) titlePrefixes.push(s.slice(0, cut).trim());
+  return all;
+});
+const TITLE_WANT = {
+  dividend: REGISTRY.dividend.label,
+  growth: REGISTRY.growth.label,
+  cycle: REGISTRY.cycle.label,
+  'broad:us': REGISTRY['broad:us'].label,
+  broad: REGISTRY.broad.label + '(双锚)',
+};
+Object.keys(TITLE_WANT).forEach((key) => {
+  const hit = titlePrefixes.indexOf(TITLE_WANT[key]) >= 0;
+  t('决策卡 title 前缀钉住 REGISTRY.label：' + key,
+    hit ? '命中' : '未见「' + TITLE_WANT[key] + '」（现有前缀：' + (titlePrefixes.join('｜') || '无') + '）', '命中');
+});
+t('决策卡 title 共 ' + Object.keys(TITLE_WANT).length + ' 张（新增决策卡须同步登记 TITLE_WANT）',
+  titlePrefixes.length, Object.keys(TITLE_WANT).length);
+
+const timingSrc = fs.readFileSync(path.join(__dirname, '..', 'engines', 'timing.js'), 'utf8');
+const catM = timingSrc.match(/const CAT_LABEL = \{([\s\S]*?)\};/);
+const catLabel = {};
+if (catM) catM[1].replace(/(\w+):\s*'([^']*)'/g, (all, k, v) => { catLabel[k] = v; return all; });
+// CAT_LABEL 的键是「算法 type」不是 registry key：tech 与 growth 两个 type 都对应 growth 这条线
+const TYPE_TO_REG = { tech: 'growth', growth: 'growth', cycle: 'cycle', dividend: 'dividend', broad: 'broad' };
+Object.keys(TYPE_TO_REG).forEach((ty) => {
+  t('CAT_LABEL.' + ty + ' 钉住 REGISTRY.label（' + TYPE_TO_REG[ty] + '）',
+    catLabel[ty] || '（CAT_LABEL 缺 ' + ty + '）', REGISTRY[TYPE_TO_REG[ty]].label);
+});
+
+// ⑧ 畸形输入一律不抛错（用户的文件被手改坏也不能让启动挂掉）
 let threw = null;
 [null, undefined, [], 'x', 42, {}, { categories: 'x' }, { presets: 'x' }, { categories: [] }].forEach((bad) => {
   try { catLib.ensureBuiltins(bad); } catch (e) { threw = JSON.stringify(bad) + ' → ' + e.message; }

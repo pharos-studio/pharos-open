@@ -1,6 +1,6 @@
 <svg viewBox="0 0 1478 938" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
 <title>决策分配算法模型 · 四类资产 × 五套算法流程图</title>
-<desc>宽基/红利低波/科技成长/黄金四类资产，共享同一条四步骨架（便宜判定 → 趋势 → 总闸 → 决策矩阵），差异在每步的判定口径；第五步为综合分输出（V 估值分 + M 动量分 加权，0~100）。2026-09-14 起旧「位置分」重构为 V/M 双轨：动量因子（金叉强度 / 止跌强度 / 趋势偏离）由二值改连续，add/hold 判定完全不动。宽基一个 category 内分两个口径（caliber）：A股口径走 PE 分位 × 中债 ERP，海外口径（纳指100）走 滚动156周分位 ∨ PE回撤≤−12% 双通道并联、ERP 改用美债10年且仅作综合分副锚。2026-09-09 起宽基/黄金/红利三线估值分改为「相对尺」连续归一化，科技线估值分保留原式；2026-09-12 新增海外口径列。</desc>
+<desc>宽基/红利·低波/主题·行业（高波动）/商品·对冲 四类资产，共享同一条四步骨架（便宜判定 → 趋势 → 总闸 → 决策矩阵），差异在每步的判定口径；第五步为综合分输出（V 估值分 + M 动量分 加权，0~100）。2026-09-14 起旧「位置分」重构为 V/M 双轨：动量因子（金叉强度 / 止跌强度 / 趋势偏离）由二值改连续，add/hold 判定完全不动。宽基一个 category 内分两个口径（caliber）：A股口径走 PE 分位 × 中债 ERP，海外口径（纳指100）走 滚动156周分位 ∨ PE回撤≤−12% 双通道并联、ERP 改用美债10年且仅作综合分副锚。2026-09-09 起宽基/黄金/红利三线估值分改为「相对尺」连续归一化，科技线估值分保留原式；2026-09-12 新增海外口径列。2026-09-21 类别显示名对齐 registry 正名。</desc>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
 <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -24,17 +24,17 @@
 </g>
 <g>
 <rect x="666" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#3FBF9F" stroke-width="1"/>
-<text x="790" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">红利低波</text>
+<text x="790" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">红利·低波</text>
 <text x="790" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">dividend · absYield</text>
 </g>
 <g>
 <rect x="928" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#9A8CF5" stroke-width="1"/>
-<text x="1052" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">科技成长</text>
+<text x="1052" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">主题·行业（高波动）</text>
 <text x="1052" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">growth · techDip</text>
 </g>
 <g>
 <rect x="1190" y="96" width="248" height="40" rx="8" fill="#131D36" stroke="#E3B94C" stroke-width="1"/>
-<text x="1314" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">黄金（对冲）</text>
+<text x="1314" y="112" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">商品·对冲</text>
 <text x="1314" y="127" text-anchor="middle" dominant-baseline="central" font-size="10.5" fill="#8A93A6">cycle · pricePercentile</text>
 </g>
 <g>

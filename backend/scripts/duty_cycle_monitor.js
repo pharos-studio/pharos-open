@@ -8,8 +8,8 @@
  *   任何一条线的买入信号占空比异常（灯常亮 / 灯常灭），或状态型条件近恒真/恒假 → 告警。
  *
  * 覆盖范围（按数据可得性分档）：
- *   ✅ 科技成长(growth) / 黄金对冲(cycle) —— 纯净值即可完整回放
- *   ⏳ 红利低波(dividend) —— 需股息率历史序列（data/series/yield_history.json 目前过短）
+ *   ✅ 主题·行业（高波动）(growth) / 商品·对冲(cycle) —— 纯净值即可完整回放
+ *   ⏳ 红利·低波(dividend) —— 需股息率历史序列（data/series/yield_history.json 目前过短）
  *   ⏳ 宽基 A股(broad) / 宽基·海外(broad:us) —— 需 PE 历史序列
  *   扩展方式：在 LINES 里加一条 + 提供 build/stateOf 即可（数据腿齐了再加）。
  *
@@ -43,12 +43,12 @@ const fx = (v, d) => (v == null || isNaN(v) ? '—' : (+v).toFixed(d == null ? 1
 // 各线：category → { label, stateName, stateOf(matrix) }
 const LINES = [
   {
-    cat: 'growth', label: '科技成长',
+    cat: 'growth', label: '主题·行业（高波动）',
     stateName: '金叉状态(MA20>MA60)',
     stateOf: m => m.maZone === 'golden',
   },
   {
-    cat: 'cycle', label: '黄金对冲',
+    cat: 'cycle', label: '商品·对冲',
     stateName: '价格分位便宜(≤cheapPct)',
     stateOf: m => m.pctZone === 'cheap',
   },

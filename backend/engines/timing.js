@@ -25,8 +25,8 @@ const fetchers = require('../fetchers');
 const STATE_FILE = 'timing_state.json';
 const SAMPLES_FILE = 'timing_samples.json';
 
-// 类别中文（diagnosis 展示用）
-const CAT_LABEL = { tech: '科技成长', cycle: '黄金(对冲)', dividend: '红利低波', broad: '宽基', growth: '科技成长', unknown: '未知' };
+// 类别中文（diagnosis 展示用）—— 与 registry.js 的 REGISTRY.label 保持一致（2026-09-21 对齐）
+const CAT_LABEL = { tech: '主题·行业（高波动）', cycle: '商品·对冲', dividend: '红利·低波', broad: '宽基', growth: '主题·行业（高波动）', unknown: '未知' };
 
 // ---------- 内部 IO（默认落 data/；测试可 _forTest 替换为内存） ----------
 const defaultEnv = {
