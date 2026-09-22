@@ -89,6 +89,7 @@ const DOCS_ALLOWED = new Set([
   'docs/决策分配算法模型.md',
   'docs/前端设计系统.md',
   'docs/后端架构清单.md',
+  'docs/prd-landing-v2.md',   // 介绍页 v2 迭代规划（协作者开发依据，公开）
 ]);
 
 const TEXT_EXT = /\.(js|mjs|cjs|json|html|css|md|txt|bat|cmd|sh|ps1|yml|yaml|svg|webmanifest|example)$/i;
