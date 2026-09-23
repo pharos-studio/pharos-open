@@ -32,6 +32,10 @@
   --ease-io:cubic-bezier(.4,0,.2,1);       /* 往复/状态切换：两端对称 */
   --stagger:60ms;                          /* 组内逐个入场的间隔 */
 
+  /* ── v2 整页翻页骨架：翻页时长 + 顶栏高度（缓动直接复用 --ease-out）── */
+  --dur-page:760ms;                        /* 整页切换：滑动 + 淡入 */
+  --topbar-h:60px;                         /* 吸顶栏高度，翻页页的内边距用 */
+
   /* ── 与设计系统对齐的规范名（将来上提 style.css 的边界；本页允许先在本页使用）── */
   --accent:var(--gold);
   --accent-soft:var(--gold-soft);
@@ -195,7 +199,7 @@ table.mini tr:last-child td{border-bottom:0}
 .stance p b{color:var(--text)}
 
 /* ---------- feature tabs ---------- */
-.feat{display:grid;grid-template-columns:222px 1fr;gap:22px;margin-top:28px}
+.feat{display:block;margin-top:0}
 @media (max-width:820px){.feat{grid-template-columns:1fr;gap:14px}}
 .tabs{display:flex;flex-direction:column;gap:6px}
 @media (max-width:820px){.tabs{flex-direction:row;overflow-x:auto;padding-bottom:4px}}
@@ -211,10 +215,10 @@ table.mini tr:last-child td{border-bottom:0}
   transition:opacity var(--dur-2) var(--ease-io),visibility 0s linear var(--dur-2)}
 .pane.on{opacity:1;visibility:visible;
   transition:opacity var(--dur-2) var(--ease-io),visibility 0s}
-.pane .cap{font-size:13px;color:var(--muted);margin:0 0 6px}
-.pane .cap b{color:var(--text);font-weight:600}
-.pane .ask{font-size:12.5px;color:var(--muted);margin:0 0 14px}
-.pane .ask::before{content:"你会拿它做什么决定 → ";color:var(--dim)}
+.cap{font-size:13px;color:var(--muted);margin:0 0 6px}
+.cap b{color:var(--text);font-weight:600}
+.ask{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+.ask::before{content:"你会拿它做什么决定 → ";color:var(--dim)}
 
 /* ---------- 适用范围表 ---------- */
 .ruler{width:100%;border-collapse:collapse;font-size:13px;margin-top:26px}
@@ -334,6 +338,77 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
     transition:none}
   details.faq-i::details-content{transition:none}
 }
+
+/* ══════════════════════════════════════════════════════════════
+   v2 整页翻页骨架（2026-09-23）
+   仅在 html.deck-mode 下生效 —— 去掉这个类即回到自由长滚动。
+   过场 = 滑动 + 淡入：新页自下而上滑入并淡入，旧页向上滑出并淡出。
+   ══════════════════════════════════════════════════════════════ */
+html.deck-mode{scroll-behavior:auto}
+html.deck-mode body{overflow:hidden}
+html.deck-mode .top{z-index:50}
+html.deck-mode .deck{position:fixed;inset:0;overflow:hidden;background:var(--bg)}
+html.deck-mode .page{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  padding:calc(var(--topbar-h) + 32px) 0 40px;
+  overflow-y:auto;overscroll-behavior:contain;border-top:0;
+  opacity:0;transform:translateY(7%);
+  transition:transform var(--dur-page) var(--ease-out),opacity var(--dur-page) var(--ease-out);
+  pointer-events:none;
+}
+/* 内容不足一屏时垂直居中；超出一屏时改从顶部起（不裁切），页内可滚 */
+html.deck-mode .page > .wrap{margin-top:auto;margin-bottom:auto;width:100%}
+html.deck-mode .page[data-active]{opacity:1;transform:none;pointer-events:auto}
+html.deck-mode .page[data-left]{transform:translateY(-7%);opacity:0}
+
+/* ── 右侧导航轮（方案 A 扁平列表）── */
+.pager{
+  position:fixed;right:16px;top:50%;transform:translateY(-50%);
+  z-index:40;display:flex;flex-direction:column;gap:12px;padding:10px 8px;
+}
+.pager button{
+  position:relative;width:20px;height:20px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:0;cursor:pointer;
+}
+.pager button::before{
+  content:"";width:8px;height:8px;border-radius:50%;
+  background:var(--dim);opacity:.55;
+  transition:transform var(--dur-1) var(--ease-out),background var(--dur-1) var(--ease-out),opacity var(--dur-1) var(--ease-out);
+}
+.pager button:hover::before{opacity:.9}
+.pager button[aria-current="true"]::before{background:var(--gold);opacity:1;transform:scale(1.7)}
+.pager button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:50%}
+.pager .plabel{
+  position:absolute;right:26px;top:50%;transform:translateY(-50%);
+  white-space:nowrap;font-size:12px;color:var(--text);
+  background:var(--panel-strong);border:1px solid var(--border);
+  padding:3px 9px;border-radius:var(--radius-sm);
+  opacity:0;pointer-events:none;transition:opacity var(--dur-1) var(--ease-out);
+}
+.pager button[aria-current="true"] .plabel,
+.pager button:hover .plabel,
+.pager button:focus-visible .plabel{opacity:1}
+
+@media (max-width:760px){
+  .pager{
+    right:auto;top:auto;left:50%;bottom:14px;transform:translateX(-50%);
+    flex-direction:row;gap:10px;
+  }
+  .pager .plabel{right:auto;left:50%;top:auto;bottom:26px;transform:translateX(-50%)}
+  html.deck-mode .page{padding:calc(var(--topbar-h) + 20px) 0 64px}
+}
+
+/* ── 关动画 → 退化为可顺序滚动的长页（导航轮仍可用）── */
+@media (prefers-reduced-motion:reduce){
+  html.deck-mode,html.deck-mode body{overflow:auto}
+  html.deck-mode .deck{position:static;overflow:visible}
+  html.deck-mode .page{
+    position:static;opacity:1;transform:none;pointer-events:auto;
+    transition:none;padding:68px 0;border-top:1px solid var(--border);
+  }
+}
 </style>
 </head>
 <body>
@@ -364,10 +439,14 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
   </div>
 </header>
 
-<main id="top">
+<!-- 右侧导航轮：容器留空，由 JS 从 PHAROS_PAGES 渲染（防文案漂移）-->
+<nav class="pager" id="pager" aria-label="页面导航"></nav>
 
-<!-- ==================== HERO ==================== -->
-<section class="hero">
+<!-- v2 整页翻页：main 作翻页容器（.deck），每个 section 是一页（.page + data-page）-->
+<main id="top" class="deck">
+
+<!-- ==================== HERO / 封面 ==================== -->
+<section class="hero page" id="cover" data-page="cover">
   <div class="wrap grid">
     <div class="reveal">
       <p class="eyebrow">PHAROS · 跑在你自己电脑上</p>
@@ -521,7 +600,7 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
 </section>
 
 <!-- ==================== 为什么 ==================== -->
-<section id="why">
+<section id="why" class="page" data-page="why">
   <div class="wrap">
     <header class="sec-head reveal">
       <p class="eyebrow">为什么做它</p>
@@ -554,26 +633,13 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
 </section>
 
 <!-- ==================== 功能 ==================== -->
-<section id="feat">
+<section class="page" id="feat" data-page="overview">
   <div class="wrap">
     <header class="sec-head reveal">
-      <p class="eyebrow">功能</p>
-      <h2>六个页面，各管一件事</h2>
-      <p class="lede">点左边任一项，右边就会换成那一页长什么样、这一块能干什么。下面的界面是示意，不是截图。</p>
+      <p class="eyebrow">功能 · 概览</p>
+      <h2>今天赚了多少</h2>
     </header>
-
     <div class="feat reveal">
-      <div class="tabs" role="tablist" aria-label="功能清单">
-        <button class="tab" role="tab" aria-selected="true" aria-controls="p1" id="t1">概览<span class="h">今天赚了多少</span></button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="p2" id="t2">决策<span class="h">现在能不能加</span></button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="p3" id="t3">持仓<span class="h">记一笔买入</span></button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="p4" id="t4">配置<span class="h">组合长什么样</span></button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="p5" id="t5">复盘<span class="h">当时为什么这么判</span></button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="p6" id="t6">设置<span class="h">连上你的电脑</span></button>
-      </div>
-
-      <div class="panes">
-        <div class="pane on" id="p1" role="tabpanel" aria-labelledby="t1" tabindex="0">
           <p class="cap"><b>概览</b>：四张 KPI 一眼看清家底，下面是资产走势与每月投入。</p>
           <p class="ask">确认「钱到底赚了还是亏了」，以及口径有没有对不上。</p>
           <div class="panel">
@@ -590,8 +656,16 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
             </ul>
           </div>
         </div>
+  </div>
+</section>
 
-        <div class="pane" id="p2" role="tabpanel" aria-labelledby="t2" tabindex="0">
+<section class="page" id="feat-decision" data-page="decision">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">功能 · 决策</p>
+      <h2>现在能不能加</h2>
+    </header>
+    <div class="feat reveal">
           <p class="cap"><b>决策</b>：每天一眼看完「哪些能加、哪些别动，以及为什么」。</p>
           <p class="ask">决定今天要不要出手、看哪几只。</p>
           <div class="panel">
@@ -621,8 +695,16 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
             </ul>
           </div>
         </div>
+  </div>
+</section>
 
-        <div class="pane" id="p3" role="tabpanel" aria-labelledby="t3" tabindex="0">
+<section class="page" id="feat-holdings" data-page="holdings">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">功能 · 持仓</p>
+      <h2>记一笔买入</h2>
+    </header>
+    <div class="feat reveal">
           <p class="cap"><b>持仓</b>：记账的地方，重点在「输错也不会算错」。</p>
           <p class="ask">补一笔买入记录，并确认份额算得对。</p>
           <div class="panel">
@@ -642,8 +724,16 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
             </ul>
           </div>
         </div>
+  </div>
+</section>
 
-        <div class="pane" id="p4" role="tabpanel" aria-labelledby="t4" tabindex="0">
+<section class="page" id="feat-allocation" data-page="allocation">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">功能 · 配置</p>
+      <h2>组合长什么样</h2>
+    </header>
+    <div class="feat reveal">
           <p class="cap"><b>配置</b>：你的钱分布在哪儿，以及底层到底买了什么。</p>
           <p class="ask">看结构是否偏了，以及某条赛道是不是悄悄超配了。</p>
           <div class="panel">
@@ -670,8 +760,16 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
             </ul>
           </div>
         </div>
+  </div>
+</section>
 
-        <div class="pane" id="p5" role="tabpanel" aria-labelledby="t5" tabindex="0">
+<section class="page" id="feat-review" data-page="review">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">功能 · 复盘</p>
+      <h2>当时为什么这么判</h2>
+    </header>
+    <div class="feat reveal">
           <p class="cap"><b>复盘</b>：把「当时为什么这么判」完整留档，还能和上一周对比。</p>
           <p class="ask">回头看自己的判断，或者复盘一次「我当时为什么加了 / 没加」。</p>
           <div class="panel">
@@ -692,8 +790,16 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
             </ul>
           </div>
         </div>
+  </div>
+</section>
 
-        <div class="pane" id="p6" role="tabpanel" aria-labelledby="t6" tabindex="0">
+<section class="page" id="feat-settings" data-page="settings">
+  <div class="wrap">
+    <header class="sec-head reveal">
+      <p class="eyebrow">功能 · 设置</p>
+      <h2>连上你的电脑</h2>
+    </header>
+    <div class="feat reveal">
           <p class="cap"><b>设置</b>：只有两件事 —— 后端地址与 API Key。</p>
           <p class="ask">让手机也能连上你电脑上的这份看板。</p>
           <div class="panel">
@@ -715,13 +821,11 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
             </ul>
           </div>
         </div>
-      </div>
-    </div>
   </div>
 </section>
 
 <!-- ==================== 算法 ==================== -->
-<section id="algo">
+<section id="algo" class="page" data-page="algo">
   <div class="wrap">
     <header class="sec-head reveal">
       <p class="eyebrow">算法</p>
@@ -782,7 +886,7 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
 </section>
 
 <!-- ==================== 开始使用 ==================== -->
-<section id="start">
+<section id="start" class="page" data-page="start">
   <div class="wrap">
     <header class="sec-head reveal">
       <p class="eyebrow">开始使用</p>
@@ -813,7 +917,7 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
 </section>
 
 <!-- ==================== 数据与隐私 ==================== -->
-<section id="privacy">
+<section class="page" id="privacy" data-page="privacy">
   <div class="wrap">
     <header class="sec-head reveal">
       <p class="eyebrow">数据与隐私</p>
@@ -842,11 +946,7 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
       </div>
     </div>
   </div>
-</section>
-
-<!-- ==================== 数据来源与局限 ==================== -->
-<section id="limits">
-  <div class="wrap">
+    <div id="limits" style="margin-top:56px">
     <header class="sec-head reveal">
       <p class="eyebrow">数据来源与已知局限</p>
       <h2>先说清楚它算不准的地方</h2>
@@ -879,11 +979,12 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
         <p>所有指标都是对公开历史数据的<b>机械计算</b>，不预测顶底、不保证收益。阈值来自历史回测，而历史不等于未来。</p>
       </div>
     </div>
+    </div>
   </div>
 </section>
 
 <!-- ==================== FAQ ==================== -->
-<section id="faq">
+<section id="faq" class="page" data-page="faq">
   <div class="wrap">
     <header class="sec-head reveal">
       <p class="eyebrow">常见问题</p>
@@ -915,59 +1016,178 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
         <div class="a">根目录那个就是<b>你正在看的这一页</b>（介绍页，给还没装的人看）；<code>public/index.html</code> 才是<b>应用本体外壳</b>，由本地服务提供（给已经在用的人用）。后端只托管 <code>public/</code>，所以这一页不会被本地服务接管。</div>
       </details>
     </div>
+
+    <footer>
+      <div class="wrap row">
+        <div>
+          <b style="color:var(--muted)">Pharos</b> · 以 MIT 许可开源 · 版式与配色取自产品自身的设计系统
+          <div style="margin-top:6px">公开仓是共享代码的唯一真相源，维护者另有一份只跑真实数据的私有仓。</div>
+        </div>
+        <div style="max-width:64ch">
+          <b style="color:var(--muted)">免责声明：</b>本项目是技术工具，<b>不构成任何投资建议</b>。所有指标与结论都是基于公开历史数据的机械计算，不预测未来、不保证收益；投资决策与后果由使用者自行承担。数据来自第三方公开接口，其准确性、完整性与可用性不作保证。
+        </div>
+      </div>
+    </footer>
   </div>
 </section>
 
 </main>
 
-<footer>
-  <div class="wrap row">
-    <div>
-      <b style="color:var(--muted)">Pharos</b> · 以 MIT 许可开源 · 版式与配色取自产品自身的设计系统
-      <div style="margin-top:6px">公开仓是共享代码的唯一真相源，维护者另有一份只跑真实数据的私有仓。</div>
-    </div>
-    <div style="max-width:64ch">
-      <b style="color:var(--muted)">免责声明：</b>本项目是技术工具，<b>不构成任何投资建议</b>。所有指标与结论都是基于公开历史数据的机械计算，不预测未来、不保证收益；投资决策与后果由使用者自行承担。数据来自第三方公开接口，其准确性、完整性与可用性不作保证。
-    </div>
-  </div>
-</footer>
+<!-- 页脚（免责声明）已移入最后一页 FAQ 内，见该 section 末尾 -->
 
 <script>
 (function () {
-  // ---- 滚动入场（渐进增强）----
-  if ('IntersectionObserver' in window &&
-      !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.documentElement.classList.add('js');
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-      });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-    document.querySelectorAll('.reveal,.cascade').forEach(function (n) { io.observe(n); });
+  'use strict';
+
+  /* ══ v2 整页翻页骨架 ══
+     PHAROS_PAGES 是「页序 + 页名」的**单一数据源**：导航轮据它渲染，
+     backend/scripts/verify_landing_pages.js 据它断言。改页名只改这里。*/
+  var PHAROS_PAGES = [
+    { id: 'cover',      title: '封面' },
+    { id: 'why',        title: '为什么做它' },
+    { id: 'overview',   title: '功能 · 概览' },
+    { id: 'decision',   title: '功能 · 决策' },
+    { id: 'holdings',   title: '功能 · 持仓' },
+    { id: 'allocation', title: '功能 · 配置' },
+    { id: 'review',     title: '功能 · 复盘' },
+    { id: 'settings',   title: '功能 · 设置' },
+    { id: 'algo',       title: '算法' },
+    { id: 'start',      title: '开始使用' },
+    { id: 'privacy',    title: '数据与隐私 · 已知局限' },
+    { id: 'faq',        title: '常见问题' }
+  ];
+  window.PHAROS_PAGES = PHAROS_PAGES;
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  // 入场动画：非「减少动态效果」时启用（沿用既有行为）
+  if (!reduce.matches) document.documentElement.classList.add('js');
+
+  // 关动画 → 或用 ?long=1 强制 → 保持自由长滚动，不启用翻页
+  if (reduce.matches || /[?&]long=1\b/.test(location.search)) return;
+
+  document.documentElement.classList.add('deck-mode');
+
+  var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+  var pager = document.getElementById('pager');
+  var cur = -1, locked = false;
+
+  window.__pharosCur = function () { return cur; };
+  window.__pharosHero = null;
+
+  /* ── 入场：改为「页被激活时」播放（不再靠 IntersectionObserver）── */
+  function playEnter(page) {
+    page.querySelectorAll('.reveal,.cascade').forEach(function (n) {
+      n.classList.remove('in');
+      void n.offsetWidth;              // 强制重排，让动画可重播
+      n.classList.add('in');
+    });
   }
 
-  // ---- 功能页签 ----
-  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
-  function show(id) {
-    tabs.forEach(function (t) {
-      var on = t.getAttribute('aria-controls') === id;
-      t.setAttribute('aria-selected', on ? 'true' : 'false');
+  /* ── 导航轮：由 PHAROS_PAGES 渲染（防文案漂移）── */
+  var dots = [];
+  if (pager) {
+    PHAROS_PAGES.forEach(function (p, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-label', p.title);
+      b.innerHTML = '<span class="plabel"></span>';
+      b.firstChild.textContent = p.title;
+      b.addEventListener('click', function () { go(i); });
+      pager.appendChild(b);
+      dots.push(b);
     });
-    document.querySelectorAll('.pane').forEach(function (p) {
-      p.classList.toggle('on', p.id === id);
+    pager.addEventListener('keydown', function (e) {
+      var i = dots.indexOf(document.activeElement);
+      if (i < 0) return;
+      var nx = null;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') nx = dots[(i + 1) % dots.length];
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') nx = dots[(i - 1 + dots.length) % dots.length];
+      if (nx) { e.preventDefault(); nx.focus(); }
     });
   }
-  tabs.forEach(function (t) {
-    t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
-    t.addEventListener('keydown', function (e) {
-      var i = tabs.indexOf(t), next = null;
-      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
-      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
-      if (e.key === 'Home') next = tabs[0];
-      if (e.key === 'End') next = tabs[tabs.length - 1];
-      if (next) { e.preventDefault(); next.focus(); next.click(); }
+
+  /* ── 翻页 ── */
+  function go(i, instant) {
+    i = Math.max(0, Math.min(pages.length - 1, i));
+    if (i === cur) return;
+    if (locked && !instant) return;
+    cur = i;
+    locked = !instant;
+
+    pages.forEach(function (pg, k) {
+      pg.removeAttribute('data-active');
+      pg.removeAttribute('data-left');
+      if (k === i) { pg.setAttribute('data-active', ''); pg.removeAttribute('inert'); }
+      else { pg.setAttribute('inert', ''); if (k < i) pg.setAttribute('data-left', ''); }
+    });
+
+    dots.forEach(function (b, k) {
+      if (k === i) b.setAttribute('aria-current', 'true');
+      else b.removeAttribute('aria-current');
+    });
+
+    playEnter(pages[i]);
+
+    if (window.__pharosHero) {
+      if (i === 0) window.__pharosHero.resume(); else window.__pharosHero.pause();
+    }
+
+    if (!instant) {
+      var h = pages[i].querySelector('h1,h2');
+      if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+      setTimeout(function () { locked = false; }, 780);
+    }
+  }
+  window.__pharosGo = go;
+
+  /* ── 输入：滚轮 / 触摸 / 键盘 ── */
+  var lastT = 0;
+  window.addEventListener('wheel', function (e) {
+    // 页内还有可滚内容时，先让页面自己滚（到边界才翻页）
+    var pg = pages[cur];
+    if (pg && pg.scrollHeight > pg.clientHeight + 2) {
+      var atTop = pg.scrollTop <= 0;
+      var atBot = pg.scrollTop + pg.clientHeight >= pg.scrollHeight - 2;
+      if (!(e.deltaY > 0 && atBot) && !(e.deltaY < 0 && atTop)) return;
+    }
+    e.preventDefault();
+    var now = Date.now();
+    if (now - lastT < 520 || Math.abs(e.deltaY) < 8) return;
+    lastT = now;
+    go(cur + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+
+  var ty = null;
+  window.addEventListener('touchstart', function (e) { ty = e.touches[0].clientY; }, { passive: true });
+  window.addEventListener('touchend', function (e) {
+    if (ty == null) return;
+    var dy = e.changedTouches[0].clientY - ty; ty = null;
+    if (Math.abs(dy) < 56) return;
+    go(cur + (dy < 0 ? 1 : -1));
+  }, { passive: true });
+
+  window.addEventListener('keydown', function (e) {
+    var t = document.activeElement && document.activeElement.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+    var k = e.key;
+    if (k === 'ArrowDown' || k === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    else if (k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(pages.length - 1); }
+  });
+
+  // 顶栏锚点 → 翻页（不再跳锚点）
+  document.querySelectorAll('.top nav a[href^="#"]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      var id = a.getAttribute('href').slice(1);
+      for (var k = 0; k < pages.length; k++) {
+        if (pages[k].id === id) { e.preventDefault(); go(k); return; }
+      }
     });
   });
+
+  go(0, true);
 })();
 </script>
 
@@ -1550,6 +1770,21 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
         return { sx: (v.x + 1) / 2, sy: (1 - v.y) / 2, depth: v.z };
       }
     };
+
+    /* ── v2 翻页：3D 生命周期钩子（只有封面页在跑）──
+       翻页引擎（普通 script）在切页时调用 pause/resume；
+       module 后于它执行，故挂载时补判一次「当前是否在封面」，不在封面就先停。*/
+    function renderOnce() { renderer.render(scene, camera); }
+    window.__pharosHero = {
+      pause: function () { stop(); },
+      resume: function () {
+        resize();
+        if (staticMode) { renderOnce(); return; }
+        start();
+        renderOnce();
+      }
+    };
+    if (window.__pharosCur && window.__pharosCur() !== 0) stop();
 
     // 首帧渲染成功后切换显示（失败则不切 -> SVG 兜底）
     renderer.render(scene, camera);
