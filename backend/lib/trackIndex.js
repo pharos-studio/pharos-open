@@ -3,7 +3,8 @@
  * 跟踪指数与「基金 → 策略线」自动归类 —— 本项目唯一的「估值锚 / 类别推断」口径（唯一真相源）。
  *
  * ── 为什么要有这个文件 ──
- * 旧的类别推断散在前端（public/js/pages/holdings.js 的 suggestCategory / INDEX_HINTS），
+ * 旧的类别推断散在前端（public/js/pages/holdings.js 的 suggestCategory / INDEX_HINTS；
+ * 2026-09-23 持仓页拆分后，二者分别落在 holdings/fundMeta.js 与 holdings/constants.js），
  * 只认识作者当时手上那几只基金的名字，兜底一律 `return 'growth'`。后果是用户加一只债基或
  * 医药基金，会被静默归到「主题·行业」线并套错算法算出一个看起来正常的错结论（不报错）。
  * 现在改成：由东方财富的基金档案给出 **FTYPE（基金类型）**，这是可枚举的确定值，不再靠猜。

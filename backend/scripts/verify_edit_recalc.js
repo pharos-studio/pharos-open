@@ -18,7 +18,7 @@
  * 覆盖分三层（本仓库能测到什么就测到什么，不装样子）：
  *   L1 纯函数   —— 定价日 / 份额确认日 / 份额公式（可直接调用，最硬）
  *   L2 存量数据 —— 全局不变量 + 已修正记录的逐字段断言（防漂回）
- *   L3 前端接线 —— holdings.js 源码级不变量（重算守卫、已删入口、无死变量）
+ *   L3 前端接线 —— pages/holdings/ 全模块并集源码级不变量（重算守卫、已删入口、无死变量）
  *
  * ★ 本文件在「数据机（私有仓）」与「开源版（公开仓）」两仓**逐字节相同**。
  *   真实数值一律下沉到私有夹具 `data/state/regression_cases.json`（已被 .gitignore 忽略）。
@@ -208,9 +208,47 @@ console.log('\n【L2-2】已修正记录逐字段锁定（防漂回旧值）');
 }
 
 // ══════════════════════════════════════════════════════════════
-console.log('\n【L3】前端接线不变量（public/js/pages/holdings.js 源码级）');
+console.log('\n【L3】前端接线不变量（public/js/pages/holdings/ 全模块并集源码级）');
 {
-  const SRC = fs.readFileSync(path.join(ROOT, 'public', 'js', 'pages', 'holdings.js'), 'utf8');
+  /* 2026-09-23 结构调整：持仓页已从单文件拆到 pages/holdings/ 下，壳 holdings.js 只留 re-export。
+     这里把 13 个模块拼成同一份 src 继续断言 —— 判据不变，只是换了「从哪里读」。
+     （与 verify_landing_pages.js 同款做法） */
+  const HDIR = path.join(ROOT, 'public', 'js', 'pages', 'holdings');
+  const HSHIM = path.join(ROOT, 'public', 'js', 'pages', 'holdings.js');
+  const PARTS = [
+    'addFundPanel.js', 'bulkAdd.js', 'constants.js', 'dailyLimit.js',
+    'desktop.js', 'formShell.js', 'fundMeta.js', 'fundStore.js',
+    'index.js', 'mobile.js', 'preview.js', 'purchaseForm.js', 'state.js',
+  ];
+  PARTS.forEach(function (f) {
+    if (!fs.existsSync(path.join(HDIR, f))) { console.error('\u2717 缺少子模块：' + f); process.exit(1); }
+  });
+
+  // ── 闸门①：清单与磁盘必须一致（不只「列出的都在」，还要「在的都被列出」）──
+  //    只校验前者不够：新增子模块却忘了登记 → 并集漏扫 → 负向断言假绿（本类断言最大风险）。
+  const onDisk = fs.readdirSync(HDIR).filter(function (f) { return f.endsWith('.js'); }).sort();
+  t('holdings 子模块清单与磁盘一致（新增文件必须登记到 PARTS）',
+    onDisk.join(',') === PARTS.slice().sort().join(','),
+    { onDisk: onDisk.join(','), listed: PARTS.slice().sort().join(',') });
+
+  // ── 闸门②：入口壳必须是薄壳（防实现回流到 holdings.js 绕过并集扫描）──
+  const HSHIM_SRC = fs.readFileSync(HSHIM, 'utf8');
+  const shimCode = HSHIM_SRC.split('\n')
+    .filter(function (l) { return l.trim() && !/^\s*(\/\/|\*|\/\*)/.test(l); });
+  t('holdings.js 仍为薄入口壳（只 re-export，无实现）',
+    /export\s*\{\s*render\s*\}\s*from\s*'\.\/holdings\/index\.js'/.test(HSHIM_SRC) && shimCode.length <= 1,
+    shimCode.join(' | '));
+
+  // ── 闸门③：子模块均非空 + 无单文件超 400 行（防拆分被反向撤销）──
+  t('13 个子模块均非空', PARTS.every(function (f) {
+    return fs.statSync(path.join(HDIR, f)).size > 200;
+  }), '-');
+  t('无子模块超过 400 行（防实现回流成巨型文件）', PARTS.every(function (f) {
+    return fs.readFileSync(path.join(HDIR, f), 'utf8').split('\n').length <= 400;
+  }), '-');
+
+  // ── 全量并集（以下 19 条断言全部基于它，判据逐字未改）──
+  const SRC = PARTS.map(function (f) { return fs.readFileSync(path.join(HDIR, f), 'utf8'); }).join('\n');
 
   // ① 重算守卫 = movedKey()，且 payload.recalc 只在那个分支里被赋值
   const mkMatch = SRC.match(/const movedKey = \(\) => \(([\s\S]*?)\);/);
