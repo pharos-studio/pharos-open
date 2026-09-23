@@ -7,7 +7,7 @@
 import * as api from '../../api.js';
 import { el, tableWrap, fmtMoney, signPct, cls, catNameWithCaliber } from '../../util.js';
 import { getExpanded, setExpanded, refreshPage } from './state.js';
-import { purchasesByCode } from './fundMeta.js';
+import { purchasesByCode, feeNote } from './fundMeta.js';
 import { removeFund } from './fundStore.js';
 import { navDateInfo } from './preview.js';
 import { addForm, editForm } from './purchaseForm.js';
@@ -106,10 +106,13 @@ export function renderDesktop(root, live, state) {
   const tbody = el('tbody', {});
   funds.forEach(f => {
     const tr = el('tr', {});
-    tr.appendChild(el('td', {}, [el('div', { class: 'name-cell' }, [
+    const nameCell = el('div', { class: 'name-cell' }, [
       el('span', { class: 'nm', text: f.name }),
       el('span', { class: 'meta', text: `${f.code} · ${catNameWithCaliber(state, f.category, f.caliber)}` }),
-    ])]));
+    ]);
+    const feeTip = feeNote(f); // 申购费：后端抓取写入，界面只读（没有输入框）
+    if (feeTip) nameCell.appendChild(el('span', { class: 'meta', text: feeTip.text, title: feeTip.title }));
+    tr.appendChild(el('td', {}, [nameCell]));
     const dayCell = el('td', { class: cls(f.dayChange) });
     dayCell.textContent = f.dayChange != null ? signPct(f.dayChange) : '—';
     if (f.latestNav != null) dayCell.appendChild(el('div', { class: 'meta', text: '净值 ' + f.latestNav + (f.latestDate ? ' · ' + f.latestDate.slice(5) : '') }));
