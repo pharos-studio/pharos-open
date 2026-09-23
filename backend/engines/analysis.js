@@ -182,6 +182,10 @@ async function buildAnalysis(opts) {
         latestNav: latest ? latest.nav : null, latestDate: latest ? latest.date : null,
         dayChange: latest ? latest.dayChange : null,
         totalShares, principal, netInvested, fee, currentValue, profit, profitPct,
+        // 费率（只读展示）：由 engines/feeSync.js 抓取写入 holdings.json，界面没有任何修改入口。
+        // feeRate = 申购费折后价（算法用的那个标量）；feeDetail = 原价档位 / 运作费 / 赎回档 / 更新日。
+        feeRate: buyPlan.validFeeRate(f.feeRate),
+        feeDetail: f.feeDetail || null,
         navFallback, navFallbackDate,
         estimate, estimateChange, history,
         pendingAmount: pendingAmt, // 在途**实付**本金（份额待确认；前端可标「含在途 ¥X」）—— 展示口径，非收益基准

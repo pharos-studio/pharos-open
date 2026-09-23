@@ -7,7 +7,7 @@
 import * as api from '../../api.js';
 import { el, fmtMoney, signPct, cls, catNameWithCaliber } from '../../util.js';
 import { getExpanded, setExpanded, refreshPage } from './state.js';
-import { purchasesByCode } from './fundMeta.js';
+import { purchasesByCode, feeNote } from './fundMeta.js';
 import { removeFund } from './fundStore.js';
 import { navDateInfo } from './preview.js';
 import { addForm, editForm } from './purchaseForm.js';
@@ -67,9 +67,12 @@ export function purchaseList(code, list, navMeta) {
 
 export function fundCard(f, list, state) {
   const card = el('div', { class: 'fund-card' });
+  const fcMeta = el('div', { class: 'fc-meta', text: `${f.code} · ${catNameWithCaliber(state, f.category, f.caliber)}` });
+  const feeTip = feeNote(f); // 申购费：后端抓取写入，界面只读（没有输入框）
+  if (feeTip) { fcMeta.textContent += ' · ' + feeTip.text; fcMeta.setAttribute('title', feeTip.title); }
   card.appendChild(el('div', { class: 'fc-head' }, [
     el('div', { class: 'fc-name', text: f.name }),
-    el('div', { class: 'fc-meta', text: `${f.code} · ${catNameWithCaliber(state, f.category, f.caliber)}` }),
+    fcMeta,
   ]));
   const metrics = el('div', { class: 'fc-metrics' });
   metrics.appendChild(metricCell(

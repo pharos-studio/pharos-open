@@ -621,6 +621,73 @@ async function fundAutoFill(code) {
   };
 }
 
+// ---------- 东财：基金费率（申购 / 认购 / 赎回档 + 运作费）----------
+// 与档案接口同域名、同鉴权参数、同 UA 要求（见 ARCHIVE_URL 上方那段注释）→ 直接复用 ARCHIVE_UA，
+// 不引入新的坑。实测 9 只自持基金全 HTTP 200、延迟 22–84ms。
+// 与 fetchFundArchive 的分工：本函数**不缓存、不落盘**，只管「抓一次 + 归一化」；
+// 「要不要重抓」由 engines/feeSync.js 按 30 天有效期判断 —— 它写进 holdings.json 的那份就是缓存。
+const RATE_URL = 'https://fundmobapi.eastmoney.com/FundMNewApi/FundMNRateInfo';
+
+// "0.15%" → 0.0015。★ 必须区分两种「没数字」：
+//   "0.00%" → 0（明确免费，C 类份额常见）；"" / "--" → null（未知）
+// ★★ 高档位是**单笔定额**而非百分比（≥500万 返回 "1000元/笔"）：
+//   直接 parseFloat 会得到 1000 这个假费率，故正则只认「数字+%」，其余一律 null。
+function pctOf(s) {
+  const t = String(s == null ? '' : s).trim();
+  if (!/^\d+(\.\d+)?%$/.test(t)) return null;
+  const v = parseFloat(t) / 100;
+  return isFinite(v) ? v : null;
+}
+// 正数或 null（起购 / 单日限购这类金额字段）
+function numOf(s) {
+  const v = Number(String(s == null ? '' : s).trim());
+  return isFinite(v) && v > 0 ? v : null;
+}
+// 分档数组 → [{ cond, source, rate, raw }]。cond 是该档的条件描述
+// （申购/认购取 money，赎回取 time）；raw 原样保留两个字符串 ——
+// 定额档换算不出百分比，留原文才不丢信息。
+function rateTiers(arr, condKey) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const x of arr) {
+    if (!x || typeof x !== 'object') continue;
+    const cond = ti.normalizeArchiveValue(x[condKey]);
+    const rawS = ti.normalizeArchiveValue(x.source);
+    const rawR = ti.normalizeArchiveValue(x.rate);
+    if (cond == null && rawS == null && rawR == null) continue;
+    out.push({ cond, source: pctOf(x.source), rate: pctOf(x.rate), raw: { source: rawS, rate: rawR } });
+  }
+  return out;
+}
+// 返回 { sub, subTiers, buyTiers, redeemTiers, mgmt, trust, sales, sgState, shState, minBuy, maxBuy }；
+// 抓不到 / 撞风控 / 非 6 位数字代码 → null（调用方必须保留原值，绝不用 0 覆盖 —— 0 是"免费"的语义）。
+async function fetchFundRates(code) {
+  const key = String(code == null ? '' : code).trim();
+  if (!/^\d{6}$/.test(key)) return null;
+  try {
+    const url = RATE_URL + '?FCODE=' + key
+      + '&deviceid=Wap&version=2.0.0&product=EFund&plat=iPhone&osVersion=16.6&appType=iPhone';
+    const txt = await fetchText(url, { 'User-Agent': ARCHIVE_UA, Referer: 'https://mpservice.com/' });
+    const j = JSON.parse(txt) || {};
+    const D = j.Datas;
+    if (!D || typeof D !== 'object') return null;
+    const subTiers = rateTiers(D.sg, 'money');
+    return {
+      // ★ 只把第一档（起购金额那一档）当作默认申购费：各档分界都在 100 万以上，
+      //   本项目的单笔金额恒落第一档；更高档位是给大额批发的，不参与成本计算
+      //   （但整份 subTiers 一并留档，将来若做大额对比有原始依据）。
+      sub: subTiers.length ? { source: subTiers[0].source, rate: subTiers[0].rate } : null,
+      subTiers,
+      buyTiers: rateTiers(D.rg, 'money'),
+      redeemTiers: rateTiers(D.sh, 'time'),
+      mgmt: pctOf(D.MGREXP), trust: pctOf(D.TRUSTEXP), sales: pctOf(D.SALESEXP),
+      sgState: ti.normalizeArchiveValue(D.SGZT),
+      shState: ti.normalizeArchiveValue(D.SHZT),
+      minBuy: numOf(D.MINSG), maxBuy: numOf(D.MAXSG),
+    };
+  } catch (e) { return null; }
+}
+
 // ---------- 东财：A股个股行业（穿透补词典向导的赛道预选用）----------
 // 数据源：push2.eastmoney.com/api/qt/stock/get?secid={mkt}.{code}&fields=f57,f58,f100,f127 → f127=东财行业名（实测主动基金九只重仓 9/9 命中，免鉴权）。
 // secid 前缀：6 开头 → 1.（沪市）；0/3 开头 → 0.（深市）。海外/含字母码跳过（返回 null，仍走 theme_map 词典）。
@@ -704,5 +771,6 @@ module.exports = {
   parseHoldingsContent, fetchHoldings,
   fetchSinaIndex, fetchCNBond10Y, fetchBond10Y, fetchIndexPeHistory,
   fundMetaLookup, getFundListMeta, fetchFundArchive, fundAutoFill,
+  fetchFundRates,
   fetchStockIndustryBatch
 };

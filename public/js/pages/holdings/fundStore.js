@@ -37,7 +37,10 @@ export async function addFund(code, name, category, market, estIndex, estLabel, 
   const newFund = Object.assign({
     code, name, category, market,
     caliber: (category === 'broad' && (caliber === 'cn' || caliber === 'us')) ? caliber : undefined,
-    feeRate: 0, estimateIndex: estIndex || null, estimateLabel: estLabel || null,
+    // ★ 这里刻意不给 feeRate 值：费率是**基金属性**（由后端 feeSync 抓取写入），不是用户输入。
+    //   前端就算传了也会被 server.js 的 pinFundFees 剥掉（新增基金）或盖回磁盘值（已有基金），
+    //   界面因此没有任何修改入口。
+    estimateIndex: estIndex || null, estimateLabel: estLabel || null,
     purchases: [],
   }, trackIndex ? { trackIndex } : {});
   state.holdings = Object.assign({}, state.holdings, { funds: funds.concat([newFund]) });
