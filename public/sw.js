@@ -2,10 +2,11 @@
 // 注意：echarts（1MB）刻意不在预缓存清单内 —— 它由 charts/trend.js 按需加载，
 // 首次请求后才经下方 fetch 分支入缓存。预缓存等于让首屏优化白做。
 // v24（2026-09-18）：收益基准改净口径 + 概览页新增「累计投入」KPI。
+// v25（2026-09-23）：持仓页拆分为 pages/holdings/（13 个模块）；子模块与 pages/*.js 同策，**不入 SHELL**。
 // ★ 为什么必须升：js/pages/*.js 不在 SHELL 预缓存里，靠下方 fetch 分支的 stale-while-revalidate 入缓存
 //   ⇒ 不升版本时用户**首次加载仍看到旧页**（要刷第二次才更新）。升版本会让 activate 删掉旧桶，
 //   首次加载即拿到新版。（v23 那次漏升，导致 09-18 持仓页改造可能被旧缓存挡住，本次一并冲掉。）
-const CACHE = 'fund-board-v24';
+const CACHE = 'fund-board-v25';
 const SHELL = [
   '/', '/index.html', '/style.css',
   '/js/app.js', '/js/store.js', '/js/api.js', '/js/util.js',
