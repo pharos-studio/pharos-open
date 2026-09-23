@@ -1,6 +1,6 @@
 /* 持仓页 · 基金元数据
-   职责：基金名单懒加载、市场推断、分类建议、按代码归集买入记录。
-   导出：marketOfType / suggestCategory / ensureFundList / purchasesByCode
+   职责：基金名单懒加载、市场推断、分类建议、按代码归集买入记录、费率只读文案。
+   导出：marketOfType / suggestCategory / ensureFundList / purchasesByCode / feeNote
    ★ 不要放在这里：增删基金的落盘逻辑请去 fundStore.js。
 */
 
@@ -55,4 +55,28 @@ export function purchasesByCode(state) {
   const funds = Array.isArray(raw) ? raw : Object.values(raw); // 磁盘为数组；历史代码兼容对象形态
   funds.forEach(f => { if (f && f.code) map[f.code] = f.purchases || []; });
   return map;
+}
+
+/* —— 申购费只读文案 —— */
+// 费率由后端抓取写入持仓文件，**界面刻意不提供任何输入框**：改费率会连带改变成本与份额口径，
+// 开放版用户随手一改就再难自查。这里只把抓来的值排版成一行可读文案。
+// 返回 { text, title }；拿不到费率时返回 null —— 宁可整行不显示，也不显示「0%」冒充已知值。
+export function feeNote(f) {
+  const rate = f && f.feeRate;
+  if (typeof rate !== 'number' || !isFinite(rate) || rate < 0) return null;
+  const d = (f && f.feeDetail) || {};
+  const tips = [];
+  const src = d.sub && d.sub.source;
+  if (typeof src === 'number' && src > rate) tips.push('法定原价 ' + pctText(src) + '（' + foldText(src, rate) + '）');
+  if (d.updated) tips.push('数据源 天天基金 · 更新 ' + d.updated);
+  if (d.sgState) tips.push('申购状态 ' + d.sgState);
+  return { text: '申购费 ' + pctText(rate), title: tips.join(' · ') };
+}
+// 0.0012 → "0.12%"；0 → "0%"（去掉无意义的尾零）
+function pctText(v) {
+  return (Number(v) * 100).toFixed(2).replace(/\.?0+$/, '') + '%';
+}
+// 折数：折后价 ÷ 原价。国内「几折」= 原价的十分之几，故 1 折是九折优惠后的价
+function foldText(source, rate) {
+  return String(Math.round(rate / source * 100) / 10).replace(/\.0$/, '') + ' 折';
 }
