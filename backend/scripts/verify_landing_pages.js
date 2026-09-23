@@ -5,6 +5,8 @@
  * 为什么存在：翻页骨架把 8 个 section + 6 个 tab 重排成 13 个 .page，
  * 并引入「页名单一数据源 PHAROS_PAGES」与右侧导航轮。这一层没有运行时探针，
  * 一旦有人改了页名、删了页、或把页名写死在别处，只有肉眼能发现 —— 故用静态断言钉住。
+ * 导航轮后升级为「弧形滚轮」（移植 OptionWheel 的算法与视觉，刻意不引入 React / 构建链）：
+ * ⑧ 节同时钉住「移植到位」与「没被改回 React」这两件事。
  *
  * 判据：读 index.html 原文 + 正则。不联网、零依赖。
  * 退出码：0 全过 / 1 有失败（挂进 npm test 的 test:offline）。
@@ -66,6 +68,25 @@ t('reduced-motion 下退化为静态长页', /html\.deck-mode,html\.deck-mode bo
 t('已无 role="tablist"', !/role="tablist"/.test(src), '-');
 t('已无 class="pane…" 元素', !/class="pane[ "'']/.test(src), '-');
 t('已无 class="tabs" 元素', !/class="tabs"/.test(src), '-');
+
+// ⑧ 导航轮的「弧形滚轮」形态（deck 模式 + ≥761px；窄屏自动落回点阵）
+//    轮盘算法移植自 OptionWheel，但刻意不引入 React / 构建链 —— 这几条同时钉住"移植到位"与"没被改回 React"
+t('存在 --wheel-w token（内容让位据此算）', /--wheel-w\s*:/.test(src), '-');
+t('存在 --wheel-fs token', /--wheel-fs\s*:/.test(src), '-');
+t('存在 --wheel-inset token', /--wheel-inset\s*:/.test(src), '-');
+t('存在 WHEEL 配置对象（轮盘参数的单一来源）', /var WHEEL = \{/.test(src), '-');
+t('轮盘只在 ≥761px 生效（CSS 媒体查询）', /@media \(min-width:761px\)\{/.test(src), '-');
+t('轮盘只在 ≥761px 生效（JS matchMedia 同条件）', /matchMedia\('\(min-width:761px\)'\)/.test(src), '-');
+t('移植到位：帧率无关指数平滑', /Math\.exp\(-dt \/ tau\)/.test(src), '-');
+t('移植到位：圆环横向偏移', /1 - Math\.cos\(ang\)/.test(src), '-');
+t('移植到位：逐项写入 --ow-p', /setProperty\('--ow-p'/.test(src), '-');
+t('移植到位：color-mix 随 --ow-p 在静色与金色间过渡', /color-mix\(in srgb, var\(--gold\)/.test(src), '-');
+t('存在外部受控入口 __pharosWheel（原组件缺这个能力）', /__pharosWheel = \{ to:/.test(src), '-');
+t('页名取自数据源（渲染处不写死页名）', /textContent = p\.title/.test(src), '-');
+t('键盘防护：轮盘 keydown 阻止冒泡（防与全局翻页重复触发）', /e\.stopPropagation\(\)/.test(src), '-');
+t('内容让位为动态计算（大屏不白留）', /padding-right:calc\(22px \+ max\(0px, var\(--wheel-w\)/.test(src), '-');
+t('窄屏点阵兜底仍在（max-width:760px 下 .pager）', /@media \(max-width:760px\)\{[\s\S]{0,240}?\.pager\{/.test(src), '-');
+t('未引入 React / JSX（保持零依赖零构建）', !/(from\s*['"]react|require\(\s*['"]react|React\.createElement|jsx)/i.test(src), '-');
 
 console.log('\n结果：PASS=' + pass + ' FAIL=' + fail);
 process.exit(fail ? 1 : 0);
