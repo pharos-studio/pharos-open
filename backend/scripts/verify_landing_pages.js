@@ -2,7 +2,7 @@
 /*
  * 介绍页「整页翻页骨架」结构断言（v2 第一阶段）
  *
- * 为什么存在：翻页骨架把 8 个 section + 6 个 tab 重排成 12 个 .page，
+ * 为什么存在：翻页骨架把 8 个 section + 6 个 tab 重排成 13 个 .page，
  * 并引入「页名单一数据源 PHAROS_PAGES」与右侧导航轮。这一层没有运行时探针，
  * 一旦有人改了页名、删了页、或把页名写死在别处，只有肉眼能发现 —— 故用静态断言钉住。
  *
@@ -22,22 +22,23 @@ function t(name, cond, actual) {
   else { fail++; console.log('  ❌ ' + name + '  实际：' + String(actual)); }
 }
 
-// 期望的 12 页（须与 index.html 的 PHAROS_PAGES 一致）
-const WANT = ['cover', 'why', 'overview', 'decision', 'holdings', 'allocation', 'review', 'settings', 'algo', 'start', 'privacy', 'faq'];
+// 期望的 13 页（须与 index.html 的 PHAROS_PAGES 一致）
+// 注：privacy 与 limits 原为合并一页，2026-09-23 按展示效果拆回两页。
+const WANT = ['cover', 'why', 'overview', 'decision', 'holdings', 'allocation', 'review', 'settings', 'algo', 'start', 'privacy', 'limits', 'faq'];
 
 console.log('\n── 介绍页翻页骨架结构 ──');
 
-// ① 12 个 .page 容器
+// ① 13 个 .page 容器
 const pageIds = (src.match(/data-page="([^"]+)"/g) || []).map(function (s) { return s.replace(/.*"(.*)"/, '$1'); });
-t('页容器共 12 个（data-page 出现 12 次）', pageIds.length === 12, pageIds.length);
-t('页 id 集合与期望一致', new Set(pageIds).size === 12 && WANT.every(function (x) { return pageIds.indexOf(x) >= 0; }), pageIds.join(','));
+t('页容器共 13 个（data-page 出现 13 次）', pageIds.length === 13, pageIds.length);
+t('页 id 集合与期望一致', new Set(pageIds).size === 13 && WANT.every(function (x) { return pageIds.indexOf(x) >= 0; }), pageIds.join(','));
 
 // ② PHAROS_PAGES 单一数据源与 DOM 一致
 const mPg = src.match(/var PHAROS_PAGES = \[([\s\S]*?)\];/);
 t('存在 PHAROS_PAGES 定义', !!mPg, !!mPg);
 if (mPg) {
   const ids = (mPg[1].match(/id:\s*'([^']+)'/g) || []).map(function (s) { return s.replace(/.*'([^']+)'.*/, '$1'); });
-  t('PHAROS_PAGES 长度 12', ids.length === 12, ids.length);
+  t('PHAROS_PAGES 长度 13', ids.length === 13, ids.length);
   t('PHAROS_PAGES 的 id 集合 == DOM 的 data-page 集合', ids.slice().sort().join() === pageIds.slice().sort().join(), ids.join(','));
 }
 
