@@ -21,6 +21,7 @@ const decisions = require('./engines/decisions');
 const advice = require('./engines/advice');
 const timing = require('./engines/timing'); // 买入时机复盘：战役采集/buy 补扫/统计（见内部设计文档《买入时机复盘模块-设计v2》，未随开源发布）
 const backfill = require('./engines/backfill'); // 在途买入记录自动补填（买入确认日净值 → 份额）
+const feeSync = require('./engines/feeSync'); // 基金费率（申购/认购/赎回档/运作费）抓取与落盘 —— feeRate 的唯一写入方
 const tradeDate = require('./lib/tradeDate'); // 交易时段口径引擎：成交净值日推算
 const buyPlan = require('./lib/buyPlan'); // 买入方案推导：口径→净值→份额（唯一实现，预览/保存共用）
 const schema = require('./lib/schema'); // 数据结构版本与迁移（唯一版本口径，见 lib/schema.js 顶部说明）
@@ -106,6 +107,36 @@ function restoreSecrets(merged, cur) {
     }
   }
   return merged;
+}
+// ---------- 基金费率：前端只读（不可修改）----------
+// 费率由 engines/feeSync.js 抓取写入，是**基金属性**而非用户输入。若允许前端回传，开放版用户
+// 随手改一个数就会让「净投入 / 在途预估 / 份额推导」全部失真，而且改完不留任何痕迹。
+// 故写成硬约束（与 restoreSecrets 同一范式，都放在写盘之前）：
+//   · 磁盘上已存在的基金 → 用磁盘值把回传的费率字段盖回去（前端传什么都不生效）
+//   · 磁盘上没有的基金（本次新增）→ 直接剥掉费率字段，交给 feeSync 立即抓
+//     （★ 不能留着前端那个 feeRate:0 —— 0 是「免申购费」的语义，会被误当成已知值而跳过抓取）
+// 返回本次新增的基金代码，供调用方触发一次增量抓取。
+function pinFundFees(incoming) {
+  const added = [];
+  const cur = store.readJSON('holdings.json');
+  const byCode = {};
+  if (cur && Array.isArray(cur.funds)) {
+    for (const f of cur.funds) if (f && typeof f.code === 'string') byCode[f.code] = f;
+  }
+  const funds = (incoming && Array.isArray(incoming.funds)) ? incoming.funds : [];
+  for (const f of funds) {
+    if (!f || typeof f !== 'object' || typeof f.code !== 'string') continue;
+    const src = byCode[f.code];
+    if (src) {
+      if (src.feeRate === undefined) delete f.feeRate; else f.feeRate = src.feeRate;
+      if (src.feeDetail === undefined) delete f.feeDetail; else f.feeDetail = src.feeDetail;
+    } else {
+      delete f.feeRate;
+      delete f.feeDetail;
+      added.push(f.code);
+    }
+  }
+  return added;
 }
 function readBody(req, maxBytes = 2 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -317,7 +348,11 @@ const server = http.createServer(async (req, res) => {
       if (data.categories !== undefined && !okCategories(data.categories)) fails.push('categories 结构不合法');
       if (data.config !== undefined && !okConfig(data.config)) fails.push('config 结构不合法');
       if (fails.length) return json(res, { ok: false, error: '校验失败：' + fails.join('；') }, 400);
-      if (data.holdings && !store.writeJSONSafe('holdings.json', data.holdings)) fails.push('holdings.json');
+      let addedFunds = [];
+      if (data.holdings) {
+        addedFunds = pinFundFees(data.holdings); // ★ 费率前端只读：写盘前用磁盘值覆盖回传的费率字段
+        if (!store.writeJSONSafe('holdings.json', data.holdings)) fails.push('holdings.json');
+      }
       if (data.categories && !store.writeJSONSafe('categories.json', data.categories)) fails.push('categories.json');
       // ★config 必须 merge 而非整份替换：/api/state 已剥离 apiKey/llm.apiKey/news.*.key，
       // 前端（持仓页改日限等）把 state.config 整份回写，若整份替换会把磁盘上的鉴权 Key 抹掉（下次写操作全 401）。
@@ -328,7 +363,28 @@ const server = http.createServer(async (req, res) => {
         if (!store.writeJSONSafe('config.json', merged)) fails.push('config.json');
       }
       if (fails.length) return json(res, { ok: false, error: '保存失败（文件被占用，可能是 OneDrive/杀软锁定）：' + fails.join(',') }, 500);
+      // 新增基金：立刻抓一次费率（3 秒封顶）。抓失败也不影响保存结果 —— 后台定时任务会兜底。
+      // 必须等这一下：新基金若留着"没有费率"，用户紧接着记的那一笔会按 0 费率推导份额。
+      if (addedFunds.length) {
+        try {
+          await Promise.race([
+            feeSync.syncFundFees({ codes: addedFunds }),
+            new Promise((r) => setTimeout(r, 3000)),
+          ]);
+        } catch (e) { console.warn('[fee-sync] 新增基金费率抓取失败:', e && e.message || e); }
+      }
       return json(res, { ok: true });
+    }
+    if (p === '/api/fees/refresh' && req.method === 'POST') {
+      // 手动刷新基金费率（鉴权同 /api/save：它会写 holdings.json，不能对局域网裸奔）。
+      // force=1 无视 30 天有效期强制重抓；不带则只补「没抓过 / 已过期」的。
+      const ak = config.getApiKey();
+      if (!ak || req.headers['x-api-key'] !== ak) {
+        return json(res, { ok: false, error: '鉴权失败：缺少或错误的 API Key（设置页可查看/重置）。' }, 401);
+      }
+      const force = u.searchParams.get('force') === '1';
+      const out = await feeSync.syncFundFees({ force });
+      return json(res, Object.assign({ ok: true }, out));
     }
     if (p === '/api/theme-map' && req.method === 'POST') {
       // 穿透补词典向导：批量追加词典条目（股票→赛道）。鉴权同 /api/save；幂等去重（normalizeStockName 全等比对）。
@@ -636,6 +692,16 @@ if (require.main === module) {
     }
     // 买入时机复盘：启动即幂等补扫历史 purchases（buy 样本进池，含战役外/历史定投标注；失败不致命）
     try { timing.buyScan(); } catch (e) { console.warn('[timing] 启动 buyScan 失败:', e && e.message || e); }
+    // 基金费率：启动后延迟一次（不阻塞首屏 —— 首屏抓净值比抓费率重要得多），此后每 24 小时一次。
+    // 定时器 unref：不因它挂着而让进程无法自然退出。启动时跑不到的部分（新增基金）由 /api/save 触发。
+    const feeRun = () => {
+      feeSync.syncFundFees().then((r) => {
+        if (r && r.updated) console.log('[fee-sync] 已更新 ' + r.updated + ' 只基金的费率');
+        if (r && r.failed) console.warn('[fee-sync] ' + r.failed + ' 只抓取失败（保留原值，下次重试）');
+      }).catch((e) => console.warn('[fee-sync] 同步失败:', e && e.message || e));
+    };
+    const feeT1 = setTimeout(feeRun, 3000); if (feeT1.unref) feeT1.unref();
+    const feeT2 = setInterval(feeRun, 24 * 3600 * 1000); if (feeT2.unref) feeT2.unref();
   };
   if (HOST) server.listen(PORT, HOST, onReady); else server.listen(PORT, onReady);
 }

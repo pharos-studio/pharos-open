@@ -70,7 +70,7 @@ export async function commitBulkRows(items) {
     const built = toAdd.map(r => Object.assign({
       code: r.code, name: r.name, category: r.category, market: r.market,
       caliber: (r.category === 'broad') ? (r.bulkCal || (r.market === 'QDII' ? 'us' : 'cn')) : undefined,
-      feeRate: 0,
+      // 费率不在这里给值：由后端 feeSync 抓取写入（传了也会被 pinFundFees 剥掉）
       estimateIndex: r.est || null,
       estimateLabel: r.est ? ((EST_OPTIONS.find(o => o.value === r.est) || {}).label || null) : null,
       purchases: [],

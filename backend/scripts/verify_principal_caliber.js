@@ -257,5 +257,60 @@ console.log('\n【L3】接线不变量（源码级）');
 }
 
 // ══════════════════════════════════════════════════════════════
+// L3b —— 基金费率：抓取 → 落盘 → 防改（2026-09-23）
+//   本组的重点是**负向**不变量：「界面改不动费率」是功能要求，不是编码风格。
+//   一旦被破坏（有人加回输入框、或把写盘前的盖回删掉），后果是**静默算错成本**
+//   而不是报错 —— 只能靠断言锁住，不能只靠 code review。
+// ══════════════════════════════════════════════════════════════
+console.log('\n【L3b】基金费率接线（抓取 / 落盘 / 防改）');
+{
+  const FEE = fs.readFileSync(path.join(ROOT, 'backend', 'engines', 'feeSync.js'), 'utf8');
+  const FET = fs.readFileSync(path.join(ROOT, 'backend', 'fetchers.js'), 'utf8');
+  const SRV = fs.readFileSync(path.join(ROOT, 'backend', 'server.js'), 'utf8');
+  const A2 = fs.readFileSync(path.join(ROOT, 'backend', 'engines', 'analysis.js'), 'utf8');
+
+  // ── 抓取层 ──
+  t('fetchers 导出 fetchFundRates', /module\.exports = \{[\s\S]*?fetchFundRates[\s\S]*?\}/.test(FET), undefined);
+  t('★ 费率走东财移动接口且用移动端 UA（桌面 UA 会被业务码 61136403 拦成「假 200」）',
+    /FundMNRateInfo/.test(FET) && /fetchFundRates[\s\S]{0,600}?ARCHIVE_UA/.test(FET), undefined);
+
+  // ── 落盘层 ──
+  t('feeSync 导出 syncFundFees', /module\.exports = \{ syncFundFees/.test(FEE), undefined);
+  t('★ 抓不到时保留原值：feeRate 仅在拿到折后价时覆盖，且没有 0 兜底（0 = 免申购费，是有效值）',
+    /if \(it\.r\.sub && it\.r\.sub\.rate != null\) it\.f\.feeRate = it\.r\.sub\.rate;/.test(FEE)
+    && !/feeRate\s*\|\|\s*0/.test(FEE), undefined);
+  t('★ TTL 判据用数字时间戳 updatedAt（若误用日期串 updated，相减得 NaN ⇒ 每次全量重抓）',
+    /d\.updatedAt = now;/.test(FEE) && /detail\.updatedAt/.test(FEE) && /d\.updated = day;/.test(FEE), undefined);
+
+  // ── 防改层（负向）──
+  t('server 定义 pinFundFees', /function pinFundFees\(incoming\)/.test(SRV), undefined);
+  const idxPin = SRV.indexOf('pinFundFees(data.holdings)');
+  const idxWrite = SRV.indexOf("writeJSONSafe('holdings.json'");
+  t('★ /api/save 在写盘**之前**调用 pinFundFees（顺序不可对调，否则等于没保护）',
+    idxPin > -1 && idxWrite > -1 && idxPin < idxWrite, { idxPin: idxPin, idxWrite: idxWrite });
+  t('★ 新增基金剥掉费率字段（留下的 feeRate:0 会被当成「已知的 0」而跳过抓取）',
+    /else \{\s*delete f\.feeRate;\s*delete f\.feeDetail;/.test(SRV), undefined);
+  t('/api/fees/refresh 端点存在且带鉴权',
+    /'\/api\/fees\/refresh'/.test(SRV) && /feeSync\.syncFundFees\(\{ force \}\)/.test(SRV), undefined);
+  t('启动延迟 3s + 每 24h 定时（unref 不阻塞进程退出）',
+    /setTimeout\(feeRun, 3000\)/.test(SRV) && /setInterval\(feeRun, 24 \* 3600 \* 1000\)/.test(SRV) && /unref/.test(SRV), undefined);
+
+  // ── 展示层：只读（负向断言，扫全部 public/js）──
+  const JSDIR = path.join(ROOT, 'public', 'js');
+  const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(d, e.name);
+    return e.isDirectory() ? walk(p) : (p.endsWith('.js') ? [p] : []);
+  });
+  const UISRC = walk(JSDIR).map((p) => fs.readFileSync(p, 'utf8')).join('\n');
+  t('★ 前端不得写入费率（全 public/js 无 feeRate 的赋值/字面量）',
+    !/feeRate\s*[:=](?!=)/.test(UISRC), (UISRC.match(/feeRate\s*[:=](?!=)/g) || []));
+  t('★ 前端不得有费率输入框', !/<input[^>]*\bfee/i.test(UISRC), undefined);
+  t('analysis 透出 feeRate（经 validFeeRate 归一）/ feeDetail',
+    /feeRate: buyPlan\.validFeeRate\(f\.feeRate\)/.test(A2) && /feeDetail: f\.feeDetail/.test(A2), undefined);
+  t('★ 费率仍是净投入的输入（analysis 传 f.feeRate 给 netInvestedTotal，语义链未断）',
+    /netInvestedTotal\(purchases, f\.feeRate\)/.test(A2), undefined);
+}
+
+// ══════════════════════════════════════════════════════════════
 console.log('\n\u2500\u2500 结果: ' + pass + ' 通过 / ' + fail + ' 失败 \u2500\u2500');
 process.exit(fail ? 1 : 0);
