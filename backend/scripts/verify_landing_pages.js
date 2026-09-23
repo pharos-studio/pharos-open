@@ -8,15 +8,27 @@
  * 导航轮后升级为「弧形滚轮」（移植 OptionWheel 的算法与视觉，刻意不引入 React / 构建链）：
  * ⑧ 节同时钉住「移植到位」与「没被改回 React」这两件事。
  *
- * 判据：读 index.html 原文 + 正则。不联网、零依赖。
+ * 判据：读 index.html 与 landing/ 下的 css / js 原文 + 正则。不联网、零依赖。
  * 退出码：0 全过 / 1 有失败（挂进 npm test 的 test:offline）。
  */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
-const FILE = path.join(ROOT, 'index.html');
-const src = fs.readFileSync(FILE, 'utf8');
+
+/* 2026-09-23 结构调整：介绍页的 CSS / JS 已从 index.html 拆到 landing/ 下，
+   index.html 只保留 13 页骨架与引用。这里把 6 个文件拼成同一份 src 继续断言
+   —— 判据不变，只是换了"从哪里读"。 */
+const PARTS = [
+  'index.html',
+  'landing/base.css', 'landing/blocks.css', 'landing/deck.css',
+  'landing/landing.js', 'landing/hero-3d.js'
+];
+PARTS.forEach(function (rel) {
+  if (!fs.existsSync(path.join(ROOT, rel))) { console.error('✗ 缺少文件：' + rel); process.exit(1); }
+});
+const src = PARTS.map(function (rel) { return fs.readFileSync(path.join(ROOT, rel), 'utf8'); }).join('\n');
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
 let pass = 0, fail = 0;
 function t(name, cond, actual) {
@@ -24,7 +36,7 @@ function t(name, cond, actual) {
   else { fail++; console.log('  ❌ ' + name + '  实际：' + String(actual)); }
 }
 
-// 期望的 13 页（须与 index.html 的 PHAROS_PAGES 一致）
+// 期望的 13 页（须与 landing/landing.js 的 PHAROS_PAGES 一致）
 // 注：privacy 与 limits 原为合并一页，2026-09-23 按展示效果拆回两页。
 const WANT = ['cover', 'why', 'overview', 'decision', 'holdings', 'allocation', 'review', 'settings', 'algo', 'start', 'privacy', 'limits', 'faq'];
 
@@ -87,6 +99,14 @@ t('键盘防护：轮盘 keydown 阻止冒泡（防与全局翻页重复触发�
 t('内容让位为动态计算（大屏不白留）', /padding-right:calc\(22px \+ max\(0px, var\(--wheel-w\)/.test(src), '-');
 t('窄屏点阵兜底仍在（max-width:760px 下 .pager）', /@media \(max-width:760px\)\{[\s\S]{0,240}?\.pager\{/.test(src), '-');
 t('未引入 React / JSX（保持零依赖零构建）', !/(from\s*['"]react|require\(\s*['"]react|React\.createElement|jsx)/i.test(src), '-');
+
+// ⑨ 拆分成多文件后的组织（2026-09-23：CSS / JS 移入 landing/，index.html 只留骨架 + 引用）
+t('index.html 引用 landing/ 的三个样式表', /<link rel="stylesheet" href="landing\/base\.css">[\s\S]*?landing\/blocks\.css[\s\S]*?landing\/deck\.css/.test(html), '-');
+t('index.html 引用 landing/ 的两个脚本（普通 + module）', /<script src="landing\/landing\.js"><\/script>/.test(html) && /<script type="module" src="landing\/hero-3d\.js"><\/script>/.test(html), '-');
+t('index.html 里已无内联 <style> / 内联脚本', !/<style>/.test(html) && !/<script>/.test(html), '-');
+t('hero-3d.js 的 three 路径已改为 ../public/vendor/', /import\('\.\.\/public\/vendor\/three\.module\.min\.js'\)/.test(src), '-');
+t('五个资源文件都非空', ['landing/base.css', 'landing/blocks.css', 'landing/deck.css', 'landing/landing.js', 'landing/hero-3d.js']
+  .every(function (rel) { return fs.statSync(path.join(ROOT, rel)).size > 500; }), '-');
 
 console.log('\n结果：PASS=' + pass + ' FAIL=' + fail);
 process.exit(fail ? 1 : 0);

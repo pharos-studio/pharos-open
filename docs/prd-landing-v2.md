@@ -174,11 +174,38 @@ v2 不再是「一条自由滚动的长页」，而是一套**翻页式演示（
 ---
 
 ## 附录：技术现状速查
-- 三维场景：`index.html` 内 `<script type="module">` 场景源码 + `public/vendor/three.module.min.js`（本地三维库，不联网加载）。
+- 三维场景：`landing/hero-3d.js`（自包含模块）+ `public/vendor/three.module.min.js`（本地三维库，不联网加载；相对路径为 `../public/vendor/`）。
 - 三维探针：本地 3D 探针（**未随仓库发布**）；仓库内的守卫见 `backend/scripts/verify_caliber_routing.js` 与 `npm test`。
 - 命名防漂移：`backend/scripts/verify_caliber_routing.js`。
 - 部署：GitHub Pages（`pharos-studio/pharos-open`）。流程见 `CONTRIBUTING.md`：`clone → 切分支 → 开 PR → Squash 合并`（不直推 `main`）。
 - 本地预览：仓库根起任意静态服务器访问根 `index.html`（如 `python -m http.server 8123`）；注意 `npm start`(:3000) **只托管 `public/`**，看不到根介绍页。
+
+### 代码组织与文件归属（2026-09-23 拆分后）
+
+介绍页由"单文件 2002 行"拆成 **1 个入口 + 5 个资源文件**。HTML 仍留在 `index.html`（不拆），以保住「无 JS 也能读 + 无首屏白屏 + SEO」；CSS / JS 移入 `landing/`：
+
+| 文件 | 管什么 | 约行数 |
+|---|---|---|
+| `index.html` | 13 页 HTML 骨架 + 5 行引用 | 650 |
+| `landing/base.css` | `:root` 全部设计 token、全局排版、顶栏 | 101 |
+| `landing/blocks.css` | 通用组件（hero / 数字条 / 面板 / 表格 / 卡片 / 步骤 / FAQ / 入场动效 / 响应式） | 230 |
+| `landing/deck.css` | 整页翻页布局 + 导航轮盘 + 窄屏与 reduce 降级 | 108 |
+| `landing/landing.js` | `PHAROS_PAGES`（页名单一数据源）+ 翻页引擎 + 轮盘 | 293 |
+| `landing/hero-3d.js` | three.js 首屏场景（自包含，与页面只通过 DOM / window 通信） | 618 |
+
+**要做的事 → 该动哪个文件**（v2 剩余工作按此归位，避免改动散落、避免"改来改去"）：
+
+| 要做什么 | 改哪里 |
+|---|---|
+| 改某页文案 / 版式 | `index.html` 对应 `<section>`；页专属样式建议新建 `landing/pages.css` |
+| 加 / 删一页，或改页名 | 只改 `landing/landing.js` 的 `PHAROS_PAGES`；`index.html` 相应加 / 删一个 `<section>`（断言会挡住对不上的情况） |
+| 调翻页节奏 / 轮盘参数 | `landing/landing.js` 的 `WHEEL` 对象；时长看 `--dur-page` |
+| 封面 3D 打磨 | `landing/hero-3d.js` |
+| 改配色 / 字号 / 时长 token | `landing/base.css` 的 `:root` |
+| 改通用组件（按钮 / 卡片 / 表格…） | `landing/blocks.css` |
+| 改翻页布局 / 轮盘形态 / 响应式 | `landing/deck.css` |
+
+**守卫**：`backend/scripts/verify_landing_pages.js`（45 条静态断言，已改为跨 6 个文件读取）—— 改页名、删页、挪文件位置时它会先红。
 
 ---
 *已决清单（v1.0 定稿前已确认）：*

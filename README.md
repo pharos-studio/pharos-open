@@ -125,6 +125,8 @@ git pull
 
 后端**只托管 `public/`**，所以根目录那一页不会被本地服务接管 —— 这是有意的：一个给「还没装的人看」，一个给「已经在用的人用」。要看板请走 <http://localhost:3000>。
 
+> 介绍页的样式与脚本已拆到 **`landing/`** 下（`base.css` / `blocks.css` / `deck.css` / `landing.js` / `hero-3d.js`），根 `index.html` 只保留 13 页骨架与几行引用。两套前端依旧互不相干：介绍页是静态托管，`public/` 由本地服务提供。
+
 ---
 
 ## 它和你手机里的基金 App 有什么不同
@@ -197,7 +199,8 @@ data/                   数据目录，按角色分五区
 ├── series/             自建时序序列（增量累积）
 └── example/            脱敏模板，setup.bat / npm run setup 从这里生成正式文件
 docs/                   算法与架构文档
-index.html              项目介绍页（GitHub Pages）
+index.html              项目介绍页（GitHub Pages）—— 13 页骨架 + 对 landing/ 的引用
+landing/                介绍页的样式与脚本（base / blocks / deck.css + landing.js + hero-3d.js）
 package.json            npm scripts：setup / start / test / audit
 setup.bat               第一次运行：生成数据文件（Windows 双击；其他平台 npm run setup）
 start.bat               启动服务（Windows 双击；其他平台 npm start）
