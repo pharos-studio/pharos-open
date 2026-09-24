@@ -10,7 +10,7 @@
     "start": "node backend/server.js",
     "setup": "node backend/scripts/setup.js",
     "test": "npm run setup && npm run test:offline && npm run audit",
-    "test:offline": "node backend/scripts/verify_caliber_routing.js && node backend/scripts/verify_dividend_reason.js && node backend/scripts/verify_nav_parallel.js && node backend/scripts/verify_trading_calendar.js && node backend/scripts/timing-smoke-test.js && node backend/scripts/verify_composite_score.js && node backend/scripts/verify_edit_recalc.js && node backend/scripts/verify_principal_caliber.js && node backend/scripts/verify_schema_migrate.js",
+    "test:offline": "node backend/scripts/verify_caliber_routing.js && node backend/scripts/verify_dividend_reason.js && node backend/scripts/verify_nav_parallel.js && node backend/scripts/verify_trading_calendar.js && node backend/scripts/timing-smoke-test.js && node backend/scripts/verify_composite_score.js && node backend/scripts/verify_edit_recalc.js && node backend/scripts/verify_principal_caliber.js && node backend/scripts/verify_schema_migrate.js && node backend/scripts/verify_landing_pages.js",
     "test:network": "node backend/scripts/verify_bond10y.js",
     "check:offline": "node backend/scripts/check_offline.js",
     "audit": "node backend/scripts/audit_desensitize.js .",
