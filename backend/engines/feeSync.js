@@ -26,7 +26,7 @@
  *
  * ★★ 与收益口径的关系（别踩的坑）：费率**不会**改写已确认的买入记录。
  *   analysis.js 的净投入对「已确认（有 shares + nav）」的记录直接取 shares × nav（券商真值），
- *   只有「在途（shares 未确认）」才用 amount × (1 − feeRate) 预估。
+ *   只有「在途（shares 未确认）」才用 amount ÷ (1 + effectiveRate) 预估。
  *   ⇒ 补齐费率不会凭空改写历史盈亏，只影响将来记新一笔时的份额推导与在途预估。
  */
 const store = require('../lib/store');
@@ -34,6 +34,7 @@ const util = require('../lib/util');
 const fetchers = require('../fetchers');
 
 const RATE_TTL = 30 * 24 * 3600 * 1000;
+const STATUS_TTL = 24 * 3600 * 1000;
 const SRC_TAG = 'eastmoney';
 
 let running = false;          // in-flight 锁
@@ -42,6 +43,24 @@ let pendingAll = false;       // 跑动期间新来的「全量」请求
 
 function freshEnough(detail) {
   return !!(detail && detail.updatedAt && (Date.now() - detail.updatedAt) < RATE_TTL);
+}
+function statusFresh(status) {
+  return !!(status && status.updatedAt && (Date.now() - status.updatedAt) < STATUS_TTL);
+}
+function normalizePurchaseStatus(r, updatedAt) {
+  const raw = r && r.sgState != null ? String(r.sgState) : null;
+  let state = 'unknown';
+  if (raw && /暂停|封闭|终止|不可申购|停止/.test(raw)) state = 'suspended';
+  else if (raw && /限|额度/.test(raw)) state = 'limited';
+  else if (raw && /开放|正常|可申购/.test(raw)) state = 'open';
+  const rawMax = r && r.maxBuyRaw != null ? String(r.maxBuyRaw) : '';
+  const numericMax = r && Number(r.maxBuy);
+  const unlimited = /不限|无限|--/.test(rawMax) || (Number.isFinite(numericMax) && numericMax >= 100000000000);
+  return {
+    state, raw, maxBuy: state === 'suspended' || unlimited ? null : (r && r.maxBuy || null),
+    unlimited: state === 'suspended' ? false : unlimited,
+    updatedAt,
+  };
 }
 
 function isFundCode(v) { return /^\d{6}$/.test(String(v == null ? '' : v).trim()); }
@@ -56,7 +75,7 @@ async function runOnce(o) {
   const targets = holdings.funds.filter((f) => {
     if (!f || !isFundCode(f.code)) return false;
     if (want.size && !want.has(String(f.code))) return false;
-    return o.force === true || !freshEnough(f.feeDetail);
+    return o.force === true || !freshEnough(f.feeDetail) || !statusFresh(f.purchaseStatus);
   });
   if (!targets.length) return { ok: true, checked: 0, updated: 0, failed: 0, changed: false, codes: [] };
 
@@ -67,21 +86,36 @@ async function runOnce(o) {
   const day = util.todayStr();
   const updatedCodes = [];
   let failed = 0;
+  const patches = [];
   for (const it of got) {
     if (!it.r) { failed++; continue; }   // 抓不到 → 不写 feeDetail（下次重试），feeRate 保持原值
-    const d = Object.assign({}, it.r);
-    d.src = SRC_TAG;
-    d.updatedAt = now;
-    d.updated = day;
-    it.f.feeDetail = d;
-    // ★ 只在真拿到「折后申购费率」时覆盖算法标量。C 类免申购费会返回 0 → 0 是有效值，照写。
-    if (it.r.sub && it.r.sub.rate != null) it.f.feeRate = it.r.sub.rate;
+    patches.push({
+      code: String(it.f.code), result: it.r,
+      updateRate: o.force === true || !freshEnough(it.f.feeDetail),
+      updateStatus: o.force === true || !statusFresh(it.f.purchaseStatus),
+    });
     updatedCodes.push(it.f.code);
   }
   if (!updatedCodes.length) {
     return { ok: true, checked: targets.length, updated: 0, failed, changed: false };
   }
-  if (!store.writeJSONSafe('holdings.json', holdings)) {
+  const saved = await store.withFileLocks(['holdings.json'], async () => {
+    const latest = store.readJSON('holdings.json');
+    if (!latest || !Array.isArray(latest.funds)) return false;
+    const byCode = new Map(latest.funds.filter(Boolean).map((f) => [String(f.code), f]));
+    for (const patch of patches) {
+      const f = byCode.get(patch.code);
+      if (!f) continue;
+      if (patch.updateRate) {
+        const d = Object.assign({}, patch.result, { src: SRC_TAG, updatedAt: now, updated: day });
+        f.feeDetail = d;
+        if (patch.result.sub && patch.result.sub.rate != null) f.feeRate = patch.result.sub.rate;
+      }
+      if (patch.updateStatus) f.purchaseStatus = normalizePurchaseStatus(patch.result, now);
+    }
+    return store.writeJSONSafe('holdings.json', latest);
+  });
+  if (!saved) {
     return { ok: false, checked: targets.length, updated: 0, failed, error: 'write failed (file locked by OneDrive/杀软?)' };
   }
   return { ok: true, checked: targets.length, updated: updatedCodes.length, failed, changed: true, codes: updatedCodes };
@@ -130,4 +164,4 @@ async function syncFundFees(opts) {
   }
 }
 
-module.exports = { syncFundFees, RATE_TTL };
+module.exports = { syncFundFees, RATE_TTL, STATUS_TTL, normalizePurchaseStatus, statusFresh };

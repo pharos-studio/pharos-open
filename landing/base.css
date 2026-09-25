@@ -1,0 +1,101 @@
+:root{
+  --panel:rgba(255,255,255,.05); --panel-strong:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.12); --border-strong:rgba(255,255,255,.20);
+  --gold-line:rgba(217,164,65,.22);
+  --text:#EDEFF7; --muted:#9AA3C0; --dim:#6F7899;
+  --gold:#D9A441; --gold-soft:#E8C57A;
+  --up:#FF8F8F; --down:#6FCF97;
+  --radius:12px; --radius-sm:7px; --maxw:1080px;
+  --serif:"Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC","SimSun",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+
+  /* ── 动效：时长 + 曲线（纯时长/曲线，将来可整块原样上提到 public/style.css）── */
+  --dur-1:140ms;   /* 微反馈：hover / 按下 / 焦点 / 图标切换 */
+  --dur-2:240ms;   /* 小位移：页签交叉淡入 / FAQ 展开 / 面板状态 */
+  --dur-3:520ms;   /* 区块入场：滚到才播一次 */
+  --ease-out:cubic-bezier(.22,.61,.36,1);  /* 入场：快出慢收 */
+  --ease-io:cubic-bezier(.4,0,.2,1);       /* 往复/状态切换：两端对称 */
+  --stagger:60ms;                          /* 组内逐个入场的间隔 */
+
+  /* ── v2 整页翻页骨架：翻页时长 + 顶栏高度（缓动直接复用 --ease-out）── */
+  --dur-page:760ms;                        /* 整页切换：滑动 + 淡入 */
+  --topbar-h:60px;                         /* 吸顶栏高度，翻页页的内边距用 */
+
+  /* ── v2 导航轮：弧形滚轮（移植 OptionWheel 的视觉与算法；仅 deck 模式 + ≥761px 启用）── */
+  --wheel-w:220px;                         /* 轮盘占据的右侧宽度：内容区据此让位（含弧线的横向外扩） */
+  --wheel-fs:.9rem;                        /* 页名字号：13 项的弧高与轮盘总宽都由它推出（与 WHEEL.fontSize 一致） */
+  --wheel-inset:28px;                      /* 页名右端与屏幕右缘的距离 */
+
+  /* ── 与设计系统对齐的规范名（将来上提 style.css 的边界；本页允许先在本页使用）── */
+  --accent:var(--gold);
+  --accent-soft:var(--gold-soft);
+  --text-muted:var(--muted);
+  --font-display:var(--serif);
+  --font-sans:var(--sans);
+
+  /* ── 画布底色（与 public/style.css:7-10 的 --bg 逐字一致）── */
+  --bg:
+    radial-gradient(900px 420px at 15% -60px, rgba(124,140,248,.16), transparent 65%),
+    radial-gradient(800px 360px at 100% 0%, rgba(217,164,65,.08), transparent 60%),
+    #0A1020;
+
+  /* ── 估值分档：单色阶，与涨跌红绿语义解耦（原 --indiago 改建，复用 --bg 已有色相）── */
+  --val-ramp:#7C8CF8;
+  --val-ramp-dim:rgba(124,140,248,.45);
+
+  /* ── 图表色：镜像 public/js/pages/allocation.js 的 BUCKET_COLORS（真源在那；将来上提为共享 token）── */
+  --chart-1:#4C9AF0; --chart-2:#3FBF9F; --chart-3:#9A8CF5;
+  --chart-4:#E3B94C; --chart-5:#6E8AB8; --chart-6:#C9B47A;
+  --gold-glow:#F7E7C0;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.75;
+  background:var(--bg);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+}
+/* 海图网格：极淡的经纬线，给整页一层「图纸」底纹 */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:
+    linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+  background-size:72px 72px;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 55%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0%,#000 55%,transparent 100%);
+}
+a{color:var(--gold-soft);text-decoration:none;transition:color var(--dur-1) var(--ease-io)}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;position:relative;z-index:1}
+.tnum{font-variant-numeric:tabular-nums}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:12px;top:12px;z-index:60;background:var(--gold);color:#1A1206;padding:8px 14px;border-radius:6px}
+
+/* ---------- top bar ---------- */
+.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);background:rgba(10,16,32,.72);border-bottom:1px solid var(--border)}
+.top .wrap{display:flex;align-items:center;gap:18px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;letter-spacing:.3px;color:var(--text)}
+.mark{width:28px;height:28px;flex:none;border:1px solid var(--gold-line);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.top nav{display:flex;gap:18px;margin-left:auto;font-size:13px;align-items:center}
+.top nav a{color:var(--muted);transition:color var(--dur-1) var(--ease-io)}
+.top nav a:hover{color:var(--text);text-decoration:none}
+.ghost{border:1px solid var(--border-strong);border-radius:var(--radius-sm);padding:6px 12px;font-size:13px;color:var(--text);white-space:nowrap;transition:border-color var(--dur-1) var(--ease-io),color var(--dur-1) var(--ease-io)}
+.ghost:hover{border-color:var(--gold);color:var(--gold-soft);text-decoration:none}
+@media (max-width:860px){.top nav a:not(.ghost){display:none}}
+
+/* ---------- sections ---------- */
+section{padding:68px 0;border-top:1px solid var(--border);position:relative;z-index:1}
+section:first-of-type{border-top:0}
+.eyebrow{font-size:11.5px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin:0 0 12px;display:flex;align-items:center;gap:10px}
+.eyebrow::after{content:"";height:1px;width:44px;background:linear-gradient(90deg,var(--border-strong),transparent)}
+h1{font-family:var(--serif);font-size:46px;line-height:1.18;font-weight:600;margin:0 0 8px;letter-spacing:1px}
+h2{font-family:var(--serif);font-size:27px;font-weight:600;margin:0 0 10px;letter-spacing:.4px}
+h3{font-family:var(--serif);font-size:16px;font-weight:600;letter-spacing:.3px;margin:0 0 6px}
+.sub{font-size:16px;color:var(--text);margin:0 0 14px;font-family:var(--serif)}
+.lede{font-size:16px;color:var(--muted);max-width:64ch;margin:0}
+.muted{color:var(--muted)}
+.small{font-size:12.5px;color:var(--dim);line-height:1.7}
+code{background:rgba(255,255,255,.07);border-radius:4px;padding:1px 6px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}

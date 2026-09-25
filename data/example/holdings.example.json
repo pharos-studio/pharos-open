@@ -1,5 +1,14 @@
 {
-  "_schemaVersion": 1,
-  "_comment": "EMPTY STARTER — DEMO DATA, NOT real holdings. 这是给「从零开始」的人用的空模板：跑 setup 后它会变成 data/state/holdings.json，然后你到看板的「持仓」页添加自己的第一只基金即可，不需要手改这个文件。",
+  "_schemaVersion": 2,
+  "_shareMigration": {
+    "version": 2,
+    "status": "complete",
+    "recalculated": 0,
+    "historyRebuilt": 0,
+    "rateBasis": "migration-current-rate",
+    "errors": [],
+    "completedAt": null
+  },
+  "_comment": "EMPTY STARTER — DEMO DATA, NOT real holdings. 这是给「从零开始」的人用的空模板：跑 setup 后它会变成 data/state/holdings.json，然后你到看板的「我的基金」页添加自己的第一只基金即可，不需要手改这个文件。",
   "funds": []
 }

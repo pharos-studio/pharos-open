@@ -239,19 +239,24 @@ function pct(a, b) {
   const badSample = [];
   for (const r of rows) {
     const f = holdings.funds.find((x) => x.code === r.code);
-    const fee = buyPlan.validFeeRate(f && f.feeRate);
-    const exp = buyPlan.computeShares(r.amount, fee, r.cur.nav);
+    const fee = buyPlan.validFeeRate(r.cur.quotedFeeRate != null ? r.cur.quotedFeeRate : f && f.feeRate);
+    const exp = buyPlan.computeShares(r.amount, fee, r.cur.nav, !!r.cur.feeWaived);
     if (exp == null) continue;
     if (Math.abs(exp - r.cur.shares) < 1e-9) selfOk++;
     else if (Math.abs(exp - r.cur.shares) < 0.001) feeDiff++;
     else { selfBad++; if (badSample.length < 6) badSample.push(r); }
   }
   console.log('');
-  console.log('─── 库内 shares 与「金额×(1−费率)÷nav」是否自洽 ───');
+  console.log('─── 库内 shares 与「[金额÷(1+有效费率)]÷nav」是否自洽 ───');
   console.log('  完全一致 : ' + selfOk + '    小数舍入级差异(<0.001份) : ' + feeDiff + '    明显不一致 : ' + selfBad);
   for (const r of badSample) {
     console.log('     · ' + r.code + ' ' + r.date + '  库内 ' + r.cur.shares + '  公式 ' +
-      buyPlan.computeShares(r.amount, buyPlan.validFeeRate((holdings.funds.find((x) => x.code === r.code) || {}).feeRate), r.cur.nav));
+      buyPlan.computeShares(
+        r.amount,
+        buyPlan.validFeeRate(r.cur.quotedFeeRate != null ? r.cur.quotedFeeRate : (holdings.funds.find((x) => x.code === r.code) || {}).feeRate),
+        r.cur.nav,
+        !!r.cur.feeWaived
+      ));
   }
 
   console.log('');

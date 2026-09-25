@@ -19,6 +19,7 @@ const LAYOUT = {
   'signals.json': 'state',
   'timing_state.json': 'state',
   'timing_samples.json': 'state',
+  'share_migration_journal.json': 'state',
   // 私有回归夹具：真实净值/份额/本金基线。只存在于数据机本地（.gitignore 已忽略，
   // 绝不入库、绝不被 publish.js 复制到公开仓）。公开仓没有它 → 相关断言自动 SKIP。
   'regression_cases.json': 'state',
@@ -62,6 +63,46 @@ function ensureParent(target) {
 const nap = (ms) => { const end = Date.now() + ms; while (Date.now() < end) {} };
 // 进程唯一后缀：多进程并发写同一文件时，避免共享 .tmp 互相覆盖
 const _pidSuffix = '_' + process.pid + '_' + Date.now().toString(36) + '.tmp';
+
+// 进程级异步互斥。所有持仓/历史的读改写必须先拿锁；多文件按文件名排序获取，避免死锁。
+const _lockTails = new Map();
+async function acquireFileLock(file) {
+  const key = String(file);
+  const previous = _lockTails.get(key) || Promise.resolve();
+  let releaseGate;
+  const gate = new Promise((resolve) => { releaseGate = resolve; });
+  const tail = previous.catch(() => {}).then(() => gate);
+  _lockTails.set(key, tail);
+  await previous.catch(() => {});
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    releaseGate();
+    if (_lockTails.get(key) === tail) _lockTails.delete(key);
+  };
+}
+
+async function withFileLocks(files, fn) {
+  const keys = Array.from(new Set(files.map(String))).sort();
+  const releases = [];
+  try {
+    for (const key of keys) releases.push(await acquireFileLock(key));
+    return await fn();
+  } finally {
+    for (let i = releases.length - 1; i >= 0; i--) releases[i]();
+  }
+}
+
+async function updateJSONSafe(file, updater) {
+  return withFileLocks([file], async () => {
+    const current = readJSON(file);
+    const next = await updater(current);
+    if (next === undefined) return { ok: true, changed: false, value: current };
+    const ok = writeJSONSafe(file, next);
+    return { ok, changed: ok, value: next };
+  });
+}
 
 // 读：挂 schema 归一（只补业务缺省值；版本号不经此路径 —— 见 lib/schema.js 铁律 1/2）。
 // 需要磁盘真值（迁移、字节级比对）时用 readJSONRaw。
@@ -109,15 +150,13 @@ function lastSnapshotFundValue(code) {
   return null;
 }
 async function appendSnapshot(snap) {
-  const h = readHistory();
-  const last = h[h.length - 1];
-  if (last && last.date === snap.date) {
-    h[h.length - 1] = snap;
-  } else {
-    h.push(snap);
-  }
-  // 历史快照非致命：写不进（如被 OneDrive 锁住）只少一条曲线，不拖累整个看板
-  writeJSONSafe('history.json', h);
+  return withFileLocks(['history.json'], async () => {
+    const h = readHistory();
+    const last = h[h.length - 1];
+    if (last && last.date === snap.date) h[h.length - 1] = snap;
+    else h.push(snap);
+    return writeJSONSafe('history.json', h);
+  });
 }
 
 // ---------- 决策快照（供复盘「每日」tab 的周对比）----------
@@ -138,4 +177,8 @@ function writeDecisionHistory(entry) {
   return true;
 }
 
-module.exports = { DATA_DIR, LAYOUT, dataPath, readJSON, readJSONRaw, writeJSON, writeJSONSafe, readHistory, lastSnapshotFundValue, appendSnapshot, readDecisionHistory, writeDecisionHistory };
+module.exports = {
+  DATA_DIR, LAYOUT, dataPath, readJSON, readJSONRaw, writeJSON, writeJSONSafe,
+  acquireFileLock, withFileLocks, updateJSONSafe,
+  readHistory, lastSnapshotFundValue, appendSnapshot, readDecisionHistory, writeDecisionHistory,
+};

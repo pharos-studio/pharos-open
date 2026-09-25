@@ -243,6 +243,23 @@ function synthesizePositionLabel(dec) {
   return (dec && dec.action === 'add') ? 'L2已确认加仓' : 'L2未确认加仓(不动)';
 }
 
+function purchaseStatusMeta(f, now) {
+  const s = f && f.purchaseStatus;
+  const ts = now == null ? Date.now() : Number(now);
+  const fresh = !!(s && s.updatedAt && ts - Number(s.updatedAt) < 24 * 3600 * 1000);
+  const state = s && s.state || 'unknown';
+  return { state, fresh, suspended: fresh && state === 'suspended', unavailable: !fresh || state === 'unknown' };
+}
+
+function purchaseDecision(marketVerdict, ps, userLimit) {
+  const blocked = !!(ps && (ps.suspended || ps.unavailable)) || (userLimit != null && userLimit <= 0);
+  return {
+    blocked,
+    verdict: blocked ? 'hold' : marketVerdict,
+    executable: !blocked && marketVerdict === 'add',
+  };
+}
+
 // 综合分信号入口：挂载 _dec/_marketScore 副作用 + 返回 scoreMap（唯一活输出）。
 // 参数保持原签名（allocation/analysis 调用处不变）；totalValue/monthlyBudget 已无用途，保留形参不破坏调用方。
 function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget, valuationMap, dailyLimits) {
@@ -269,7 +286,9 @@ function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget,
     const dec = hit.reg.builder(f, valuationMap, config.getConfig());
     f._dec = dec;
     const lim0 = (dailyLimits && dailyLimits[f.code] != null) ? dailyLimits[f.code] : null;
-    f._composite = synthesizeCompositeScore(dec, AC, hit.reg.type, hit.reg.caliber, { suspended: lim0 != null && lim0 <= 0 });
+    const ps = purchaseStatusMeta(f);
+    f._purchaseStatusMeta = ps;
+    f._composite = synthesizeCompositeScore(dec, AC, hit.reg.type, hit.reg.caliber, { suspended: ps.suspended || (lim0 != null && lim0 <= 0) });
     f._marketScore = f._composite.composite; // 语义变更：位置分 → 综合分（0~100）
   });
 
@@ -278,6 +297,8 @@ function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget,
     const b = util.engineCategoryToBucket(f.category);
     if ((policy[b] || 'buy') !== 'buy') return false;
     if (dailyLimits && dailyLimits[f.code] != null && dailyLimits[f.code] <= 0) return false;
+    const ps = f._purchaseStatusMeta || purchaseStatusMeta(f);
+    if (ps.suspended || ps.unavailable) return false;
     return true;
   });
 
@@ -301,6 +322,9 @@ function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget,
     }
     const lim = (dailyLimits && dailyLimits[f.code] != null) ? dailyLimits[f.code] : null;
     const c = f._composite || {};
+    const ps = f._purchaseStatusMeta || purchaseStatusMeta(f);
+    const marketVerdict = f._dec.action === 'add' ? 'add' : 'hold';
+    const decision = purchaseDecision(marketVerdict, ps, lim);
     scoreMap[f.code] = {
       code: f.code, name: f.name,
       marketScore: +f._marketScore.toFixed(1),                                   // = 综合分
@@ -311,7 +335,12 @@ function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget,
       degraded: c.degraded || [],                                               // ['V'] / ['M'] / ['V','M']
       positionLabel: synthesizePositionLabel(f._dec),
       eligible: eligible.includes(f),
-      suspended: lim != null && lim <= 0
+      suspended: ps.suspended || (lim != null && lim <= 0),
+      purchaseStatus: f.purchaseStatus || null,
+      statusFresh: ps.fresh,
+      marketVerdict,
+      verdict: decision.verdict,
+      executable: decision.executable
     };
   });
   return { scoreMap };
@@ -373,4 +402,4 @@ function legacyPositionScore(dec, AC, cheapBy, caliber) {
   return square(clamp(p, 0, 1));               // 沿用平方加速 p²×100
 }
 
-module.exports = { computeAllocation, synthesizePositionScore, synthesizeValueScore, synthesizeMomentumScore, synthesizeCompositeScore, legacyPositionScore, compositeLabelOf, relScale, wavg };
+module.exports = { computeAllocation, synthesizePositionScore, synthesizeValueScore, synthesizeMomentumScore, synthesizeCompositeScore, legacyPositionScore, compositeLabelOf, relScale, wavg, purchaseStatusMeta, purchaseDecision };

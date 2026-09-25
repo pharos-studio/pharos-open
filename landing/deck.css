@@ -1,0 +1,108 @@
+/* ══════════════════════════════════════════════════════════════
+   v2 整页翻页骨架（2026-09-23）
+   仅在 html.deck-mode 下生效 —— 去掉这个类即回到自由长滚动。
+   过场 = 滑动 + 淡入：新页自下而上滑入并淡入，旧页向上滑出并淡出。
+   ══════════════════════════════════════════════════════════════ */
+html.deck-mode{scroll-behavior:auto}
+html.deck-mode body{overflow:hidden}
+html.deck-mode .top{z-index:50}
+html.deck-mode .deck{position:fixed;inset:0;overflow:hidden;background:var(--bg)}
+html.deck-mode .page{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  padding:calc(var(--topbar-h) + 32px) 0 40px;
+  overflow-y:auto;overscroll-behavior:contain;border-top:0;
+  opacity:0;transform:translateY(7%);
+  transition:transform var(--dur-page) var(--ease-out),opacity var(--dur-page) var(--ease-out);
+  pointer-events:none;
+}
+/* 内容不足一屏时垂直居中；超出一屏时改从顶部起（不裁切），页内可滚 */
+html.deck-mode .page > .wrap{margin-top:auto;margin-bottom:auto;width:100%}
+html.deck-mode .page[data-active]{opacity:1;transform:none;pointer-events:auto}
+html.deck-mode .page[data-left]{transform:translateY(-7%);opacity:0}
+
+/* ── 右侧导航轮：基础形态 = 圆点点阵（窄屏用它）；deck 模式 + ≥761px 时覆盖为弧形滚轮 ── */
+.pager{
+  position:fixed;right:16px;top:50%;transform:translateY(-50%);
+  z-index:40;display:flex;flex-direction:column;gap:12px;padding:10px 8px;
+}
+.pager button{
+  position:relative;width:20px;height:20px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:0;cursor:pointer;
+}
+.pager button::before{
+  content:"";width:8px;height:8px;border-radius:50%;
+  background:var(--dim);opacity:.55;
+  transition:transform var(--dur-1) var(--ease-out),background var(--dur-1) var(--ease-out),opacity var(--dur-1) var(--ease-out);
+}
+.pager button:hover::before{opacity:.9}
+.pager button[aria-current="page"]::before{background:var(--gold);opacity:1;transform:scale(1.7)}
+.pager button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:50%}
+.pager .plabel{
+  position:absolute;right:26px;top:50%;transform:translateY(-50%);
+  white-space:nowrap;font-size:12px;color:var(--text);
+  background:var(--panel-strong);border:1px solid var(--border);
+  padding:3px 9px;border-radius:var(--radius-sm);
+  opacity:0;pointer-events:none;transition:opacity var(--dur-1) var(--ease-out);
+}
+.pager button[aria-current="page"] .plabel,
+.pager button:hover .plabel,
+.pager button:focus-visible .plabel{opacity:1}
+
+@media (max-width:760px){
+  .pager{
+    right:auto;top:auto;left:50%;bottom:14px;transform:translateX(-50%);
+    flex-direction:row;gap:10px;
+  }
+  .pager .plabel{right:auto;left:50%;top:auto;bottom:26px;transform:translateX(-50%)}
+  html.deck-mode .page{padding:calc(var(--topbar-h) + 20px) 0 64px}
+}
+
+/* ── 弧形滚轮（移植 OptionWheel：圆环布局 + 帧率无关平滑 + 远处模糊淡出）──
+   只在 deck 模式且 ≥761px 生效；窄屏自动落回上面的点阵形态，无需另写规则。
+   JS 逐帧给每个 .pager button 写 transform / opacity / filter / --ow-p。 */
+@media (min-width:761px){
+  /* 内容让位：只有当 wrap 自带的两侧留白装不下轮盘时才补差，避免大屏下白留一大片 */
+  html.deck-mode .page > .wrap{
+    padding-right:calc(22px + max(0px, var(--wheel-w) - max(0px, (100vw - var(--maxw)) / 2)));
+  }
+
+  html.deck-mode .pager{
+    position:fixed;right:0;top:0;bottom:0;width:var(--wheel-w);height:auto;
+    display:block;padding:0;gap:0;
+    transform:none;            /* ★ 必须清掉基础形态的 translateY(-50%)，否则整个轮盘被顶出屏幕 */
+    touch-action:none;user-select:none;cursor:grab;
+  }
+  html.deck-mode .pager:active{cursor:grabbing}
+
+  html.deck-mode .pager button{
+    position:absolute;top:50%;right:var(--wheel-inset);left:auto;
+    width:auto;height:auto;padding:0;display:block;
+    background:none;border:0;cursor:pointer;
+    white-space:nowrap;font-size:var(--wheel-fs);line-height:1;font-weight:200;
+    transform-origin:right center;will-change:transform,opacity,filter;
+    /* --ow-p：0 = 远离中心的边缘，1 = 正中；据此在静色与金色之间过渡 */
+    color:color-mix(in srgb, var(--gold) calc(var(--ow-p,0) * 100%), var(--dim));
+  }
+  html.deck-mode .pager button::before{display:none}
+  html.deck-mode .pager button[aria-current="page"]{font-weight:500}
+  html.deck-mode .pager button:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:3px}
+
+  /* 页名由浮层改为常显（轮盘本来就全铺） */
+  html.deck-mode .pager .plabel{
+    position:static;right:auto;top:auto;transform:none;
+    background:none;border:0;padding:0;border-radius:0;
+    font-size:inherit;color:inherit;opacity:1;
+  }
+}
+
+/* ── 关动画 → 退化为可顺序滚动的长页（导航轮仍可用）── */
+@media (prefers-reduced-motion:reduce){
+  html.deck-mode,html.deck-mode body{overflow:auto}
+  html.deck-mode .deck{position:static;overflow:visible}
+  html.deck-mode .page{
+    position:static;opacity:1;transform:none;pointer-events:auto;
+    transition:none;padding:68px 0;border-top:1px solid var(--border);
+  }
+}
