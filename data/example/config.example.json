@@ -1,8 +1,11 @@
 {
-  "_schemaVersion": 1,
+  "_schemaVersion": 2,
   "apiKey": "dev",
   "currency": "¥",
   "timezone": "Asia/Shanghai",
+  "purchaseDefaults": {
+    "feeWaived": false
+  },
   "treasury10y": 0.0169,
   "usTreasury10y": 0.047,
   "_usTreasury10y_note": "美债10年（小数），仅服务海外宽基(caliber=us) 的 ERP 副锚兜底。正常由 analysis 自动抓东方财富同接口 EMG00001310 列覆盖；抓取失败才用此常量。★A股宽基禁用美债、海外禁用中债，二者不可互为兜底。",

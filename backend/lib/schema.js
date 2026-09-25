@@ -29,11 +29,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 // MIGRATIONS[n] 把数据从 (n-1) 升到 n。现在为空 —— 第一次真的要改结构时才加。
 // 例：MIGRATIONS[2] = (obj) => { /* 把 v1 结构改成 v2 */ return obj; };
-const MIGRATIONS = {};
+// holdings 的 v2 是跨 holdings/history 的严格迁移，由 engines/shareMigration.js 独占执行；
+// 此处 identity 仅供 config 等单文件版本升级及迁移框架自检。
+const MIGRATIONS = { 2: (obj) => obj };
 
 // 只补 undefined —— 语义在此处保证一次，所有 normalize* 都经它写。
 function setIfMissing(obj, key, value) {
@@ -56,11 +58,22 @@ function normalizeHoldings(h) {
       && typeof h._comment === 'string' && DEMO_MARK_RX.test(h._comment)) {
     delete h._comment;
   }
+  if (Array.isArray(h.funds)) {
+    for (const f of h.funds) {
+      if (!f || typeof f !== 'object') continue;
+      if (!Array.isArray(f.purchases)) f.purchases = [];
+    }
+  }
   // 示例（将来加字段时照这样写）：setIfMissing(h, 'someFutureField', defaultValue);
   return h;
 }
 function normalizeConfig(c) {
   if (!c || typeof c !== 'object' || Array.isArray(c)) return c;
+  if (!c.purchaseDefaults || typeof c.purchaseDefaults !== 'object' || Array.isArray(c.purchaseDefaults)) {
+    c.purchaseDefaults = { feeWaived: false };
+  } else {
+    setIfMissing(c.purchaseDefaults, 'feeWaived', false);
+  }
   return c;
 }
 
@@ -108,7 +121,9 @@ function migrateIfNeeded(file, raw, opts) {
   }
   if (v === target) return { obj: raw, changed: false };
   // v < target → 需要迁移。先备份（对现有文件的复制，不影响原文件）。
-  const full = o.dataDir ? path.join(o.dataDir, file) : null;
+  // 分区存储下逻辑文件名与物理路径不同（如 config.json → data/config/config.json）。
+  // 调用方已解析出真实路径时必须优先使用 fullPath，避免在 data/ 根目录备份不存在的旧路径。
+  const full = o.fullPath || (o.dataDir ? path.join(o.dataDir, file) : null);
   let backup = null;
   if (full) {
     backup = backupFile(full);
@@ -129,13 +144,13 @@ function migrateIfNeeded(file, raw, opts) {
   return { obj, changed: true, backup };
 }
 
-// SCHEMA_VERSION 必须恰好是「最高迁移 + 1」：加了迁移忘升号（或反之）都在加载时就炸。
+// SCHEMA_VERSION 必须恰好等于最高迁移目标版本；无迁移时基线为 v1。
 function assertConsistent() {
   const keys = Object.keys(MIGRATIONS).map(Number);
-  const max = keys.length ? Math.max.apply(null, keys) : 0;
-  if (SCHEMA_VERSION !== max + 1) {
+  const max = keys.length ? Math.max.apply(null, keys) : 1;
+  if (SCHEMA_VERSION !== max) {
     throw new Error('schema 版本不自洽：SCHEMA_VERSION=' + SCHEMA_VERSION + '，但最高迁移是 v' + max
-      + '。加迁移时必须同步把 SCHEMA_VERSION 升到 max+1。');
+      + '。加迁移时必须同步更新 SCHEMA_VERSION。');
   }
 }
 assertConsistent();

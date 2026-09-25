@@ -14,7 +14,7 @@ import * as ui from './ui-prefs.js';
 const PAGES = {
   overview:   { mod: overview,  label: '概览', sidebar: true, bottom: true },
   decision:   { mod: decision,  label: '决策', sidebar: true, bottom: true },
-  holdings:   { mod: holdings,  label: '持仓', sidebar: true, bottom: true },
+  holdings:   { mod: holdings,  label: '我的基金', sidebar: true, bottom: true },
   allocation: { mod: allocation, label: '配置', sidebar: true },
   review:     { mod: review,    label: '复盘', sidebar: true },
   settings:   { mod: settings,  label: '设置', sidebar: true },

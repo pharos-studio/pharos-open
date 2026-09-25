@@ -10,8 +10,7 @@
  *
  * 改造后口径（本脚本锁定）：
  *   ① 重算唯一判据 = 定价日键是否变化（movedKey = 日期 + 时段），与任何勾选框无关；
- *   ② 只改「金额 / 备注」**绝不触发重算** —— 保护券商真实值（高精度、6 位小数）不被
- *      4 位公式值静默覆盖；
+ *   ② 只改金额或积分状态时复用原净值重算公式记录；券商真值记录仍不覆盖份额；
  *   ③ 手动校正入口与在途补填入口全部移除（真实值修正走数据层）。
  *   ⇒ 定价日只由 `date + session` 唯一决定，见 backend/lib/tradeDate.js:nominalPricingDate。
  *
@@ -96,7 +95,7 @@ console.log('\n【L1-1】定价日规则：定价日只由「日期 + 时段」�
     tradeDate.nominalPricingDate('2026-09-02', 'T') !== tradeDate.nominalPricingDate('2026-09-02', 'T+1'));
   t('改日期 → 键变（应重算）',
     tradeDate.nominalPricingDate('2026-09-02', 'T') !== tradeDate.nominalPricingDate('2026-09-03', 'T'));
-  t('只改金额 → 键不变（不得重算）',
+  t('只改金额 → 定价键不变（复用原净值）',
     tradeDate.nominalPricingDate('2026-09-02', 'T') === tradeDate.nominalPricingDate('2026-09-02', 'T'));
 }
 
@@ -117,18 +116,18 @@ console.log('\n【L1-2】份额确认日：A 股 +1 工作日 / QDII +2 工作�
 }
 
 // ══════════════════════════════════════════════════════════════
-console.log('\n【L1-3】份额公式：金额 ×(1−费率) ÷ 净值，4 位四舍五入');
+console.log('\n【L1-3】份额公式：金额 ÷(1+费率) ÷ 净值，4 位四舍五入');
 {
   // ★ 一律用**中性构造值**（与任何真实净值/份额都不相同），两仓才能共用同一份脚本。
   t('费率 0：100 / 2 = 50',
     buyPlan.computeShares(100, 0, 2) === 50, buyPlan.computeShares(100, 0, 2));
-  t('费率 0.2%：200 ×0.998 / 2.5 = 79.84',
-    buyPlan.computeShares(200, 0.002, 2.5) === 79.84, buyPlan.computeShares(200, 0.002, 2.5));
+  t('费率 0.2%：200 ÷1.002 / 2.5 = 79.8403',
+    buyPlan.computeShares(200, 0.002, 2.5) === 79.8403, buyPlan.computeShares(200, 0.002, 2.5));
   t('四位小数（除不尽）：100 / 3 = 33.3333',
     buyPlan.computeShares(100, 0, 3) === 33.3333, buyPlan.computeShares(100, 0, 3));
   t('净值 <= 0 → null（不产出假份额）', buyPlan.computeShares(100, 0, 0) === null);
   t('金额 <= 0 → null', buyPlan.computeShares(0, 0, 1.5) === null);
-  t('费率非法（>=1）按 0 处理', buyPlan.computeShares(100, 1.2, 2) === buyPlan.computeShares(100, 0, 2));
+  t('费率非法（>=1）拒绝计算', buyPlan.computeShares(100, 1.2, 2) === null);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -200,7 +199,7 @@ console.log('\n【L2-2】已修正记录逐字段锁定（防漂回旧值）');
         p.pricingDate === tradeDate.nominalPricingDate(p.date, p.session),
         { pd: p.pricingDate, nominal: tradeDate.nominalPricingDate(p.date, p.session) });
       // 份额与自身净值/费率互洽（服务端权威重算的产物）
-      const exp = buyPlan.computeShares(p.amount, buyPlan.validFeeRate(f.feeRate), p.nav);
+      const exp = buyPlan.computeShares(p.amount, p.quotedFeeRate != null ? p.quotedFeeRate : buyPlan.validFeeRate(f.feeRate), p.nav, !!p.feeWaived);
       t(`${tag} 份额 = 公式(金额, 费率, 净值)`, exp != null && Math.abs(Number(p.shares) - exp) < 1e-9,
         { got: p.shares, exp });
     }
@@ -266,7 +265,7 @@ console.log('\n【L3】前端接线不变量（public/js/pages/holdings/ 全模�
     !/const payload = \{[^}]*recalc/.test(SRC));
 
   // ② 勾选框已删除
-  t('已无勾选框节点（type:"checkbox" 不存在）', !SRC.includes("type: 'checkbox'"));
+  t('积分抵扣控件已接入两个表单', (SRC.match(/feeWaived:/g) || []).length >= 2 && SRC.includes("type: 'checkbox'"));
   t('已无勾选框容器变量 chkRow', !SRC.includes('chkRow'));
   t('已无勾选框驱动（chk.checked 不存在）', !SRC.includes('chk.checked'));
   // 「按新成交日重算净值/份额」只允许出现在**正向提示文案**里（1 处），不得再有勾选框标签

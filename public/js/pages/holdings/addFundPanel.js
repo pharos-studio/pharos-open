@@ -125,8 +125,10 @@ export function addFundPanel() {
 
   // L1 自动带出：名称(覆盖保护)/市场(触发估算联动)/类别 + 跟踪指数
   let autoTrack = null;      // 当前解析出的 trackIndex（后端档案精确给出，或 INDEX_HINTS 兜底），提交时随 addFund 落库
+  let needsHeuristicConfirm = false;
   let autoAnchorNote = '';   // 估值锚提示：跟踪了指数但我们没有估值源 → 判定会降级
   function fillMeta(c, n, t, source, meta) {
+    needsHeuristicConfirm = !!(meta && meta.suggestedBy === 'name');
     if (name.value === '' || name.value === _lastAutoName) { name.value = n || ''; _lastAutoName = n || ''; }
     const mk = marketOfType(t);
     if (market.value !== mk) { market.value = mk; market.dispatchEvent(new Event('change')); }
@@ -218,6 +220,7 @@ export function addFundPanel() {
     if (!code.value.trim() || !name.value.trim()) { alert('请填写代码和名称'); return; }
     if (!cat.value) { alert('请选择类别'); return; } // 杜绝 core/空串落库
     if (isDuplicate(code.value.trim())) { alert('该基金已存在'); return; }
+    if (needsHeuristicConfirm && !confirm('分类仅根据基金名称启发式推断，请确认当前分类与口径无误。继续添加？')) return;
     const opt = EST_OPTIONS.find(o => o.value === est.value) || null;
     addFund(code.value.trim(), name.value.trim(), cat.value, market.value, opt ? opt.value : null, opt ? opt.label : null,
       cat.value === 'broad' ? cal.value : null, autoTrack);
@@ -225,7 +228,7 @@ export function addFundPanel() {
   addBtn.addEventListener('click', addBtnHandler);
 
   const p = el('div', { class: 'panel' });
-  p.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '添加基金' })]));
+  p.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '快速添加基金' }), el('span', { class: 'sub', text: '先填代码，档案自动带出' })]));
   p.appendChild(el('div', { style: 'margin-top:8px;display:grid;gap:10px;grid-template-columns:1fr 1fr' }, [
     labeled('代码', codeWrap), labeled('名称', name),
     el('div', { class: 'field' }, [el('label', { text: '类别' }), cat, catHint]),

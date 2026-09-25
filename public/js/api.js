@@ -65,11 +65,15 @@ export const getTiming = () => request('/api/timing'); // 买入时机复盘（�
 export const getNavOnDate = (code, date) => request('/api/nav-on-date?code=' + encodeURIComponent(code) + '&date=' + encodeURIComponent(date));
 // 买入预览：口径 + 净值 + 份额一次算好，返回 { variants: { T, 'T+1' } } 两档（只读、免鉴权）。
 // ★ 前端绝不自己算 confirmDate / 份额 —— 口径与公式只在后端 lib/buyPlan.js 一份实现。
-export const getPurchasePreview = (code, date, session, amount) =>
+export const getPurchasePreview = (code, date, session, amount, feeWaived, knownNav, pricingDate) =>
   request('/api/purchase-preview?code=' + encodeURIComponent(code)
     + '&date=' + encodeURIComponent(date)
     + '&session=' + encodeURIComponent(session || 'T')
-    + '&amount=' + encodeURIComponent(amount));
+    + '&amount=' + encodeURIComponent(amount)
+    + '&waived=' + (feeWaived ? '1' : '0')
+    + (knownNav > 0 ? '&nav=' + encodeURIComponent(knownNav) : '')
+    + (pricingDate ? '&pricingDate=' + encodeURIComponent(pricingDate) : ''));
+export const retryMigration = () => request('/api/migration/retry', { method: 'POST' });
 export const getFundLookup = (code) => request('/api/fund-lookup?code=' + encodeURIComponent(code)); // 添加基金：单只带出（A名单+B兜底）
 export const getFundList = () => request('/api/fund-list'); // 添加基金：全量精简名单（联想下拉）
 export const getTrackIndex = () => request('/api/track-index'); // 添加基金：支持的跟踪指数白名单（下拉 + 手填）

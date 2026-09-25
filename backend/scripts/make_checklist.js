@@ -302,7 +302,7 @@ function newestBak() {
   L.push('## 口径备注');
   L.push('');
   L.push('- 长假顺延由各基金**自己的净值序列**决定，不查节假日表；上限 `MAX_ROLL_DAYS = 15` 自然日，超限标「预计」。');
-  L.push('- 份额公式 `金额×(1−费率)÷净值`，与本看板「记一笔」预览用的**同一个函数**（`lib/buyPlan.js`）。');
+  L.push('- 份额公式 `[金额÷(1+有效费率)]÷净值`，与本看板「记一笔」预览用的**同一个函数**（`lib/buyPlan.js`）。');
   L.push('- 份额只依赖 `pricingDate` 的净值，与 `settleDate` 完全无关（改 `settleDate` 份额一个字节不变，有单测锁定）。');
   L.push('');
 

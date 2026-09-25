@@ -1,6 +1,6 @@
 /* 持仓页 · 基金元数据
    职责：基金名单懒加载、市场推断、分类建议、按代码归集买入记录、费率只读文案。
-   导出：marketOfType / suggestCategory / ensureFundList / purchasesByCode / feeNote
+   导出：marketOfType / suggestCategory / ensureFundList / purchasesByCode / feeNote / purchaseStatusNote
    ★ 不要放在这里：增删基金的落盘逻辑请去 fundStore.js。
 */
 
@@ -71,6 +71,19 @@ export function feeNote(f) {
   if (d.updated) tips.push('数据源 天天基金 · 更新 ' + d.updated);
   if (d.sgState) tips.push('申购状态 ' + d.sgState);
   return { text: '申购费 ' + pctText(rate), title: tips.join(' · ') };
+}
+export function purchaseStatusNote(f) {
+  const s = f && f.purchaseStatus;
+  if (!s) return { text: '申购状态未知', state: 'unknown' };
+  const fresh = !!(s.updatedAt && Date.now() - Number(s.updatedAt) < 24 * 3600 * 1000);
+  const names = { open: '开放申购', limited: '限额申购', suspended: '暂停申购', unknown: '状态未知' };
+  let text = names[s.state] || '状态未知';
+  if (!fresh) text += '（已过期）';
+  if (s.state !== 'suspended') {
+    if (s.unlimited) text += ' · 不限额';
+    else if (s.maxBuy > 0) text += ' · 实际上限 ¥' + Number(s.maxBuy).toLocaleString('zh-CN');
+  }
+  return { text, state: fresh ? s.state : 'stale', title: s.raw || '' };
 }
 // 0.0012 → "0.12%"；0 → "0%"（去掉无意义的尾零）
 function pctText(v) {

@@ -45,8 +45,19 @@ export function setAdvice(a) { ADVICE = a; }
 // 启动时拉取 state + refresh（一次性）。返回 {state, live} 供首屏渲染。
 // 顺序：先 refresh（触发后端自动补填在途记录 + 行情抓取），再 state（读已更新的 holdings）。
 export async function bootstrap() {
-  const live = await api.getRefresh();
   const state = await api.getState();
+  let live;
+  if (state.migration && state.migration.status !== 'complete') {
+    const defs = state.holdings && Array.isArray(state.holdings.funds) ? state.holdings.funds : [];
+    live = {
+      funds: defs.map(f => Object.assign({}, f, { currentValue: null, profit: null, profitPct: null, pendingAmount: 0 })),
+      totals: {}, allocation: [], plan: { scoreMap: {} }, readOnlyMigration: true,
+    };
+  } else {
+    live = await api.getRefresh();
+    // refresh 可能补填在途记录；再读一次 state 才能拿到最新流水。
+    Object.assign(state, await api.getState());
+  }
   STATE = state;
   LIVE = live;
   return { state, live };

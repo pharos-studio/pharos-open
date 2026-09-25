@@ -353,7 +353,8 @@ async function buildAdvice(session = 'am') {
       categoryName: reg.label, // = REGISTRY.label（引擎类别中文名：宽基/宽基·海外/红利·低波/主题·行业(高波动)/商品·对冲）；⚠ 非分配桶名
       unsupported: false,
       valuationAnchor: f.valuationAnchor || null,
-      verdict: card.verdict,   // 机器判定值 'add'|'hold'（= kernel dec.action）
+      marketVerdict: sm.marketVerdict || card.verdict,
+      verdict: sm.verdict || card.verdict,
       title: card.title, detail: card.detail, factors: card.factors,
       matrix: (dec && dec.matrix) || null,
       score,                                   // ← 语义变更：位置分 → **综合分**（= wV×V + wM×M）
@@ -366,6 +367,9 @@ async function buildAdvice(session = 'am') {
       degraded: sm.degraded || [],                                        // ['V'] / ['M'] / ['V','M']
       conclusion: anchorWarn + conclusionOf(dec.action, score, suspended, dailyLimit, sm.compositeLabel), // ★ 两维派生；compositeLabel 用于区分「硬约束归零」与「估值真贵」；anchorWarn 见上
       suspended, dailyLimit,
+      purchaseStatus: sm.purchaseStatus || f.purchaseStatus || null,
+      statusFresh: sm.statusFresh === true,
+      executable: sm.executable === true,
       currentValue: f.currentValue != null ? f.currentValue : 0, // 未建仓为 0；净值缺失为 0（live.funds 兜底见 A6）
       latestNav: f.latestNav,
       dayChange: f.dayChange != null ? +f.dayChange.toFixed(2) : null,

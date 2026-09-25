@@ -11,7 +11,7 @@ import * as api from '../../api.js';
 // ★ 竞态处理：seq 单调递增；响应回来时若 seq 已变（说明用户又改过），整条丢弃 ——
 //   否则「先发后到」的旧响应会覆盖新结果，用户看到的是上一版数字（静默错，最难查）。
 // dispose() 必须在表单被 replaceWith/refreshPage 销毁前调用，否则会往脱离文档的节点写字、白耗请求。
-export function createPreview({ code, getDate, getSession, getAmount, paint }) {
+export function createPreview({ code, getDate, getSession, getAmount, getFeeWaived, getKnownNav, getKnownPricingDate, paint }) {
   let seq = 0, timer = null, last = null, dead = false;
   async function run() {
     if (dead) return;
@@ -22,7 +22,8 @@ export function createPreview({ code, getDate, getSession, getAmount, paint }) {
     const my = ++seq;
     paint('loading', null);
     try {
-      const r = await api.getPurchasePreview(code, date, session, amount);
+      const r = await api.getPurchasePreview(code, date, session, amount, getFeeWaived ? getFeeWaived() : false,
+        getKnownNav ? getKnownNav() : null, getKnownPricingDate ? getKnownPricingDate() : null);
       if (dead || my !== seq) return;
       last = r; paint(r, null);
     } catch (e) {

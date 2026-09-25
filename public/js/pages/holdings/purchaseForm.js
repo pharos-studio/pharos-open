@@ -5,16 +5,27 @@
 */
 
 import * as api from '../../api.js';
+import * as store from '../../store.js';
 import { el, todayStr } from '../../util.js';
 import { refreshPage } from './state.js';
 import { sessionToggle, buyRowShell } from './formShell.js';
 import { createPreview, pvFmtOne } from './preview.js';
+
+function waiverToggle(initial, onChange) {
+  const input = el('input', { type: 'checkbox' }); input.checked = initial === true;
+  input.addEventListener('change', () => onChange && onChange(input.checked));
+  const wrap = el('label', { class: 'hint', style: 'display:flex;gap:5px;align-items:center;margin-top:3px' }, [input, el('span', { text: '积分抵扣申购费' })]);
+  wrap.isWaived = () => input.checked;
+  return wrap;
+}
 
 /* ---------- 通用：记一笔表单（桌面/手机共用） ---------- */
 export function addForm(code) {
   // pvSchedule 占位：sessionToggle 的 onChange 需要在 pv 建好之前就能引用（TDZ 规避）
   let pvSchedule = () => {};
   const sessT = sessionToggle('T', { onChange: () => pvSchedule(0) }); // 默认「15:00前」
+  const defaultWaived = !!(store.getState().config && store.getState().config.purchaseDefaults && store.getState().config.purchaseDefaults.feeWaived);
+  const waiver = waiverToggle(defaultWaived, () => pvSchedule(0));
   const dateI = el('input', { class: 'input', type: 'date', value: todayStr(), style: 'width:auto' });
   const amtI = el('input', { class: 'input', type: 'number', min: '0.01', step: '0.01', placeholder: '金额 ¥ 必填', style: 'width:110px' });
   // —— 净值/份额：完全由系统按「成交日净值」算出，不提供人工入口（真实值回填走券商核对后的数据修正） ——
@@ -32,7 +43,7 @@ export function addForm(code) {
     const amount = Number(amtI.value);
     if (!amtI.value.trim() || !isFinite(amount) || amount <= 0) { msg.textContent = '金额必填且 > 0'; return; }
     if (!dateI.value.trim()) { msg.textContent = '日期必填'; return; }
-    const payload = { code, date: dateI.value, amount, session: sessT.getSession() };
+    const payload = { code, date: dateI.value, amount, session: sessT.getSession(), feeWaived: waiver.isWaived() };
     // 预览已算出的净值直接带上（navAuto 标志让服务端用权威 feeRate 自己重算份额）。
     // pending/error 时**什么都不带** → 落成「在途」，由 backfill 在净值公布后自动补份额。
     let autoFilled = false;
@@ -57,7 +68,7 @@ export function addForm(code) {
   const cancelBtn = el('button', { class: 'btn', text: '取消', style: 'padding:3px 10px;font-size:12px' });
   cancelBtn.addEventListener('click', () => { pv.dispose(); refreshPage(); });
   // 5 列对齐容器：日期(+时段+前/后对比) / 份额(实时) / 金额 / 净值(实时) / 操作
-  const dateCell = el('div', { style: 'display:flex;flex-direction:column;gap:2px' }, [dateI, sessT, bothT, bothP]);
+  const dateCell = el('div', { style: 'display:flex;flex-direction:column;gap:2px' }, [dateI, sessT, waiver, bothT, bothP]);
   const sharesCell = el('div', { style: 'display:flex;flex-direction:column;gap:2px' }, [shMain, shSub]);
   const amountCell = amtI;
   const navCell = el('div', { style: 'display:flex;flex-direction:column;gap:2px' }, [navMain, navSub]);
@@ -72,6 +83,7 @@ export function addForm(code) {
     getDate: () => dateI.value,
     getSession: () => sessT.getSession(),
     getAmount: () => amtI.value,
+    getFeeWaived: () => waiver.isWaived(),
     paint: (r, err) => {
       const sel = sessT.getSession() || 'T';
       if (r === 'loading') { navMain.textContent = '…'; shMain.textContent = '…'; return; }
@@ -92,7 +104,10 @@ export function addForm(code) {
            + (v.settleDate ? ' · 份额 ' + v.settleDate.slice(5) + (v.settleEstimated ? ' 预计到账' : ' 确认') : ''))
         : v.message;
       // 前/后两档同时列出 —— 用户不必来回点按钮才知道有没有区别
-      if (r.converged) {
+      if (r.reusedNav) {
+        bothT.textContent = '仅金额/积分状态变化：复用原成交净值，不重新查询';
+        bothT.className = 'pv-both on'; bothP.textContent = ''; bothP.className = 'pv-both';
+      } else if (r.converged) {
         // 两档收敛 ⇒ 下单日不是交易日（那天根本没有 15:00 这个分界），前后必然同结果。
         // 开关**保留**（不隐藏不置灰），只把两行合并成一句主动说明 —— 把「看不出区别」讲清楚。
         bothT.textContent = '非交易日下单，15:00 前后无差别：' + r.variants.T.pricingDate.slice(5) + ' 的净值';
@@ -127,6 +142,7 @@ export function editForm(code, p) {
   let pvSchedule = () => {};
   const noSession = (p.session !== 'T' && p.session !== 'T+1'); // 2026-09 之前的老记录
   const sessT = sessionToggle(p.session, { allowUnknown: noSession, onChange: () => pvSchedule(0) });
+  const waiver = waiverToggle(p.feeWaived === true, () => { pvSchedule(0); refreshWarn(); });
   const dateI = el('input', { class: 'input', type: 'date', value: p.date || '', style: 'width:auto' });
   const amtI = el('input', { class: 'input', type: 'number', min: '0.01', step: '0.01', value: p.amount != null ? String(p.amount) : '', placeholder: '金额 ¥ 必填', style: 'width:110px' });
   const msg = el('div', { class: 'hint', style: 'margin-top:2px;text-align:right;max-width:170px;line-height:1.35' });
@@ -140,15 +156,16 @@ export function editForm(code, p) {
   const cancelBtn = el('button', { class: 'btn', text: '取消', style: 'padding:3px 10px;font-size:12px' });
   // 改了日期/时段 → 保存即按新定价日重算；未改 → 不提示（避免噪音）
   const movedKey = () => (dateI.value !== p.date || sessT.getSession() !== (noSession ? null : p.session));
+  const formulaChanged = () => Number(amtI.value) !== Number(p.amount) || waiver.isWaived() !== (p.feeWaived === true);
   const refreshWarn = () => {
     if (msg.textContent === '保存中…' || msg.textContent.startsWith('✓') || msg.textContent.startsWith('✗')) return;
-    msg.textContent = movedKey() ? '将按新成交日重算净值/份额' : '';
+    msg.textContent = movedKey() ? '将按新成交日重算净值/份额' : (formulaChanged() ? (p.sharesSource === 'broker' ? '券商确认份额优先，仅更新抵扣留痕' : '将复用原净值重算份额') : '');
   };
   const doSave = async () => {
     const amount = Number(amtI.value);
     if (!amtI.value.trim() || !isFinite(amount) || amount <= 0) { msg.textContent = '金额必填且 > 0'; return; }
     if (!dateI.value.trim()) { msg.textContent = '日期必填'; return; }
-    const payload = { code, date: dateI.value, amount, session: sessT.getSession(), editKey: { date: p.date, amount: p.amount } };
+    const payload = { code, date: dateI.value, amount, session: sessT.getSession(), feeWaived: waiver.isWaived(), editKey: { date: p.date, amount: p.amount } };
     // 重算：定价日只由「日期 + 时段」决定 —— 二者任一变更即自动重算，无需任何勾选。
     // 只信预览结果；服务端会用权威 feeRate 自己重算份额（客户端份额不被信任）。
     if (movedKey()) {
@@ -186,7 +203,7 @@ export function editForm(code, p) {
   saveBtn.addEventListener('click', doSave);
   cancelBtn.addEventListener('click', () => { pv.dispose(); refreshPage(); });
   // 5 列对齐容器：日期(+时段) / 份额(原·新) / 金额 / 净值(原·新 + 成交日说明) / 操作
-  const dateCell = el('div', { style: 'display:flex;flex-direction:column;gap:2px' }, [dateI, sessT]);
+  const dateCell = el('div', { style: 'display:flex;flex-direction:column;gap:2px' }, [dateI, sessT, waiver]);
   const sharesCell = el('div', { class: 'pv-kv' }, [
     el('span', { class: 'k', text: '原' }), shOld,
     el('span', { class: 'k', text: '新' }), shNew,
@@ -210,6 +227,9 @@ export function editForm(code, p) {
     getDate: () => dateI.value,
     getSession: () => sessT.getSession(),
     getAmount: () => amtI.value,
+    getFeeWaived: () => waiver.isWaived(),
+    getKnownNav: () => !movedKey() && p.nav > 0 ? p.nav : null,
+    getKnownPricingDate: () => p.pricingDate || p.navDate || null,
     paint: (r, err) => {
       const sel = sessT.getSession() || 'T';
       const dash = (e) => { e.textContent = '—'; e.className = 'hint'; };
@@ -232,9 +252,9 @@ export function editForm(code, p) {
       if (v.status === 'ok') {
         navNew.textContent = v.nav.toFixed(4);
         navNew.className = 'pv-new tnum';
-        navSub.textContent = '成交净值 ' + pd.slice(5)
+        navSub.textContent = r.reusedNav ? '复用原成交净值（未发起净值查询）' : ('成交净值 ' + pd.slice(5)
           + (v.shifted ? '（' + v.nominalDate.slice(5) + ' 非交易日，顺延 ' + v.rollDays + ' 天）' : '')
-          + (v.settleDate ? ' · 份额 ' + v.settleDate.slice(5) + (v.settleEstimated ? ' 预计到账' : ' 确认') : '');
+          + (v.settleDate ? ' · 份额 ' + v.settleDate.slice(5) + (v.settleEstimated ? ' 预计到账' : ' 确认') : ''));
       } else {
         if (v.status === 'pending') hold(navNew); else dash(navNew);
         navSub.textContent = v.message;
@@ -255,7 +275,7 @@ export function editForm(code, p) {
   });
   pvSchedule = (d) => pv.schedule(d);
   dateI.addEventListener('change', () => { refreshWarn(); pv.schedule(0); });
-  amtI.addEventListener('input', () => pv.schedule(450));
+  amtI.addEventListener('input', () => { refreshWarn(); pv.schedule(450); });
   pv.schedule(0); // 打开表单即算一版：用户一眼看到「改不改有区别」
 
   return buyRowShell({ date: dateCell, shares: sharesCell, amount: amountCell, nav: navCell, ops: opsCell });
