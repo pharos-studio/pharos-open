@@ -49,13 +49,13 @@ async function buildAnalysis(opts) {
     const fee = principal - netInvested;
     const pendingAmt = purchases.filter(p => p.shares == null).reduce((s, p) => s + (p.amount || 0), 0); // 在途**实付**本金（份额待 T+2 确认，先记金额后补份额）——仅用于界面「含在途」提示
     // 在途**净**投入（2026-09-18）：在途只知实付、不知份额，但**费率由基金档案决定、与净值无关**，
-    // 故净投入可精确预估 = amount × (1 − 费率)。资产侧与成本侧都用它 ⇒ 在途行对 profit 贡献**恒为 0**。
+    // 故净投入可按 v2 外扣公式预估。资产侧与成本侧都用它 ⇒ 在途行对 profit 贡献**恒为 0**。
     // ★ 为什么必须用净而不是实付：若资产侧用实付、成本侧用净，两侧之间会凭空冒出
     //   「手续费」大小的**假收益**（400 在途 → 假赚 0.6）。用净口径则两侧严格抵消。
     //   与「在途算入总资产」改动前的行为逐位一致（改动前两侧同为实付 → 同样抵消为 0）。
     const pendingNet = purchases
       .filter(p => p.shares == null)
-      .reduce((s, p) => s + buyPlan.netInvestedOf({ amount: p.amount }, f.feeRate), 0);
+      .reduce((s, p) => s + buyPlan.netInvestedOf(p, f.feeRate), 0);
 
     // H1: 净值抓取失败/空 → 用 history.json 最新快照该基金 value 兜底，绝不写 0
     let currentValue, navFallback = false, navFallbackDate = null;
@@ -168,6 +168,7 @@ async function buildAnalysis(opts) {
       currentValue,
       fund: {
         code: f.code, name: f.name, category: f.category, market: f.market,
+        fundType: f.fundType || null, indexCode: f.indexCode || null, indexName: f.indexName || null,
         caliber: util.caliberOf(f),  // ★口径（broad 下 cn/us）：computeAllocation/advice 的路由依据，缺它两层解析失效
         estimateIndex: f.estimateIndex, estimateLabel: f.estimateLabel || null,
         trackIndex: f.trackIndex || null,
@@ -186,6 +187,7 @@ async function buildAnalysis(opts) {
         // feeRate = 申购费折后价（算法用的那个标量）；feeDetail = 原价档位 / 运作费 / 赎回档 / 更新日。
         feeRate: buyPlan.validFeeRate(f.feeRate),
         feeDetail: f.feeDetail || null,
+        purchaseStatus: f.purchaseStatus || null,
         navFallback, navFallbackDate,
         estimate, estimateChange, history,
         pendingAmount: pendingAmt, // 在途**实付**本金（份额待确认；前端可标「含在途 ¥X」）—— 展示口径，非收益基准
@@ -436,16 +438,22 @@ async function handleRefresh() {
   // 写快照（用上海本地日期，避免 UTC 跨日漂移）
   const sd = util.shanghaiNow();
   const snapDate = sd.ymd;
-  // ★ 快照 schema **未变**（不新增字段），但 totalProfit/totalProfitPct 的口径自 2026-09-18 起
-  //   由「实付」改为「净投入」（扣申购费）。⚠️ 旧快照（≤2026-09-17）仍为实付口径，
-  //   新旧差值 = 当日累计申购费。该字段目前无任何读取方
-  //   （走势图只用 totalValue），故混合口径不影响任何展示；若将来要用它画「收益曲线」，
-  //   必须先按日期回算各日累计申购费再对齐。
+  // v2 快照同时冻结实付与净投入口径，收益统一以净投入为基准。
   await store.appendSnapshot({
     date: snapDate,
-    totalPrincipal: a.totals.totalPrincipal, totalValue: a.totals.totalValue,
+    totalPrincipal: a.totals.totalPrincipal,
+    totalNetInvested: a.totals.totalNetInvested,
+    totalFee: a.totals.totalFee,
+    totalValue: a.totals.totalValue,
     totalProfit: a.totals.totalProfit, totalProfitPct: a.totals.totalProfitPct,
-    funds: a.funds.map(f => ({ code: f.code, value: f.currentValue, principal: f.principal }))
+    funds: a.funds.map(f => ({
+      code: f.code,
+      value: f.currentValue,
+      principal: f.principal,
+      netInvested: f.netInvested,
+      profit: f.profit,
+      profitPct: f.profitPct,
+    }))
   });
   return a;
 }

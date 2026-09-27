@@ -5,7 +5,7 @@
  * 职责：遍历持仓里 shares==null 的在途记录，先算出「名义定价日」
  * （显式 pricingDate → 旧名 confirmDate/navDate → session 推算 → 旧 offset 兜底），
  * 再拿**该基金自己的净值序列**把它顺延到真实成交日（序列中第一个 >= 名义日的日期，无需节假日表），
- * 按  份额 = 金额 × (1 − feeRate) ÷ 定价日净值  推导并写回 holdings.json；
+ * 按 v2 外扣公式推导并写回 holdings.json；
  * 同时补上 `settleDate`（份额确认日 = 定价日 +1 工作日 A股 / +2 工作日 QDII）——
  * 它只是「份额何时到账」的说明，**不参与任何计算**。
  * 口径/份额公式/顺延上限统一由 lib/buyPlan.js + lib/tradeDate.js 提供，本文件不再自带副本。
@@ -36,13 +36,14 @@ async function autoBackfillPending() {
   let resolved = 0;
   const detail = [];
   try {
+    return await store.withFileLocks(['holdings.json'], async () => {
     const holdings = store.readJSON('holdings.json');
     if (!holdings || !Array.isArray(holdings.funds)) return { ok: true, resolved: 0, changed: false };
     let changed = false;
     for (const f of holdings.funds) {
       const purchases = Array.isArray(f.purchases) ? f.purchases : [];
       if (!purchases.length) continue;
-      const feeRate = validFeeRate(f.feeRate);
+      const fundFeeRate = validFeeRate(f.feeRate);
       const market = f.market === 'QDII' ? 'QDII' : 'A';
       for (const p of purchases) {
         if (p.shares != null) continue;                         // 已确认，跳过（幂等）
@@ -59,10 +60,15 @@ async function autoBackfillPending() {
         if (!navRes || !navRes.date || !navRes.nav) continue;   // 尚未公布/早于可查范围/网络失败 → 保持待确认
         const rollDays = tradeDate.naturalDayDiff(nominal, navRes.date);
         if (rollDays > tradeDate.MAX_ROLL_DAYS) continue;        // 顺延太远（长期停牌/清盘）→ 交人工确认，绝不硬写
-        const shares = computeShares(p.amount, feeRate, navRes.nav);
+        const feeRate = p.quotedFeeRate != null ? validFeeRate(p.quotedFeeRate) : fundFeeRate;
+        const shares = computeShares(p.amount, feeRate, navRes.nav, !!p.feeWaived);
         if (shares == null) continue;
         p.shares = shares;                                      // 4 位小数（由 buyPlan 保证）
         p.nav = navRes.nav;
+        p.quotedFeeRate = feeRate;
+        p.shareCalcVersion = 2;
+        p.sharesSource = 'formula-v2';
+        p.shareCalcBasis = p.shareCalcBasis || 'purchase-current-rate';
         // 补全元数据（不改变任何数值）：
         //   pricingDate = 真实成交净值日（份额由它决定）
         //   settleDate  = 份额确认日（到账时间，不参与计算）
@@ -84,6 +90,7 @@ async function autoBackfillPending() {
       try { timing.buyScan(); } catch (e) { console.warn('[backfill] buyScan 失败:', e && e.message || e); }
     }
     return { ok: true, resolved, changed, detail };
+    });
   } catch (e) {
     return { ok: false, resolved: 0, error: e && e.message || String(e) };
   } finally {

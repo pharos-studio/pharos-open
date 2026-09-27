@@ -7,11 +7,11 @@
 import * as api from '../../api.js';
 import { el, tableWrap, fmtMoney, signPct, cls, catNameWithCaliber } from '../../util.js';
 import { getExpanded, setExpanded, refreshPage } from './state.js';
-import { purchasesByCode, feeNote } from './fundMeta.js';
+import { purchasesByCode, feeNote, purchaseStatusNote } from './fundMeta.js';
 import { removeFund } from './fundStore.js';
 import { navDateInfo } from './preview.js';
 import { addForm, editForm } from './purchaseForm.js';
-import { limitCell } from './dailyLimit.js';
+import { limitCell, fundSettings } from './dailyLimit.js';
 import { addFundPanel } from './addFundPanel.js';
 
 /* ---------- 桌面：展开子表（含在途「待确认」标与删除） ---------- */
@@ -54,9 +54,11 @@ export function buyTable(f, list, navMeta) {
       if (nd) dateTd.appendChild(el('div', { class: 'pv-sub', text: nd.text }));
       else if (pending) dateTd.appendChild(el('div', { class: 'pv-sub', text: '待确认' }));
       tr.appendChild(dateTd);
-      tr.appendChild(el('td', { class: 'tnum', text: pending ? '—' : Number(p.shares).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) }));
+      tr.appendChild(el('td', { class: 'tnum', text: pending ? '—' : Number(p.shares).toLocaleString('zh-CN', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) }));
       const amtTd = el('td', { class: 'tnum' }, [el('span', { text: fmtMoney(p.amount) })]);
       if (pending) amtTd.appendChild(el('span', { class: 'badge badge-muted', style: 'margin-left:6px', text: '待确认' }));
+      amtTd.appendChild(el('span', { class: 'badge badge-muted', style: 'margin-left:6px', text: p.sharesSource === 'broker' ? '券商真值' : '公式估算' }));
+      if (p.feeWaived) amtTd.appendChild(el('span', { class: 'badge badge-muted', style: 'margin-left:6px', text: '积分抵扣' }));
       tr.appendChild(amtTd);
       tr.appendChild(el('td', { class: 'tnum', text: p.nav != null ? p.nav.toFixed(4) : '—' }));
       const opTd = el('td', {});
@@ -91,12 +93,12 @@ export function buyTable(f, list, navMeta) {
 export function renderDesktop(root, live, state) {
   const funds = (live.funds || []).slice().sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0));
   const buys = purchasesByCode(state);
+  root.appendChild(addFundPanel());
   const panel = el('div', { class: 'panel' });
-  panel.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '持仓基金' }), el('span', { class: 'sub', text: `${funds.length} 只` })]));
+  panel.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '我的基金' }), el('span', { class: 'sub', text: `${funds.length} 只` })]));
   if (!funds.length) {
-    panel.appendChild(el('div', { class: 'hint', text: '还没有基金。在下方表单添加第一只——填好代码后，名称、类别、跟踪指数都会自动带出来。' }));
+    panel.appendChild(el('div', { class: 'hint', text: '还没有基金。在上方表单添加第一只——填好代码后，名称、类别、跟踪指数都会自动带出来。' }));
     root.appendChild(panel);
-    root.appendChild(addFundPanel()); // 空仓时也把添加表单放下方
     return;
   }
   const table = el('table', { class: 'tbl' });
@@ -111,7 +113,11 @@ export function renderDesktop(root, live, state) {
       el('span', { class: 'meta', text: `${f.code} · ${catNameWithCaliber(state, f.category, f.caliber)}` }),
     ]);
     const feeTip = feeNote(f); // 申购费：后端抓取写入，界面只读（没有输入框）
-    if (feeTip) nameCell.appendChild(el('span', { class: 'meta', text: feeTip.text, title: feeTip.title }));
+    const statusTip = purchaseStatusNote(f);
+    const autoInfo = el('div', { class: 'meta', style: 'margin-top:4px;padding:4px 6px;border-left:2px solid var(--accent);background:rgba(255,255,255,.035)' });
+    autoInfo.appendChild(el('span', { text: '自动信息 · ' + [f.fundType, f.indexName ? ('跟踪 ' + f.indexName) : null, feeTip && feeTip.text, statusTip.text].filter(Boolean).join(' · '), title: [feeTip && feeTip.title, statusTip.title].filter(Boolean).join(' · ') }));
+    nameCell.appendChild(autoInfo);
+    nameCell.appendChild(fundSettings(state, f.code));
     tr.appendChild(el('td', {}, [nameCell]));
     const dayCell = el('td', { class: cls(f.dayChange) });
     dayCell.textContent = f.dayChange != null ? signPct(f.dayChange) : '—';
@@ -147,5 +153,4 @@ export function renderDesktop(root, live, state) {
   table.appendChild(tbody);
   panel.appendChild(tableWrap(table, true));
   root.appendChild(panel);
-  root.appendChild(addFundPanel()); // 2026-09-12 调序：添加表单移到持仓列表下方
 }

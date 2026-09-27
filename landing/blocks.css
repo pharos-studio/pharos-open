@@ -193,7 +193,6 @@ footer .row{display:flex;gap:22px;flex-wrap:wrap;justify-content:space-between}
   #limits .src{columns:2;column-gap:36px}
   #limits .src li{break-inside:avoid;grid-template-columns:1fr;gap:2px}
 }
-
 #faq{padding:56px 0}
 #faq .faq{max-width:840px;gap:8px}
 
@@ -227,4 +226,3 @@ html.js .cascade.in > *:nth-child(n+7){--i:6}
     transition:none}
   details.faq-i::details-content{transition:none}
 }
-

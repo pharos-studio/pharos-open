@@ -44,16 +44,19 @@ export async function parseBulkRows(text) {
     if (badToken) { out.push({ code, err: '无法识别的字段：「' + badToken + '」（日期用 YYYY-MM-DD，金额只留数字）' }); continue; }
     if (amount != null && amount <= 0) { out.push({ code, err: '金额须 > 0' }); continue; }
     const local = rows && rows.find(r => r[0] === code);
-    let name = local ? local[1] : '', type = local ? local[2] : '';
-    if (!local) {
-      try { const d = await api.getFundLookup(code); if (d && d.ok && d.found && d.name) { name = d.name; type = d.type || ''; } } catch (e) {}
-    }
+    let meta = null;
+    try { meta = await api.getFundLookup(code); } catch (e) { meta = null; }
+    let name = (meta && meta.found && meta.name) || (local ? local[1] : '');
+    const type = (meta && meta.type) || (local ? local[2] : '');
     if (!name) { out.push({ code, err: '未找到该基金（检查代码）' }); continue; }
     const hint = INDEX_HINTS.find(h => h.re.test(name));
+    const suggestedCategory = (meta && meta.suggestedCategory) || suggestCategory(name);
+    const needsConfirm = !suggestedCategory || !!(meta && meta.suggestedBy === 'name');
     out.push({
-      code, name, market: marketOfType(type), category: suggestCategory(name), date, amount,
-      trackIndex: (hint && hint.trackIndex) || null,
+      code, name, market: (meta && meta.market) || marketOfType(type), category: suggestedCategory, date, amount,
+      trackIndex: (meta && meta.trackIndex) || (hint && hint.trackIndex) || null,
       est: (hint && hint.est) || null,
+      needsConfirm, confirmed: !needsConfirm,
       exists: readFunds(store.getState()).some(f => f.code === code),
     });
   }
@@ -65,6 +68,7 @@ export async function parseBulkRows(text) {
 export async function commitBulkRows(items) {
   const state = store.getState();
   const report = [];
+  for (const r of items) if (!r.err && (!r.category || (r.needsConfirm && !r.confirmed))) r.err = '分类为启发式推断，尚未确认';
   const toAdd = items.filter(r => !r.err && !r.exists);
   if (toAdd.length) {
     const built = toAdd.map(r => Object.assign({
@@ -84,11 +88,12 @@ export async function commitBulkRows(items) {
     report.push('（无新建基金，仅处理买入记录）');
   }
   const buyRows = items.filter(x => !x.err && x.amount > 0);
+  const defaultWaived = !!(state.config && state.config.purchaseDefaults && state.config.purchaseDefaults.feeWaived);
   for (const r of buyRows) {
     const d = r.date || todayStr();
     // 批量录入的时段假定：默认「15:00 前」= 下单当天净值（多数人盘中下单）。
     // 注意：批量路径与单笔路径口径一致（都是 session:'T'）；批量行如需「后」请录入后逐笔编辑。
-    try { await api.addPurchase({ code: r.code, date: d, amount: r.amount, session: 'T' }); report.push('✓ 买入 ' + r.code + ' ' + d + ' ¥' + r.amount + '（默认 15:00 前，份额待净值出来后自动回填）'); }
+    try { await api.addPurchase({ code: r.code, date: d, amount: r.amount, session: 'T', feeWaived: defaultWaived }); report.push('✓ 买入 ' + r.code + ' ' + d + ' ¥' + r.amount + '（默认 15:00 前，份额待净值出来后自动回填）'); }
     catch (e) { report.push('✗ 买入 ' + r.code + '：' + e.message); }
   }
   if (!buyRows.length) report.push('（无买入记录需要写入）');
@@ -123,7 +128,7 @@ export function renderBulkPreview(container, items) {
       if (r.category === 'broad') { calSel.style.display = ''; r.bulkCal = calSel.value; }
       else calSel.style.display = 'none';
     };
-    catSel.addEventListener('change', () => { r.category = catSel.value; syncCal(); });
+    catSel.addEventListener('change', () => { r.category = catSel.value; r.confirmed = true; syncCal(); });
     calSel.addEventListener('change', () => { r.bulkCal = calSel.value; });
     syncCal();
     tr.appendChild(el('td', { text: r.code }));
@@ -133,7 +138,13 @@ export function renderBulkPreview(container, items) {
     tr.appendChild(el('td', {}, [calSel]));
     tr.appendChild(el('td', { text: r.date || (todayStr() + '（默认）') }));
     tr.appendChild(el('td', { text: r.amount > 0 ? '¥' + r.amount : '—' }));
-    tr.appendChild(el('td', { text: r.exists ? '已存在（只补买入）' : (r.amount > 0 ? '新建+买入' : '新建') }));
+    const status = el('td', { text: r.exists ? '已存在（只补买入）' : (r.amount > 0 ? '新建+买入' : '新建') });
+    if (r.needsConfirm) {
+      const confirmBox = el('input', { type: 'checkbox' }); confirmBox.checked = r.confirmed;
+      confirmBox.addEventListener('change', () => { r.confirmed = confirmBox.checked; });
+      status.appendChild(el('label', { class: 'hint', style: 'display:block;margin-top:4px' }, [confirmBox, el('span', { text: ' 已确认启发式分类' })]));
+    }
+    tr.appendChild(status);
     tb.appendChild(tr);
   });
   tbl.appendChild(tb);

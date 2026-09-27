@@ -23,27 +23,23 @@
  */
 const tradeDate = require('./tradeDate');
 const navQuote = require('./navQuote');
+const purchaseMath = require('./purchaseMath');
 
-// 申购费率安全降级：缺失/非法（非数、负数、>=1）→ 0（不扣费，静默）
+// 兼容旧调用方：公开的校验函数仍返回数字；计算路径本身不再把未知费率猜成 0。
 function validFeeRate(fr) {
-  const f = Number(fr);
-  return isFinite(f) && f >= 0 && f < 1 ? f : 0;
+  return purchaseMath.normalizeRate(fr);
 }
 
-// 申购费外扣法：份额 = 金额 × (1 − 费率) ÷ 净值，保留 4 位小数。
-// 金额/费率/净值任一非法或算出非正数 → null（调用方视为「拿不到份额」）
-function computeShares(amount, feeRate, nav) {
-  const a = Number(amount), f = validFeeRate(feeRate), n = Number(nav);
-  if (!isFinite(a) || a <= 0 || !isFinite(n) || n <= 0) return null;
-  const s = a * (1 - f) / n;
-  if (!isFinite(s) || s <= 0) return null;
-  return Math.round(s * 10000) / 10000;
+// v2 外扣法：净申购金额 = 金额 ÷ (1 + 有效费率)，份额 = 净申购金额 ÷ 净值。
+function computeShares(amount, feeRate, nav, feeWaived) {
+  const result = purchaseMath.calculatePurchase({ amount, nav, quotedFeeRate: feeRate, feeWaived });
+  return result.ok ? result.shares : null;
 }
 
 // ---------- 净投入口径（2026-09-18 新增）----------
-// 背景：一笔买入实际付出 `amount`，但其中 (amount × 费率) 被当申购费收走、**没有变成份额**。
+// 背景：一笔买入实际付出 `amount`，按外扣法其中一部分是申购费、**没有变成份额**。
 //   ⇒ 实付（Σ amount） ≠ 净投入（真正买成份额的钱）
-//   例：10 元买 QDII，费率 0.15% → 实付 10，净投入 10×(1−0.0015) = 9.985
+//   例：10 元买 QDII，费率 0.15% → 实付 10，净投入 10÷(1+0.0015) ≈ 9.9850
 //
 // ★ 两者是两个口径，都有用，不能互相替代：
 //   实付   —— 你实际掏出去的钱（算「我投了多少」用这个）
@@ -51,12 +47,14 @@ function computeShares(amount, feeRate, nav) {
 //
 // ★ 已确认记录（有 shares + nav）优先用 `shares × nav`：那是券商真值，含 4 位小数舍入的最终结果，
 //   不能用公式重算（否则会把高精度真值降级为公式近似）。
-// ★ 在途记录（shares 未确认）无法用 shares×nav → 用 `amount × (1 − 费率)` 预估。
+// ★ 在途记录（shares 未确认）无法用 shares×nav → 用 `amount ÷ (1 + 有效费率)` 预估。
 //   费率由基金档案决定、与净值无关，故这一步不依赖「净值已公布」。
 function netInvestedOf(p, feeRate) {
   const a = Number(p && p.amount) || 0;
   if (p && p.shares != null && p.nav != null) return Number(p.shares) * Number(p.nav);
-  return a * (1 - validFeeRate(feeRate));
+  const quoted = p && p.quotedFeeRate != null ? p.quotedFeeRate : feeRate;
+  const calc = purchaseMath.calculatePurchase({ amount: a, nav: 1, quotedFeeRate: quoted, feeWaived: !!(p && p.feeWaived) });
+  return calc.ok ? calc.netAmount : 0;
 }
 
 // 一只基金的净投入合计
@@ -89,7 +87,7 @@ async function resolveSettleDate(code, pricingDate, market) {
 //   ok      —— 序列里找到 >= 名义日 的净值，且顺延 <= MAX_ROLL_DAYS，nav/shares 可算
 //   pending —— 名义日之后尚无已公布净值（在途），或顺延超过上限（需人工确认）；不置份额
 //   error   —— 名义日早于该基金可查范围 / 数据源异常；不阻塞保存
-async function previewOne({ code, market, feeRate, date, session, amount }) {
+async function previewOne({ code, market, feeRate, feeWaived, date, session, amount }) {
   const nominalDate = tradeDate.nominalPricingDate(date, session);
   const hit = await navQuote.resolveQuoteOnOrAfter(code, nominalDate);
   const base = {
@@ -136,13 +134,20 @@ async function previewOne({ code, market, feeRate, date, session, amount }) {
 
   // 定价日已确定 → 顺带把「份额确认日」也算出来（仅作到账说明，不影响上面的份额公式）
   const settle = await resolveSettleDate(code, hit.date, market);
+  const shares = computeShares(amount, feeRate, hit.nav, feeWaived);
+  if (shares == null) {
+    return Object.assign(base, {
+      pricingDate: hit.date, nav: hit.nav, navIsExact: true,
+      status: 'error', message: '申购费率未知，无法计算份额；积分抵扣开启后可按零费率计算',
+    });
+  }
 
   return Object.assign(base, {
     pricingDate: hit.date,        // ★ 真实成交净值日（可能已顺延，不等于 nominalDate）
     settleDate: settle.settleDate,
     settleEstimated: settle.settleEstimated,
     nav: hit.nav, navIsExact: true,
-    shares: computeShares(amount, feeRate, hit.nav),
+    shares,
     shifted: rollDays > 0, rollDays,
     status: 'ok', message: '',
   });
@@ -150,11 +155,11 @@ async function previewOne({ code, market, feeRate, date, session, amount }) {
 
 // 预览一笔买入：一次给出「15:00 前 / 15:00 后」两档，方便用户在界面上直接看出差别。
 // 两档的定价日通常相同或相邻，navQuote 缓存能吃掉重复请求。
-async function previewPurchase({ code, market, feeRate, date, amount, selected }) {
+async function previewPurchase({ code, market, feeRate, feeWaived, date, amount, selected }) {
   const fr = validFeeRate(feeRate);
   const variants = {};
   for (const s of ['T', 'T+1']) {
-    variants[s] = await previewOne({ code, market, feeRate: fr, date, session: s, amount });
+    variants[s] = await previewOne({ code, market, feeRate: fr, feeWaived, date, session: s, amount });
   }
   // 两档收敛：下单日非交易日时，前/后顺延到同一个定价日 → 界面应合并成一行提示。
   // ★ 必须两档都 ok 才算收敛，且用 pricingDate 比较：
@@ -164,7 +169,9 @@ async function previewPurchase({ code, market, feeRate, date, amount, selected }
   const a = variants.T, b = variants['T+1'];
   const converged = !!(a.status === 'ok' && b.status === 'ok' && a.pricingDate && b.pricingDate && a.pricingDate === b.pricingDate);
   return {
-    ok: true, code, market: market === 'QDII' ? 'QDII' : 'A', feeRate: fr,
+    ok: true, code, market: market === 'QDII' ? 'QDII' : 'A',
+    quotedFeeRate: fr, effectiveFeeRate: feeWaived ? 0 : fr,
+    feeWaived: !!feeWaived, shareCalcVersion: purchaseMath.SHARE_CALC_VERSION,
     orderDate: date, amount: Number(amount), selected, converged,
     variants,
   };

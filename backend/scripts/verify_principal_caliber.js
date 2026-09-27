@@ -10,7 +10,7 @@
  *     012920 易方达全球成长QDII   0.15% ×  200 = 0.30
  *   两个数都对，只是口径不同：
  *     实付   = Σ 每笔 amount              → 1600（你实际掏出去的钱）
- *     净投入 = Σ shares × nav = Σ amount×(1−费率) → 1597.66（真正买成份额的钱，券商同口径）
+ *     净投入 = Σ shares × nav = Σ amount÷(1+费率)（真正买成份额的钱，券商同口径）
  *
  * 本次变更（用户拍板）：
  *   ① 收益基准由「实付」改为「净投入」—— 与券商「持仓成本」对齐（收益不再把申购费算作亏损）；
@@ -88,16 +88,16 @@ console.log('\n【L1-1】netInvestedOf —— 已确认记录优先用券商真�
     buyPlan.netInvestedOf(NEUTRAL, 0.5));
 }
 
-console.log('\n【L1-2】netInvestedOf —— 在途记录用 amount × (1 − 费率) 预估');
+console.log('\n【L1-2】netInvestedOf —— 在途记录用 amount ÷ (1 + 费率) 预估');
 {
-  t('在途（shares=null）：400 @0.15% → 399.4',
-    Math.abs(buyPlan.netInvestedOf({ amount: 400, shares: null, nav: null }, 0.0015) - 399.4) < 1e-9,
+  t('在途（shares=null）：400 @0.15% → 400/1.0015',
+    Math.abs(buyPlan.netInvestedOf({ amount: 400, shares: null, nav: null }, 0.0015) - 400 / 1.0015) < 1e-9,
     buyPlan.netInvestedOf({ amount: 400, shares: null, nav: null }, 0.0015));
   t('在途：费率 0 → 净投入 === amount',
     buyPlan.netInvestedOf({ amount: 100, shares: null }, 0) === 100,
     buyPlan.netInvestedOf({ amount: 100, shares: null }, 0));
   t('在途：nav 缺失也能算（费率与净值无关）',
-    Math.abs(buyPlan.netInvestedOf({ amount: 200, shares: null, nav: null }, 0.0012) - 199.76) < 1e-9,
+    Math.abs(buyPlan.netInvestedOf({ amount: 200, shares: null, nav: null }, 0.0012) - 200 / 1.0012) < 1e-9,
     buyPlan.netInvestedOf({ amount: 200, shares: null, nav: null }, 0.0012));
 }
 
@@ -105,9 +105,9 @@ console.log('\n【L1-3】netInvestedOf / netInvestedTotal —— 边界与非法
 {
   t('空数组 → 0', buyPlan.netInvestedTotal([], 0.0015) === 0);
   t('null → 0', buyPlan.netInvestedTotal(null, 0.0015) === 0);
-  t('费率非法（>=1）按 0 处理', buyPlan.netInvestedOf({ amount: 100, shares: null }, 1.2) === 100,
+  t('费率非法（>=1）返回 0（未知费率不猜）', buyPlan.netInvestedOf({ amount: 100, shares: null }, 1.2) === 0,
     buyPlan.netInvestedOf({ amount: 100, shares: null }, 1.2));
-  t('费率负数按 0 处理', buyPlan.netInvestedOf({ amount: 100, shares: null }, -0.1) === 100,
+  t('费率负数返回 0（未知费率不猜）', buyPlan.netInvestedOf({ amount: 100, shares: null }, -0.1) === 0,
     buyPlan.netInvestedOf({ amount: 100, shares: null }, -0.1));
   t('amount 缺失 → 0', buyPlan.netInvestedOf({ shares: null }, 0.0015) === 0);
   t('amount 非法（字符串）→ 0', buyPlan.netInvestedOf({ amount: 'abc', shares: null }, 0.0015) === 0);
@@ -145,7 +145,7 @@ console.log('\n【L2】存量数据关系式（读 holdings.json，不硬编码�
       //    ★ 注意这个残差**可正可负**（份额被舍入上去时 Σ shares×nav 会略高于 Σ amount，
       //      实测最大 +4.71e-4，如 016452 的 +0.00047），故不能断言「净投入必 ≤ 实付」。
       //      它也不是费用：纯舍入噪声，与费率无关。
-      if (fr > 0) {
+      if (fr > 0 && paid > 0) {
         if (!(net < paid - 1e-9)) badOrder.push(`${f.code} fr=${fr} net=${net} paid=${paid}`);
       } else {
         if (Math.abs(net - paid) > 0.01) badZeroFee.push(`${f.code} net=${net} paid=${paid}`);
@@ -153,8 +153,12 @@ console.log('\n【L2】存量数据关系式（读 holdings.json，不硬编码�
         zeroFeePctDiff.push(pctDiff);
       }
       // ③ 关联式：申购费 = 实付 − 净投入 ≥ 0（全组合层面恒成立，见下文总校验）
-      if (fr > 0) {
-        const expectFee = ps.reduce((s, p) => s + (Number(p.amount) || 0) * fr, 0);
+      if (fr > 0 && paid > 0) {
+        const expectFee = ps.reduce((s, p) => {
+          const rate = p.feeWaived ? 0 : (p.quotedFeeRate != null ? p.quotedFeeRate : fr);
+          const amount = Number(p.amount) || 0;
+          return s + (rate == null ? 0 : amount - amount / (1 + rate));
+        }, 0);
         const actualFee = paid - net;
         if (Math.abs(actualFee - expectFee) > 0.01) badRatio.push(`${f.code} fee=${actualFee} expect≈${expectFee}`);
       }
@@ -180,11 +184,11 @@ console.log('\n【L2b】本金口径基线（真实值只在私有夹具里）')
   if (!pc) {
     skip('L2b「本金口径基线」', fx.ok ? '夹具里没有 principalCaliber' : fx.reason);
   } else {
-    const feeSum = (pc.feeDetail || []).reduce((s, x) => s + x.rate * x.amount, 0);
+    const feeSum = (pc.feeDetail || []).reduce((s, x) => s + x.amount - x.amount / (1 + x.rate), 0);
     t('实付 − 净投入 = 申购费总额',
       Math.abs((pc.paid - pc.netInvested) - pc.feeTotal) < 0.01,
       { paid: pc.paid, netInvested: pc.netInvested, diff: pc.paid - pc.netInvested, feeTotal: pc.feeTotal });
-    t('费用明细 Σ(费率 × 金额) = 申购费总额（±0.01）',
+    t('费用明细 Σ[金额−金额÷(1+费率)] = 申购费总额（±0.01）',
       Math.abs(feeSum - pc.feeTotal) < 0.01, { feeSum, feeTotal: pc.feeTotal });
     t('交叉验证：实付 − 申购费 = 净投入',
       Math.abs((pc.paid - pc.feeTotal) - pc.netInvested) < 0.01);
@@ -277,15 +281,16 @@ console.log('\n【L3b】基金费率接线（抓取 / 落盘 / 防改）');
   // ── 落盘层 ──
   t('feeSync 导出 syncFundFees', /module\.exports = \{ syncFundFees/.test(FEE), undefined);
   t('★ 抓不到时保留原值：feeRate 仅在拿到折后价时覆盖，且没有 0 兜底（0 = 免申购费，是有效值）',
-    /if \(it\.r\.sub && it\.r\.sub\.rate != null\) it\.f\.feeRate = it\.r\.sub\.rate;/.test(FEE)
+    /if \(patch\.result\.sub && patch\.result\.sub\.rate != null\) f\.feeRate = patch\.result\.sub\.rate;/.test(FEE)
     && !/feeRate\s*\|\|\s*0/.test(FEE), undefined);
   t('★ TTL 判据用数字时间戳 updatedAt（若误用日期串 updated，相减得 NaN ⇒ 每次全量重抓）',
-    /d\.updatedAt = now;/.test(FEE) && /detail\.updatedAt/.test(FEE) && /d\.updated = day;/.test(FEE), undefined);
+    /updatedAt: now/.test(FEE) && /detail\.updatedAt/.test(FEE) && /updated: day/.test(FEE), undefined);
 
   // ── 防改层（负向）──
   t('server 定义 pinFundFees', /function pinFundFees\(incoming\)/.test(SRV), undefined);
-  const idxPin = SRV.indexOf('pinFundFees(data.holdings)');
-  const idxWrite = SRV.indexOf("writeJSONSafe('holdings.json'");
+  const saveRoute = SRV.slice(SRV.indexOf("p === '/api/save'"), SRV.indexOf("p === '/api/fees/refresh'"));
+  const idxPin = saveRoute.indexOf('pinFundFees(data.holdings)');
+  const idxWrite = saveRoute.indexOf("writeJSONSafe('holdings.json'");
   t('★ /api/save 在写盘**之前**调用 pinFundFees（顺序不可对调，否则等于没保护）',
     idxPin > -1 && idxWrite > -1 && idxPin < idxWrite, { idxPin: idxPin, idxWrite: idxWrite });
   t('★ 新增基金剥掉费率字段（留下的 feeRate:0 会被当成「已知的 0」而跳过抓取）',

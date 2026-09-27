@@ -7,11 +7,11 @@
 import * as api from '../../api.js';
 import { el, fmtMoney, signPct, cls, catNameWithCaliber } from '../../util.js';
 import { getExpanded, setExpanded, refreshPage } from './state.js';
-import { purchasesByCode, feeNote } from './fundMeta.js';
+import { purchasesByCode, feeNote, purchaseStatusNote } from './fundMeta.js';
 import { removeFund } from './fundStore.js';
 import { navDateInfo } from './preview.js';
 import { addForm, editForm } from './purchaseForm.js';
-import { limitRow } from './dailyLimit.js';
+import { limitRow, fundSettings } from './dailyLimit.js';
 import { addFundPanel } from './addFundPanel.js';
 
 /* ---------- 手机端卡片 ---------- */
@@ -39,6 +39,8 @@ export function buyRow(code, p, navMeta) {
     el('span', { class: 'buy-amt' }, [
       el('span', { text: fmtMoney(p.amount) }),
       pending ? el('span', { class: 'badge badge-muted', style: 'margin-left:4px', text: '待确认' }) : null,
+      el('span', { class: 'badge badge-muted', style: 'margin-left:4px', text: p.sharesSource === 'broker' ? '券商真值' : '公式估算' }),
+      p.feeWaived ? el('span', { class: 'badge badge-muted', style: 'margin-left:4px', text: '积分抵扣' }) : null,
     ]),
     el('span', { class: 'buy-nav', text: p.nav != null ? '净值 ' + p.nav.toFixed(4) : (pending ? '份额 —' : '') }),
   ]);
@@ -70,6 +72,8 @@ export function fundCard(f, list, state) {
   const fcMeta = el('div', { class: 'fc-meta', text: `${f.code} · ${catNameWithCaliber(state, f.category, f.caliber)}` });
   const feeTip = feeNote(f); // 申购费：后端抓取写入，界面只读（没有输入框）
   if (feeTip) { fcMeta.textContent += ' · ' + feeTip.text; fcMeta.setAttribute('title', feeTip.title); }
+  const statusTip = purchaseStatusNote(f);
+  fcMeta.textContent += (f.fundType ? ' · ' + f.fundType : '') + (f.indexName ? ' · 跟踪 ' + f.indexName : '') + ' · ' + statusTip.text;
   card.appendChild(el('div', { class: 'fc-head' }, [
     el('div', { class: 'fc-name', text: f.name }),
     fcMeta,
@@ -91,6 +95,7 @@ export function fundCard(f, list, state) {
     cls(f.profitPct)
   ));
   card.appendChild(metrics);
+  card.appendChild(fundSettings(state, f.code));
   card.appendChild(limitRow(state, f.code)); // 日限显示 + 编辑
 
   const delFundBtn = el('div', { class: 'fc-expand', text: '删除该基金', style: 'color:var(--up);margin-top:8px' });
@@ -124,17 +129,16 @@ export function renderMobile(root, live, state) {
   // 2026-09-12：调序——「持仓基金」在上、「添加基金」面板移到下方
   const funds = (live.funds || []).slice().sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0));
   const buys = purchasesByCode(state);
+  root.appendChild(addFundPanel());
   const panel = el('div', { class: 'panel' });
-  panel.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '持仓基金' }), el('span', { class: 'sub', text: `${funds.length} 只` })]));
+  panel.appendChild(el('div', { class: 'panel-head' }, [el('span', { text: '我的基金' }), el('span', { class: 'sub', text: `${funds.length} 只` })]));
   if (!funds.length) {
-    panel.appendChild(el('div', { class: 'hint', text: '还没有基金。在下方表单添加第一只——填好代码后，名称、类别、跟踪指数都会自动带出来。' }));
+    panel.appendChild(el('div', { class: 'hint', text: '还没有基金。在上方表单添加第一只——填好代码后，名称、类别、跟踪指数都会自动带出来。' }));
     root.appendChild(panel);
-    root.appendChild(addFundPanel()); // 空仓时也把添加表单放下方
     return;
   }
   const stack = el('div', { class: 'stack' });
   funds.forEach(f => stack.appendChild(fundCard(f, buys[f.code] || [], state)));
   panel.appendChild(stack);
   root.appendChild(panel);
-  root.appendChild(addFundPanel()); // 2026-09-12 调序：添加表单移到持仓列表下方
 }

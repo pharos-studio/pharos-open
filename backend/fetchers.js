@@ -684,6 +684,7 @@ async function fetchFundRates(code) {
       sgState: ti.normalizeArchiveValue(D.SGZT),
       shState: ti.normalizeArchiveValue(D.SHZT),
       minBuy: numOf(D.MINSG), maxBuy: numOf(D.MAXSG),
+      minBuyRaw: ti.normalizeArchiveValue(D.MINSG), maxBuyRaw: ti.normalizeArchiveValue(D.MAXSG),
     };
   } catch (e) { return null; }
 }

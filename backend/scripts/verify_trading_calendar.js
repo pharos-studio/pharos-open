@@ -351,7 +351,7 @@ const seriesOf = c => seriesMap[c];
     // 9.5 ★★ 硬不变量：份额只由定价日净值决定
     const v0 = await buyPlan.previewOne({ code: 'A', market: 'A', feeRate: 0, date: '2023-09-28', session: 'T', amount: 1000 });
     const expShares = buyPlan.computeShares(1000, 0, v0.nav);
-    check('previewOne 返回 pricingDate，且 shares = 金额×(1−费率)÷nav(pricingDate)',
+    check('previewOne 返回 pricingDate，且 shares = [金额÷(1+有效费率)]÷nav(pricingDate)',
       v0.status === 'ok' && v0.pricingDate === '2023-09-28' && v0.shares === expShares,
       JSON.stringify({ p: v0.pricingDate, nav: v0.nav, sh: v0.shares, exp: expShares }));
     check('★ 份额只依赖定价日净值 —— 与 settleDate 无关（篡改它也必须算出同一个数）',

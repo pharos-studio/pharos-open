@@ -22,8 +22,11 @@ const advice = require('./engines/advice');
 const timing = require('./engines/timing'); // 买入时机复盘：战役采集/buy 补扫/统计（见内部设计文档《买入时机复盘模块-设计v2》，未随开源发布）
 const backfill = require('./engines/backfill'); // 在途买入记录自动补填（买入确认日净值 → 份额）
 const feeSync = require('./engines/feeSync'); // 基金费率（申购/认购/赎回档/运作费）抓取与落盘 —— feeRate 的唯一写入方
+const shareMigration = require('./engines/shareMigration');
+const purchaseService = require('./engines/purchaseService');
 const tradeDate = require('./lib/tradeDate'); // 交易时段口径引擎：成交净值日推算
 const buyPlan = require('./lib/buyPlan'); // 买入方案推导：口径→净值→份额（唯一实现，预览/保存共用）
+const purchaseMath = require('./lib/purchaseMath');
 const schema = require('./lib/schema'); // 数据结构版本与迁移（唯一版本口径，见 lib/schema.js 顶部说明）
 const trackIndex = require('./lib/trackIndex'); // 指数白名单与类别推断（唯一真相源）
 const categories = require('./lib/categories'); // 内置类别/算法/口径/预设（唯一真相源 + 启动补齐）
@@ -39,6 +42,33 @@ const HOST = process.env.HOST || '';
 
 // /api/fund-list 序列化缓存：2.7 万行只 stringify 一次（刷新名单时重建），避免每次请求烧 CPU
 let fundListCacheStr = null;
+const fundLookupInflight = new Map();
+function lookupFundOnce(code) {
+  if (fundLookupInflight.has(code)) return fundLookupInflight.get(code);
+  const task = Promise.all([fetchers.fundAutoFill(code), fetchers.fetchFundRates(code)])
+    .finally(() => fundLookupInflight.delete(code));
+  fundLookupInflight.set(code, task);
+  return task;
+}
+async function syncFundProfiles(codes) {
+  const profiles = await Promise.all(codes.map(async (code) => ({ code, profile: await fetchers.fundAutoFill(code) })));
+  return store.withFileLocks(['holdings.json'], async () => {
+    const holdings = store.readJSON('holdings.json');
+    if (!holdings || !Array.isArray(holdings.funds)) return false;
+    const byCode = new Map(holdings.funds.filter(Boolean).map(f => [String(f.code), f]));
+    for (const item of profiles) {
+      const f = byCode.get(String(item.code)), p = item.profile;
+      if (!f || !p || !p.found) continue;
+      f.name = p.name || f.name;
+      f.fundType = p.type || null;
+      f.indexCode = p.indexCode || null;
+      f.indexName = p.indexName || null;
+      f.autoProfileUpdatedAt = Date.now();
+      if (!f.trackIndex && p.trackIndex) f.trackIndex = p.trackIndex;
+    }
+    return store.writeJSONSafe('holdings.json', holdings);
+  });
+}
 
 // 合法类别（fund.category）：**实时读取** categories.json 的 engines + 用户自建分类。
 // ★ 这里必须是「函数」而不是启动时算一次的常量：用户在看板里自建分类后要立刻能保存，
@@ -130,9 +160,11 @@ function pinFundFees(incoming) {
     if (src) {
       if (src.feeRate === undefined) delete f.feeRate; else f.feeRate = src.feeRate;
       if (src.feeDetail === undefined) delete f.feeDetail; else f.feeDetail = src.feeDetail;
+      if (src.purchaseStatus === undefined) delete f.purchaseStatus; else f.purchaseStatus = src.purchaseStatus;
     } else {
       delete f.feeRate;
       delete f.feeDetail;
+      delete f.purchaseStatus;
       added.push(f.code);
     }
   }
@@ -220,10 +252,20 @@ const server = http.createServer(async (req, res) => {
   catch { return httpError(res, 400); } // 畸形请求路径（如 //）不应击垮整个服务
   const p = u.pathname;
   try {
+    if (p === '/api/migration/retry' && req.method === 'POST') {
+      const ak = config.getApiKey();
+      if (!ak || req.headers['x-api-key'] !== ak) return json(res, { ok: false, error: '鉴权失败' }, 401);
+      const migration = await shareMigration.ensureMigration();
+      return json(res, { ok: migration.status === 'complete', migration }, migration.status === 'complete' ? 200 : 503);
+    }
+    const mutating = req.method === 'POST' || p === '/api/refresh';
+    if (mutating && shareMigration.isPending()) {
+      return json(res, { ok: false, code: 'MIGRATION_PENDING', error: '份额与历史迁移尚未完成，当前为只读模式', migration: shareMigration.migrationState() }, 503);
+    }
     if (p === '/api/state') {
       const holdings = store.readJSON('holdings.json');
       // navMeta：买入记录「成交净值日」只读旁挂（老记录由后端按冻结旧口径推定），绝不写回 holdings.json
-      return json(res, { holdings, categories: store.readJSON('categories.json'), config: sanitizeConfig(config.getConfig()), history: store.readHistory(), navMeta: buildNavMeta(holdings) });
+      return json(res, { holdings, categories: store.readJSON('categories.json'), config: sanitizeConfig(config.getConfig()), history: store.readHistory(), navMeta: buildNavMeta(holdings), migration: shareMigration.migrationState() });
     }
     if (p === '/api/refresh') {
       // 自动补填：每次看板加载/刷新时，把「确认日净值已发布」的在途记录自动转已确认（零手动）
@@ -257,7 +299,10 @@ const server = http.createServer(async (req, res) => {
       const code = (u.searchParams.get('code') || '').trim();
       const date = (u.searchParams.get('date') || '').trim();
       const session = u.searchParams.get('session') === 'T+1' ? 'T+1' : 'T';
+      const feeWaived = u.searchParams.get('waived') === '1';
       const amount = Number(u.searchParams.get('amount'));
+      const knownNav = Number(u.searchParams.get('nav'));
+      const knownPricingDate = (u.searchParams.get('pricingDate') || '').trim();
       if (!code) return json(res, { ok: false, error: 'code 必填' }, 400);
       const dv = validateOrderDate(date);
       if (dv.error) return json(res, { ok: false, error: dv.error }, 400);
@@ -267,9 +312,24 @@ const server = http.createServer(async (req, res) => {
       const fund = holdings.funds.find(x => x && x.code === code);
       // 基金必须在持仓里：market / feeRate 只能从 holdings 取，否则算出的份额会与保存路径不一致
       if (!fund) return json(res, { ok: false, error: '基金代码不存在：' + code, code: 'NOT_FOUND' }, 404);
+      if (Number.isFinite(knownNav) && knownNav > 0) {
+        const calc = purchaseMath.calculatePurchase({ amount, nav: knownNav, quotedFeeRate: fund.feeRate, feeWaived });
+        if (!calc.ok) return json(res, { ok: false, code: calc.code, error: '申购参数无法计算份额' }, 422);
+        const pricingDate = /^\d{4}-\d{2}-\d{2}$/.test(knownPricingDate) ? knownPricingDate : date;
+        const variant = {
+          status: 'ok', session, nominalDate: pricingDate, pricingDate, settleDate: null, settleEstimated: false,
+          nav: knownNav, navIsExact: true, shares: calc.shares, shifted: false, rollDays: 0, message: '', reusedNav: true,
+        };
+        return json(res, {
+          ok: true, code, market: fund.market === 'QDII' ? 'QDII' : 'A', orderDate: date, amount,
+          selected: session, converged: true, reusedNav: true, quotedFeeRate: calc.quotedFeeRate, effectiveFeeRate: calc.effectiveRate,
+          feeWaived, shareCalcVersion: purchaseMath.SHARE_CALC_VERSION,
+          variants: { T: Object.assign({}, variant, { session: 'T' }), 'T+1': Object.assign({}, variant, { session: 'T+1' }) },
+        });
+      }
       return json(res, await buyPlan.previewPurchase({
         code, market: fund.market === 'QDII' ? 'QDII' : 'A',
-        feeRate: fund.feeRate, date, amount, selected: session,
+        feeRate: fund.feeRate, feeWaived, date, amount, selected: session,
       }));
     }
     if (p === '/api/fund-lookup') {
@@ -278,7 +338,13 @@ const server = http.createServer(async (req, res) => {
       const code = (u.searchParams.get('code') || '').trim();
       if (!/^\d{6}$/.test(code)) return json(res, { ok: false, error: 'code 须为 6 位数字' }, 400);
       try {
-        return json(res, Object.assign({ ok: true }, await fetchers.fundAutoFill(code)));
+        const [profile, rates] = await lookupFundOnce(code);
+        const purchaseStatus = rates ? feeSync.normalizePurchaseStatus(rates, Date.now()) : { state: 'unknown', raw: null, maxBuy: null, unlimited: false, updatedAt: Date.now() };
+        return json(res, Object.assign({ ok: true }, profile, {
+          feeRate: rates && rates.sub ? rates.sub.rate : null,
+          feeDetail: rates ? Object.assign({}, rates, { updatedAt: Date.now(), src: 'eastmoney' }) : null,
+          purchaseStatus,
+        }));
       } catch (e) { return json(res, { ok: false, error: (e && e.message) || String(e) }, 500); }
     }
     if (p === '/api/track-index') {
@@ -350,17 +416,26 @@ const server = http.createServer(async (req, res) => {
       if (fails.length) return json(res, { ok: false, error: '校验失败：' + fails.join('；') }, 400);
       let addedFunds = [];
       if (data.holdings) {
-        addedFunds = pinFundFees(data.holdings); // ★ 费率前端只读：写盘前用磁盘值覆盖回传的费率字段
-        if (!store.writeJSONSafe('holdings.json', data.holdings)) fails.push('holdings.json');
+        const ok = await store.withFileLocks(['holdings.json'], async () => {
+          addedFunds = pinFundFees(data.holdings); // 自动信息后端只读：写盘前用磁盘值覆盖
+          return store.writeJSONSafe('holdings.json', data.holdings);
+        });
+        if (!ok) fails.push('holdings.json');
       }
-      if (data.categories && !store.writeJSONSafe('categories.json', data.categories)) fails.push('categories.json');
+      if (data.categories) {
+        const ok = await store.withFileLocks(['categories.json'], async () => store.writeJSONSafe('categories.json', data.categories));
+        if (!ok) fails.push('categories.json');
+      }
       // ★config 必须 merge 而非整份替换：/api/state 已剥离 apiKey/llm.apiKey/news.*.key，
       // 前端（持仓页改日限等）把 state.config 整份回写，若整份替换会把磁盘上的鉴权 Key 抹掉（下次写操作全 401）。
       // 合并 + restoreSecrets：前端改的键生效（dailyLimits/timing/signals…），密钥类字段保留磁盘原值。
       if (data.config) {
-        const cur = store.readJSON('config.json') || {};
-        const merged = restoreSecrets(Object.assign({}, cur, data.config), cur);
-        if (!store.writeJSONSafe('config.json', merged)) fails.push('config.json');
+        const ok = await store.withFileLocks(['config.json'], async () => {
+          const cur = store.readJSON('config.json') || {};
+          const merged = restoreSecrets(Object.assign({}, cur, data.config), cur);
+          return store.writeJSONSafe('config.json', merged);
+        });
+        if (!ok) fails.push('config.json');
       }
       if (fails.length) return json(res, { ok: false, error: '保存失败（文件被占用，可能是 OneDrive/杀软锁定）：' + fails.join(',') }, 500);
       // 新增基金：立刻抓一次费率（3 秒封顶）。抓失败也不影响保存结果 —— 后台定时任务会兜底。
@@ -368,7 +443,7 @@ const server = http.createServer(async (req, res) => {
       if (addedFunds.length) {
         try {
           await Promise.race([
-            feeSync.syncFundFees({ codes: addedFunds }),
+            Promise.all([feeSync.syncFundFees({ codes: addedFunds }), syncFundProfiles(addedFunds)]),
             new Promise((r) => setTimeout(r, 3000)),
           ]);
         } catch (e) { console.warn('[fee-sync] 新增基金费率抓取失败:', e && e.message || e); }
@@ -423,165 +498,39 @@ const server = http.createServer(async (req, res) => {
       }
       if (!added.length) return json(res, { ok: true, added: [], skipped });
       themeMap.updated = util.todayStr();
-      if (!store.writeJSONSafe('theme_map.json', themeMap)) {
+      const themeSaved = await store.withFileLocks(['theme_map.json'], async () => store.writeJSONSafe('theme_map.json', themeMap));
+      if (!themeSaved) {
         return json(res, { ok: false, error: '保存失败（文件被占用，可能是 OneDrive/杀软锁定）' }, 500);
       }
       return json(res, { ok: true, added, skipped });
     }
     if (p === '/api/purchase' && req.method === 'POST') {
-      // 记一笔买入：细粒度端点（先记金额后补份额）。鉴权与 /api/save 同款。
-      // 不校验 dailyLimits——记录的是历史事实（012920 暂停/超限都允许记）。
-      const ak = config.getApiKey();
-      if (!ak || req.headers['x-api-key'] !== ak) {
-        return json(res, { ok: false, error: '鉴权失败：缺少或错误的 API Key（设置页可查看/重置）。' }, 401);
-      }
-      const body = await readBody(req, 64 * 1024); // 单笔录入体量小
-      let d;
-      try { d = JSON.parse(body); } catch (e) { return json(res, { ok: false, error: 'JSON 解析失败' }, 400); }
-      if (!d || typeof d !== 'object') return json(res, { ok: false, error: '请求体必须是 JSON 对象' }, 400);
-      // ===== 删除模式（action:'delete'，早返回避免被下方 amount 通用校验拦截）=====
-      if (d.action === 'delete') {
-        const dcode = d.code;
-        const ek = d.editKey;
-        if (!dcode || typeof dcode !== 'string') return json(res, { ok: false, error: 'code 必填' }, 400);
-        if (!ek || ek.date == null || ek.amount == null) return json(res, { ok: false, error: 'editKey{date,amount} 必填' }, 400);
-        const h = store.readJSON('holdings.json');
-        if (!h || !Array.isArray(h.funds)) return json(res, { ok: false, error: 'holdings.json 结构异常' }, 500);
-        const f = h.funds.find(x => x && x.code === dcode);
-        if (!f) return json(res, { ok: false, error: '基金代码不存在：' + dcode, code: 'NOT_FOUND' }, 400);
-        const ekDate = String(ek.date);
-        const ekAmt = Math.round(Number(ek.amount) * 100) / 100;
-        const pi = (Array.isArray(f.purchases) ? f.purchases : []).findIndex(p => p.date === ekDate && p.amount === ekAmt);
-        if (pi < 0) return json(res, { ok: false, error: '原记录不存在（可能已被删除）', code: 'NOT_FOUND' }, 404);
-        f.purchases.splice(pi, 1);
-        if (!store.writeJSONSafe('holdings.json', h)) return json(res, { ok: false, error: '保存失败（文件被占用，可能是 OneDrive/杀软锁定）' }, 500);
-        try { timing.buyScan(); } catch (e) { console.warn('[timing] buyScan 失败:', e && e.message || e); }
-        return json(res, { ok: true, mode: 'delete', name: f.name });
-      }
-      const { code, date, note } = d;
-      const amt = Number(d.amount);
-      const sh = d.shares == null ? null : Number(d.shares);
-      const nv = d.nav == null ? null : Number(d.nav);
-      const session = (d.session === 'T' || d.session === 'T+1') ? d.session : null; // 15:00 前/后；缺省 null（老记录兼容）
-      if (!code || typeof code !== 'string') return json(res, { ok: false, error: 'code 必填' }, 400);
-      const dv = validateOrderDate(date); // 与 /api/purchase-preview 共用同一份日期规则
-      if (dv.error) return json(res, { ok: false, error: dv.error }, 400);
-      if (!isFinite(amt) || amt <= 0) return json(res, { ok: false, error: 'amount 必须是大于 0 的数字' }, 400);
-      if (sh != null && (!isFinite(sh) || sh <= 0)) return json(res, { ok: false, error: 'shares 必须是大于 0 的数字' }, 400);
-      if (d.nav != null && (!isFinite(nv) || nv <= 0)) return json(res, { ok: false, error: 'nav 必须是大于 0 的数字' }, 400);
-      const nt = note == null ? '' : String(note).trim();
-      if (nt.length > 100) return json(res, { ok: false, error: 'note 最长 100 字符' }, 400);
-      const a2 = Math.round(amt * 100) / 100;
-      const holdings = store.readJSON('holdings.json');
-      if (!holdings || !Array.isArray(holdings.funds)) return json(res, { ok: false, error: 'holdings.json 结构异常' }, 500);
-      const fund = holdings.funds.find(x => x && x.code === code);
-      if (!fund) return json(res, { ok: false, error: '基金代码不存在：' + code, code: 'NOT_FOUND' }, 400);
-      const market = fund.market === 'QDII' ? 'QDII' : 'A';
-      // 申购费率外扣法：finalShares 统一推导（新录 / 补填 / 编辑 三分支共用 lib/buyPlan.js）
-      const feeRate = buyPlan.validFeeRate(fund.feeRate);
-      const purchases = Array.isArray(fund.purchases) ? fund.purchases : [];
-      // 预览成功后前端回的**真实成交净值日**（定价日）；缺失则留 null，交给 backfill 按净值序列解析。
-      // 兼容前端可能回传的旧字段名（navDate / confirmDate 存的都是定价日）。
-      const rawNvDate = d.pricingDate || d.navDate || d.confirmDate;
-      const nvDate = (typeof rawNvDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawNvDate)) ? rawNvDate : null;
-      // recalc/navAuto：前端「按新成交日重算」勾选框与预览结果的标志。
-      // ★ 默认 false —— 老记录（90+ 笔手动填过的真实值）绝不被静默覆盖，这是本改动的第一纪律。
-      const recalc = d.recalc === true || d.navAuto === true;
-
-      // ===== 编辑模式（editKey 命中即改已存在记录，区别于新增/补填）=====
-      // 前端「记一笔」记错时无需删了重加：点「编辑」→ 带 editKey={原date,原amount} 提交新值覆盖。
-      if (d.editKey && d.editKey.date != null && d.editKey.amount != null) {
-        const ekDate = String(d.editKey.date);
-        const ekAmt = Math.round(Number(d.editKey.amount) * 100) / 100;
-        const oi = purchases.findIndex(p => p.date === ekDate && p.amount === ekAmt);
-        if (oi < 0) return json(res, { ok: false, error: '原记录不存在（可能已被删除）', code: 'NOT_FOUND' }, 404);
-        // 新键值碰撞检测（排除自身）：改成与另一笔同 date+amount → 拒绝，避免产生重复键
-        const ci = purchases.findIndex((p, i) => i !== oi && p.date === date && p.amount === a2);
-        if (ci >= 0) return json(res, { ok: false, error: '已存在同日期同金额的记录，无法改成该值' }, 409);
-        const ex = purchases[oi];
-        let shares, nav, pricingDate;
-        if (recalc && sh != null) {
-          // 显式份额永远最大（券商 App 实际数），连同净值一并信任
-          shares = sh; nav = nv != null ? nv : ex.nav;
-          pricingDate = nv != null ? (nvDate || ex.pricingDate || ex.navDate || null) : (ex.pricingDate || ex.navDate || null);
-        } else if (recalc) {
-          if (nv != null) {
-            // 预览成功：服务端用**权威 feeRate** 重算份额，不信任客户端传的份额
-            nav = nv;
-            shares = buyPlan.computeShares(a2, feeRate, nv);
-            // ★ 不再用名义定价日（只跳周末，不认节假日）冒充真实成交日。
-            //   预览没给定价日就写 null，交给 backfill 按该基金净值序列解析。
-            pricingDate = nvDate || null;
-          } else {
-            // 预览 pending/error：无法给出可信份额 → 置回「在途」，交给 backfill 在净值公布后自动补
-            nav = null; shares = null; pricingDate = null;
-          }
+      {
+        const ak = config.getApiKey();
+        if (!ak || req.headers['x-api-key'] !== ak) return json(res, { ok: false, error: '鉴权失败：缺少或错误的 API Key（设置页可查看/重置）。' }, 401);
+        const raw = await readBody(req, 64 * 1024);
+        let input;
+        try { input = JSON.parse(raw); } catch (e) { return json(res, { ok: false, error: 'JSON 解析失败' }, 400); }
+        if (!input || typeof input !== 'object') return json(res, { ok: false, error: '请求体必须是 JSON 对象' }, 400);
+        if (!input.code || typeof input.code !== 'string') return json(res, { ok: false, error: 'code 必填' }, 400);
+        if (input.action === 'delete') {
+          if (!input.editKey || input.editKey.date == null || input.editKey.amount == null) return json(res, { ok: false, error: 'editKey{date,amount} 必填' }, 400);
         } else {
-          // ★ 老行为（逐字保留）：未勾选重算 → 原净值/份额原样保留，改日期/时段不动数值
-          shares = sh != null ? sh : (nv != null ? buyPlan.computeShares(a2, feeRate, nv) : ex.shares);
-          nav = nv != null ? nv : ex.nav;
-          pricingDate = ex.pricingDate || ex.navDate || null;
+          const dv = validateOrderDate(input.date);
+          if (dv.error) return json(res, { ok: false, error: dv.error }, 400);
+          if (!isFinite(Number(input.amount)) || Number(input.amount) <= 0) return json(res, { ok: false, error: 'amount 必须是大于 0 的数字' }, 400);
+          input.session = input.session === 'T' || input.session === 'T+1' ? input.session : null;
+          input.note = input.note == null ? '' : String(input.note).trim();
+          if (input.note.length > 100) return json(res, { ok: false, error: 'note 最长 100 字符' }, 400);
         }
-        // 份额确认日（到账日）：**只由后端权威计算**，不信任客户端传值；定价日拿不到 → 置空交 backfill。
-        // ★ 它不参与份额计算 —— 上面算 shares 的每一行都与它无关。
-        const settleDate = pricingDate ? (await buyPlan.resolveSettleDate(code, pricingDate, market)).settleDate : null;
-        const upd = {
-          date,
-          amount: a2,
-          session, // 15:00 前/后；前端三态里的「未知」回传 null（老记录本来就是 null，不丢信息）
-          // ★ 只写真实成交净值日：重算且解析成功才有值；置回在途 → null；未重算 → 保留原值
-          pricingDate,
-          settleDate,
-          shares, nav,
-          note: nt || ex.note || ''
-        };
-        purchases[oi] = upd;
-        fund.purchases = purchases;
-        if (!store.writeJSONSafe('holdings.json', holdings)) return json(res, { ok: false, error: '保存失败（文件被占用，可能是 OneDrive/杀软锁定）' }, 500);
-        try { timing.buyScan(); } catch (e) { console.warn('[timing] buyScan 失败:', e && e.message || e); }
-        // 改了日期/时段却没勾选重算 → 明确回告「数值未动」，前端据此提示用户，避免"点了保存没变化"的困惑
-        // ⚠️ 老记录 ex.session 是 undefined，前端回传的是 null —— 必须归一化后再比，
-        //    否则「原样保存」也会被误报成「已改时段」（本轮实测踩到）。
-        const sessChanged = (session || null) !== (ex.session || null);
-        const movedKey = (date !== ekDate || sessChanged);
-        const warn = (!recalc && movedKey) ? '已改日期/时段，但未勾选重算：净值/份额保持原值' : null;
-        return json(res, { ok: true, mode: 'edit', purchase: upd, name: fund.name, recalc, warn });
-      }
-
-      let finalShares;
-      if (sh != null)      finalShares = sh;                                       // 显式份额→信任（券商 App 实际数，不重算）
-      else if (nv != null) finalShares = buyPlan.computeShares(a2, feeRate, nv);    // 只给金额+净值→按费率外扣法推导（4 位小数）
-      else                 finalShares = null;                                     // 都缺→在途（pending）
-      // ★ 一律只写**真实成交净值日**（由预览解析所得）；拿不到就写 null 交给 backfill 按净值序列解析。
-      //   绝不用名义定价日（tradeDate.nominalPricingDate，只跳周末）冒充真实成交日 —— 那会在界面上显示错日期。
-      const finalPricingDate = (nv != null) ? (nvDate || null) : null;
-      // 份额确认日（到账日）：后端权威计算，**不参与份额公式**
-      const finalSettleDate = finalPricingDate
-        ? (await buyPlan.resolveSettleDate(code, finalPricingDate, market)).settleDate
-        : null;
-      // 补填规则（防重复、免 id）：同 code+date+amount → 在途行带 shares/nav 就地补填；已确认或纯重复 → 409
-      const idx = purchases.findIndex(p => p.date === date && p.amount === a2);
-      let mode = 'new';
-      if (idx >= 0) {
-        const ex = purchases[idx];
-        if (ex.shares != null || (sh == null && nv == null)) {
-          return json(res, { ok: false, error: '该笔已确认份额或重复，勿重复录入（金额录错请人工改 holdings.json）' }, 409);
+        try {
+          const out = await purchaseService.mutatePurchase(input);
+          try { timing.buyScan(); } catch (e) { console.warn('[timing] buyScan 失败:', e && e.message || e); }
+          return json(res, out);
+        } catch (e) {
+          return json(res, { ok: false, code: e.code || 'PURCHASE_FAILED', error: e.message }, e.status || 500);
         }
-        const merged = Object.assign({}, ex, { shares: finalShares, nav: nv, pricingDate: finalPricingDate, settleDate: finalSettleDate, session, note: nt || ex.note || '' });
-        // 清掉旧字段名（与 pricingDate 语义重复，留着会造成两套口径）
-        delete merged.navDate; delete merged.confirmDate;
-        purchases[idx] = merged;
-        mode = 'backfill';
-      } else {
-        purchases.push({ date, amount: a2, shares: finalShares, nav: nv, pricingDate: finalPricingDate, settleDate: finalSettleDate, session, note: nt });
       }
-      fund.purchases = purchases;
-      if (!store.writeJSONSafe('holdings.json', holdings)) {
-        return json(res, { ok: false, error: '保存失败（文件被占用，可能是 OneDrive/杀软锁定）' }, 500);
-      }
-      // 买入时机复盘：新买入落地后立即幂等补扫（attach 战役 id）
-      try { timing.buyScan(); } catch (e) { console.warn('[timing] buyScan 失败:', e && e.message || e); }
-      return json(res, { ok: true, mode, purchase: purchases[idx >= 0 ? idx : purchases.length - 1], name: fund.name });
     }
     // 静态文件
     let rel = p === '/' ? '/index.html' : p;
@@ -618,11 +567,12 @@ if (require.main === module) {
   // 其余（缺迁移函数/迁移自身抛错）属程序 bug → fail fast —— 数据已自动备份，
   // 绝不能带着旧结构静默跑新代码（本项目最忌讳「不报错只算错」）。
   try {
-    for (const f of ['holdings.json', 'config.json']) {
+    // holdings v2 涉及 history 的联网全量重建，必须由 shareMigration 两文件事务独占处理。
+    for (const f of ['config.json']) {
       const full = store.dataPath(f);
       if (!fs.existsSync(full)) continue; // 尚未 setup 的新装环境，没有可迁移的东西
       const raw = store.readJSONRaw(f);
-      const r = schema.migrateIfNeeded(f, raw, { dataDir: store.DATA_DIR });
+      const r = schema.migrateIfNeeded(f, raw, { fullPath: full });
       if (r.changed) {
         store.writeJSONSafe(f, r.obj);
         console.log('[schema] ' + f + ' 已迁移到 v' + schema.SCHEMA_VERSION
@@ -639,6 +589,12 @@ if (require.main === module) {
       process.exit(1);
     }
   }
+
+  // 严格迁移异步运行：服务先进入只读模式，读接口可用于展示进度/缺失清单；成功后自动开放写入。
+  shareMigration.ensureMigration().then((m) => {
+    if (m.status === 'complete') console.log('[share-migration] v2 迁移完成');
+    else console.warn('[share-migration] ⚠ 迁移未完成，保持只读：' + (m.errors || []).map((x) => x.code).join(','));
+  }).catch((e) => console.warn('[share-migration] ⚠ ' + (e && e.message || e)));
 
   // L9.5: 只增不改地补齐 categories.json 里缺失的内置项（2026-09-20）。
   // 为什么需要：内置项原先只存在于 data/example/categories.example.json，而它**只在 setup 时**被整份拷成
@@ -691,10 +647,13 @@ if (require.main === module) {
       console.log(`（已按 HOST=${HOST} 限定监听地址：仅该地址可访问）`);
     }
     // 买入时机复盘：启动即幂等补扫历史 purchases（buy 样本进池，含战役外/历史定投标注；失败不致命）
-    try { timing.buyScan(); } catch (e) { console.warn('[timing] 启动 buyScan 失败:', e && e.message || e); }
+    if (!shareMigration.isPending()) {
+      try { timing.buyScan(); } catch (e) { console.warn('[timing] 启动 buyScan 失败:', e && e.message || e); }
+    }
     // 基金费率：启动后延迟一次（不阻塞首屏 —— 首屏抓净值比抓费率重要得多），此后每 24 小时一次。
     // 定时器 unref：不因它挂着而让进程无法自然退出。启动时跑不到的部分（新增基金）由 /api/save 触发。
     const feeRun = () => {
+      if (shareMigration.isPending()) return;
       feeSync.syncFundFees().then((r) => {
         if (r && r.updated) console.log('[fee-sync] 已更新 ' + r.updated + ' 只基金的费率');
         if (r && r.failed) console.warn('[fee-sync] ' + r.failed + ' 只抓取失败（保留原值，下次重试）');

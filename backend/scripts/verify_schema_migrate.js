@@ -13,7 +13,7 @@
  *   ⑤ 幂等                  —— 迁移后再跑一次，changed=false
  *   ⑥ 迁移抛错              —— 原文件字节不变（写回在调用方，失败天然无害）
  *   ⑦ 版本超前              —— 抛 SCHEMA_VERSION_AHEAD
- *   ⑧ 一致性                —— SCHEMA_VERSION === max(MIGRATIONS)+1（加载时已断言，这里显式跑一次）
+ *   ⑧ 一致性                —— SCHEMA_VERSION === max(MIGRATIONS)（加载时已断言，这里显式跑一次）
  *
  * ★ 不联网、不碰 data/ 下任何真实文件（全部在 os.tmpdir() 的临时目录里，跑完自删）。
  *   用法：node backend/scripts/verify_schema_migrate.js
@@ -81,6 +81,18 @@ try {
     { dataDir: dir, targetVersion: 2, migrations: { 2: (o) => o } });
   t('⑤ 迁移后再跑一次 changed=false', r3.changed === false);
 
+  // ── ⑤b 分区物理路径：config.json 实际位于 data/config/，备份必须紧邻真实文件 ──
+  const partitionDir = path.join(dir, 'config');
+  fs.mkdirSync(partitionDir, { recursive: true });
+  const partitionFull = path.join(partitionDir, 'config.json');
+  fs.writeFileSync(partitionFull, JSON.stringify({ _schemaVersion: 1 }), 'utf8');
+  const rPartition = schema.migrateIfNeeded('config.json', { _schemaVersion: 1 }, {
+    fullPath: partitionFull, targetVersion: 2, migrations: { 2: (o) => o },
+  });
+  t('⑤b 分区文件按真实路径备份',
+    rPartition.changed && rPartition.backup.startsWith(partitionFull + '.bak-') && fs.existsSync(rPartition.backup),
+    rPartition.backup);
+
   // ── ⑥ 迁移抛错 ──
   const raw3 = { _schemaVersion: 1, funds: [] };
   write(raw3);
@@ -102,8 +114,8 @@ try {
   t('⑦ 版本超前抛 SCHEMA_VERSION_AHEAD', ahead && code === 'SCHEMA_VERSION_AHEAD');
 
   // ── ⑧ 一致性 ──
-  try { schema.assertConsistent(); t('⑧ SCHEMA_VERSION === max(MIGRATIONS)+1', true); }
-  catch (e) { t('⑧ SCHEMA_VERSION === max(MIGRATIONS)+1', false, e.message); }
+  try { schema.assertConsistent(); t('⑧ SCHEMA_VERSION === max(MIGRATIONS)', true); }
+  catch (e) { t('⑧ SCHEMA_VERSION === max(MIGRATIONS)', false, e.message); }
 } finally {
   try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) { /* 清理非致命 */ }
 }
