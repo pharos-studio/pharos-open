@@ -12,6 +12,7 @@ const config = require('../lib/config');
 const buyPlan = require('../lib/buyPlan');
 const allocation = require('./alloc/allocation');
 const trackIndex = require('../lib/trackIndex'); // 指数白名单与"这条线能不能用锚"（唯一真相源）
+const indexQuote = require('../lib/indexQuote');
 const { baseCategoryOf } = require('./registry'); // 自建分类(custom:xxx) → 绑定的内置算法
 
 // ---------- 分析计算（纯计算，供 /api/refresh 与 /api/advice 复用）----------
@@ -153,13 +154,16 @@ async function buildAnalysis(opts) {
       } catch (e) { /* 不致命 */ }
     }
 
-    let estimate = null, estimateChange = null;
+    let estimate = null, estimateChange = null, estimateQuoteState = 'not_applicable';
     if (f.market === 'A' && f.estimateIndex && trading && latest) {
-      const idx = (await fetchers.fetchSinaIndex([f.estimateIndex]))[f.estimateIndex];
-      if (idx) {
-        estimateChange = idx.changePct;
-        estimate = latest.nav * (1 + idx.changePct / 100);
-      }
+      try {
+        const idx = await indexQuote.fetchIndexQuote(f.estimateProvider || 'sina', f.estimateIndex);
+        const quoteDay = idx && new Date(Date.parse(idx.quoteTime) + 8 * 3600000).toISOString().slice(0, 10);
+        if (idx && quoteDay === util.shanghaiNow().ymd && Date.now() - Date.parse(idx.quoteTime) < 2 * 3600000) {
+          estimateChange = idx.changePct; estimate = latest.nav * (1 + idx.changePct / 100); estimateQuoteState = 'fresh';
+        }
+        else estimateQuoteState = 'stale';
+      } catch (e) { estimateQuoteState = 'unavailable'; }
     }
     return {
       principal,
@@ -170,7 +174,10 @@ async function buildAnalysis(opts) {
         code: f.code, name: f.name, category: f.category, market: f.market,
         fundType: f.fundType || null, indexCode: f.indexCode || null, indexName: f.indexName || null,
         caliber: util.caliberOf(f),  // ★口径（broad 下 cn/us）：computeAllocation/advice 的路由依据，缺它两层解析失效
-        estimateIndex: f.estimateIndex, estimateLabel: f.estimateLabel || null,
+        estimateIndex: f.estimateIndex, estimateLabel: f.estimateIndexName || f.estimateLabel || null,
+        estimateProvider: f.estimateProvider || (f.estimateIndex ? 'sina' : null),
+        estimateRelation: f.estimateRelation || null, estimateQuoteState,
+        profileState: f.profileState || 'ready', profileUpdatedAt: f.profileUpdatedAt || null,
         trackIndex: f.trackIndex || null,
         // ★ 估值锚状态（2026-09-19 新增）：让前端能**显式**告诉用户「这只基金缺估值锚、判定已降级」，
         //   替代过去"界面显示 ? 且恒定建议持仓不动"的静默误导。
@@ -224,7 +231,8 @@ async function buildAnalysis(opts) {
 
   // 配置（按引擎 4 线汇总市值；净值缺失的基金 currentValue=null 不参与）。名单源 = categories.json 的 categories（=引擎线口径，不再并桶）
   const categories = store.readJSON('categories.json');
-  const catList = (categories && Array.isArray(categories.categories)) ? categories.categories : [];
+  const catList = (categories && Array.isArray(categories.categories))
+    ? categories.categories.filter(c => ['broad', 'dividend', 'growth', 'cycle', 'bond', 'cash'].includes(c.key)) : [];
   const byCat = {};
   funds.forEach(f => { if (f.currentValue != null) { byCat[f.category] = (byCat[f.category] || 0) + f.currentValue; } });
   const allocationRows = catList.map(c => ({
@@ -256,6 +264,10 @@ async function buildAnalysis(opts) {
     funds.forEach(f => { valuationMap[f.code] = f.valuation; });
     // 预算机制已整体移除（用户拍板）：金额建议由用户自定，引擎只产出综合分/标签信号
     plan = allocation.computeAllocation(allocationRows, pol, funds, totalValue, 0, valuationMap, dl);
+    for (const f of funds) if (f.profileState === 'needs_review' && plan.scoreMap[f.code]) {
+      plan.scoreMap[f.code] = { ...plan.scoreMap[f.code], verdict: 'hold', executable: false, eligible: false,
+        compositeLabel: '分类待确认' };
+    }
   } catch (e) { /* config 缺失不致命，plan 回退空 */ }
 
   // ★★ 全组合收益基准 = 净投入（2026-09-18 口径变更，用户拍板）★★

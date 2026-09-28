@@ -596,14 +596,16 @@ async function fundAutoFill(code) {
   const indexCode = archive ? archive.indexCode : null;
   const indexName = archive ? archive.indexName : null;
   const trackIndex = ti.resolveTrackIndex(indexCode, indexName);
-  const line = ti.suggestLine(ftype, base.name, trackIndex);
+  const officialName = archive && archive.name || base.name;
+  const line = ti.suggestLine(ftype, officialName, trackIndex);
   return {
     found: true,
     code: String(code),
-    name: base.name,
+    name: officialName,
     type: ftype,
     market: base.market,
-    source: base.source,
+    source: archive && archive.name ? 'archive' : base.source,
+    archiveFound: !!archive,
     // 跟踪标的（记录性字段：即使我们没有估值源也照样回给用户看）
     indexCode, indexName,
     // 我方支持的内部指数键；null = 没有估值源，前端必须显示「缺估值锚·降级」

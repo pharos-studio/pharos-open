@@ -270,7 +270,7 @@ function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget,
 
   // 1) 真实市场分 + 决策副作用（给 funds 挂 _dec / _marketScore，advice.js 决策卡复用，同源零漂移）
   funds.forEach(f => {
-    const hit = resolveRegistry(f);
+    const hit = f.profileState === 'needs_review' ? null : resolveRegistry(f);
     if (!hit) {
       // ★ 无算法的类别（待建设 / 未归类）：不能只是"清空分数"就完事。
       //   旧实现在下方 scoreMap 循环里遇到 `_marketScore == null` 就 return，
@@ -279,7 +279,7 @@ function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget,
       //   现在打个显式标记，由下方 scoreMap 产出一条 unsupported 记录。
       const pending = isPendingCategory(f.category);
       f._marketScore = null; f._dec = null;
-      f._unsupported = { pending, reason: pending ? 'pending' : 'unknown' };
+      f._unsupported = { pending, reason: f.profileState === 'needs_review' ? 'needs_review' : pending ? 'pending' : 'unknown' };
       return;
     }
     f._unsupported = null;
@@ -311,7 +311,7 @@ function computeAllocation(allocation, policy, funds, totalValue, monthlyBudget,
         scoreMap[f.code] = {
           code: f.code, name: f.name,
           marketScore: null, valueScore: null, momentumScore: null,
-          compositeLabel: f._unsupported.pending ? '待建设' : '未归类',
+          compositeLabel: f._unsupported.reason === 'needs_review' ? '分类待确认' : f._unsupported.pending ? '待建设' : '未归类',
           weights: null, degraded: [],
           positionLabel: null,
           eligible: false, suspended: false,

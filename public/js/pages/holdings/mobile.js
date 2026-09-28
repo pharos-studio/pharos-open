@@ -95,7 +95,7 @@ export function fundCard(f, list, state) {
     cls(f.profitPct)
   ));
   card.appendChild(metrics);
-  card.appendChild(fundSettings(state, f.code));
+  card.appendChild(fundSettings(state, f.code, f));
   card.appendChild(limitRow(state, f.code)); // 日限显示 + 编辑
 
   const delFundBtn = el('div', { class: 'fc-expand', text: '删除该基金', style: 'color:var(--up);margin-top:8px' });

@@ -30,22 +30,13 @@ export async function persist(state) {
 // 添加基金：market/估算由表单决定（删硬编码；QDII 走 T+2 无盘中估算）
 // caliber（口径，2026-09-12）：仅宽基(broad)需要 —— cn=A股口径 / us=海外口径；其他类别不落该字段。
 // trackIndex（2026-09-12 一键添加）：INDEX_HINTS 命中时自动带入（决策估值/PE历史用），缺省不落字段（走价格分位兜底）。
-export async function addFund(code, name, category, market, estIndex, estLabel, caliber, trackIndex) {
+export async function addFund(code, profileRevision, confirmations) {
   const state = store.getState();
   const funds = readFunds(state);
   if (funds.some(f => f.code === code)) { alert('该基金已存在'); return; }
-  const newFund = Object.assign({
-    code, name, category, market,
-    caliber: (category === 'broad' && (caliber === 'cn' || caliber === 'us')) ? caliber : undefined,
-    // ★ 这里刻意不给 feeRate 值：费率是**基金属性**（由后端 feeSync 抓取写入），不是用户输入。
-    //   前端就算传了也会被 server.js 的 pinFundFees 剥掉（新增基金）或盖回磁盘值（已有基金），
-    //   界面因此没有任何修改入口。
-    estimateIndex: estIndex || null, estimateLabel: estLabel || null,
-    purchases: [],
-  }, trackIndex ? { trackIndex } : {});
-  state.holdings = Object.assign({}, state.holdings, { funds: funds.concat([newFund]) });
-  const ok = await persist(state);
-  if (ok) alert('已添加。新基金无买入记录，展开点「＋记一笔」录首笔买入后才有市值。');
+  await api.createFund(code, profileRevision, confirmations);
+  await refreshPage();
+  alert('已添加。展开基金后可记录首笔买入。');
 }
 
 // 删除基金：从 funds 数组移除后整体回写（经 /api/save 的 holdings 通道，无需新端点）
