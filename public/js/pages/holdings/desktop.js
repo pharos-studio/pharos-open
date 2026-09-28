@@ -117,7 +117,7 @@ export function renderDesktop(root, live, state) {
     const autoInfo = el('div', { class: 'meta', style: 'margin-top:4px;padding:4px 6px;border-left:2px solid var(--accent);background:rgba(255,255,255,.035)' });
     autoInfo.appendChild(el('span', { text: '自动信息 · ' + [f.fundType, f.indexName ? ('跟踪 ' + f.indexName) : null, feeTip && feeTip.text, statusTip.text].filter(Boolean).join(' · '), title: [feeTip && feeTip.title, statusTip.title].filter(Boolean).join(' · ') }));
     nameCell.appendChild(autoInfo);
-    nameCell.appendChild(fundSettings(state, f.code));
+    nameCell.appendChild(fundSettings(state, f.code, f));
     tr.appendChild(el('td', {}, [nameCell]));
     const dayCell = el('td', { class: cls(f.dayChange) });
     dayCell.textContent = f.dayChange != null ? signPct(f.dayChange) : '—';

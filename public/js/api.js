@@ -75,6 +75,13 @@ export const getPurchasePreview = (code, date, session, amount, feeWaived, known
     + (pricingDate ? '&pricingDate=' + encodeURIComponent(pricingDate) : ''));
 export const retryMigration = () => request('/api/migration/retry', { method: 'POST' });
 export const getFundLookup = (code) => request('/api/fund-lookup?code=' + encodeURIComponent(code)); // 添加基金：单只带出（A名单+B兜底）
+export const createFund = (code, profileRevision, confirmations) => request('/api/funds', {
+  method: 'POST', body: JSON.stringify({ code, profileRevision, confirmations }),
+});
+export const reidentifyFund = (code, action, profileRevision, confirmations) =>
+  request('/api/funds/' + encodeURIComponent(code) + '/reidentify', {
+    method: 'POST', body: JSON.stringify({ action, profileRevision, confirmations }),
+  });
 export const getFundList = () => request('/api/fund-list'); // 添加基金：全量精简名单（联想下拉）
 export const getTrackIndex = () => request('/api/track-index'); // 添加基金：支持的跟踪指数白名单（下拉 + 手填）
 export const getThemeMap = () => request('/api/theme-map'); // 穿透：theme_map.json（themeNames/industryThemes/entries）

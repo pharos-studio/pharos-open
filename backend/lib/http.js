@@ -24,11 +24,11 @@ function release() {
   if (next) next(); else inflight--;
 }
 
-async function fetchText(url, headers = {}) {
+async function fetchText(url, headers = {}, timeoutMs = 15000) {
   await acquire(); // ★ 必须在 try 之外：若放进 try，acquire 自身异常时 finally 会归还从未占用的名额
   // 超时计时从「真正发出请求」起算，排队等待不计入 15s（保持与串行版一致的语义）
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 15000);
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(url, { headers: { 'User-Agent': UA, ...headers }, signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + url);

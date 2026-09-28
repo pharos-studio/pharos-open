@@ -287,14 +287,15 @@ console.log('\n【L3b】基金费率接线（抓取 / 落盘 / 防改）');
     /updatedAt: now/.test(FEE) && /detail\.updatedAt/.test(FEE) && /updated: day/.test(FEE), undefined);
 
   // ── 防改层（负向）──
-  t('server 定义 pinFundFees', /function pinFundFees\(incoming\)/.test(SRV), undefined);
+  t('旧整份保存禁止新增基金', /fundProfile\.profileWriteError\(data\.holdings, cur\)/.test(SRV), undefined);
   const saveRoute = SRV.slice(SRV.indexOf("p === '/api/save'"), SRV.indexOf("p === '/api/fees/refresh'"));
-  const idxPin = saveRoute.indexOf('pinFundFees(data.holdings)');
+  const idxPin = saveRoute.indexOf('fundProfile.profileWriteError(data.holdings, cur)');
   const idxWrite = saveRoute.indexOf("writeJSONSafe('holdings.json'");
-  t('★ /api/save 在写盘**之前**调用 pinFundFees（顺序不可对调，否则等于没保护）',
+  t('★ /api/save 写盘前校验自动档案（顺序不可对调）',
     idxPin > -1 && idxWrite > -1 && idxPin < idxWrite, { idxPin: idxPin, idxWrite: idxWrite });
-  t('★ 新增基金剥掉费率字段（留下的 feeRate:0 会被当成「已知的 0」而跳过抓取）',
-    /else \{\s*delete f\.feeRate;\s*delete f\.feeDetail;/.test(SRV), undefined);
+  t('★ 新增基金只写后端档案，随后抓取费率',
+    /holdings\.funds\.push\(\{ code, \.\.\.selected\.profile, purchases: \[\] \}\)/.test(SRV)
+    && /feeSync\.syncFundFees\(\{ codes: \[code\] \}\)/.test(SRV), undefined);
   t('/api/fees/refresh 端点存在且带鉴权',
     /'\/api\/fees\/refresh'/.test(SRV) && /feeSync\.syncFundFees\(\{ force \}\)/.test(SRV), undefined);
   t('启动延迟 3s + 每 24h 定时（unref 不阻塞进程退出）',

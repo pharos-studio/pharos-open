@@ -30,6 +30,7 @@ const purchaseMath = require('./lib/purchaseMath');
 const schema = require('./lib/schema'); // 数据结构版本与迁移（唯一版本口径，见 lib/schema.js 顶部说明）
 const trackIndex = require('./lib/trackIndex'); // 指数白名单与类别推断（唯一真相源）
 const categories = require('./lib/categories'); // 内置类别/算法/口径/预设（唯一真相源 + 启动补齐）
+const fundProfile = require('./lib/fundProfile');
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -42,60 +43,9 @@ const HOST = process.env.HOST || '';
 
 // /api/fund-list 序列化缓存：2.7 万行只 stringify 一次（刷新名单时重建），避免每次请求烧 CPU
 let fundListCacheStr = null;
-const fundLookupInflight = new Map();
-function lookupFundOnce(code) {
-  if (fundLookupInflight.has(code)) return fundLookupInflight.get(code);
-  const task = Promise.all([fetchers.fundAutoFill(code), fetchers.fetchFundRates(code)])
-    .finally(() => fundLookupInflight.delete(code));
-  fundLookupInflight.set(code, task);
-  return task;
-}
-async function syncFundProfiles(codes) {
-  const profiles = await Promise.all(codes.map(async (code) => ({ code, profile: await fetchers.fundAutoFill(code) })));
-  return store.withFileLocks(['holdings.json'], async () => {
-    const holdings = store.readJSON('holdings.json');
-    if (!holdings || !Array.isArray(holdings.funds)) return false;
-    const byCode = new Map(holdings.funds.filter(Boolean).map(f => [String(f.code), f]));
-    for (const item of profiles) {
-      const f = byCode.get(String(item.code)), p = item.profile;
-      if (!f || !p || !p.found) continue;
-      f.name = p.name || f.name;
-      f.fundType = p.type || null;
-      f.indexCode = p.indexCode || null;
-      f.indexName = p.indexName || null;
-      f.autoProfileUpdatedAt = Date.now();
-      if (!f.trackIndex && p.trackIndex) f.trackIndex = p.trackIndex;
-    }
-    return store.writeJSONSafe('holdings.json', holdings);
-  });
-}
 
-// 合法类别（fund.category）：**实时读取** categories.json 的 engines + 用户自建分类。
-// ★ 这里必须是「函数」而不是启动时算一次的常量：用户在看板里自建分类后要立刻能保存，
-//   不能等重启进程。（旧实现启动时只读一次，自建分类会被 400 拦下，且用户看不出原因。）
-//   5 秒 TTL 只是为了别每次请求都读盘。
-// ★ 内置六类来自 lib/categories.js（唯一真相源）—— 只增不改地补齐用户文件时用的是同一份定义。
-//   ⚠ 这里必须是**六条展示线**，不能改成 lib/categories.js 的四条 engines：
-//     下面 /api/save 的 okBind 用这六条做「预设/自建分类能绑定到哪些内置算法」的白名单，
-//     而 bond/cash 两个预设的 category 正是 bond/cash —— 换成四条会把它们判成非法。
+// 基金分类只允许系统基础类别；旧自定义分类仅保留迁移审计与兼容读取。
 const BASE_CATEGORIES = categories.BASE_CATEGORY_KEYS;
-let _catCache = null, _catCacheAt = 0;
-function allowedCategories() {
-  if (_catCache && (Date.now() - _catCacheAt) < 5000) return _catCache;
-  const base = new Set(BASE_CATEGORIES);
-  try {
-    const cats = store.readJSON('categories.json');
-    const eng = (cats && Array.isArray(cats.engines)) ? cats.engines : [];
-    for (const e of eng) { if (e && e.key) base.add(e.key); }
-    const cus = (cats && Array.isArray(cats.customCategories)) ? cats.customCategories : [];
-    // 自建分类要登记 **它的 key**（用户实际存进 fund.category 的就是这个），
-    // 而不是它绑定的算法 key —— 否则用户自建的类别会被 400 拦下。
-    for (const e of cus) { if (e && e.key) base.add(e.key); }
-  } catch (e) { /* 读不到就以内置六类兜底 */ }
-  _catCache = Array.from(base);
-  _catCacheAt = Date.now();
-  return _catCache;
-}
 
 function json(res, obj, code = 200) {
   const s = JSON.stringify(obj);
@@ -137,38 +87,6 @@ function restoreSecrets(merged, cur) {
     }
   }
   return merged;
-}
-// ---------- 基金费率：前端只读（不可修改）----------
-// 费率由 engines/feeSync.js 抓取写入，是**基金属性**而非用户输入。若允许前端回传，开放版用户
-// 随手改一个数就会让「净投入 / 在途预估 / 份额推导」全部失真，而且改完不留任何痕迹。
-// 故写成硬约束（与 restoreSecrets 同一范式，都放在写盘之前）：
-//   · 磁盘上已存在的基金 → 用磁盘值把回传的费率字段盖回去（前端传什么都不生效）
-//   · 磁盘上没有的基金（本次新增）→ 直接剥掉费率字段，交给 feeSync 立即抓
-//     （★ 不能留着前端那个 feeRate:0 —— 0 是「免申购费」的语义，会被误当成已知值而跳过抓取）
-// 返回本次新增的基金代码，供调用方触发一次增量抓取。
-function pinFundFees(incoming) {
-  const added = [];
-  const cur = store.readJSON('holdings.json');
-  const byCode = {};
-  if (cur && Array.isArray(cur.funds)) {
-    for (const f of cur.funds) if (f && typeof f.code === 'string') byCode[f.code] = f;
-  }
-  const funds = (incoming && Array.isArray(incoming.funds)) ? incoming.funds : [];
-  for (const f of funds) {
-    if (!f || typeof f !== 'object' || typeof f.code !== 'string') continue;
-    const src = byCode[f.code];
-    if (src) {
-      if (src.feeRate === undefined) delete f.feeRate; else f.feeRate = src.feeRate;
-      if (src.feeDetail === undefined) delete f.feeDetail; else f.feeDetail = src.feeDetail;
-      if (src.purchaseStatus === undefined) delete f.purchaseStatus; else f.purchaseStatus = src.purchaseStatus;
-    } else {
-      delete f.feeRate;
-      delete f.feeDetail;
-      delete f.purchaseStatus;
-      added.push(f.code);
-    }
-  }
-  return added;
 }
 function readBody(req, maxBytes = 2 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
@@ -338,7 +256,7 @@ const server = http.createServer(async (req, res) => {
       const code = (u.searchParams.get('code') || '').trim();
       if (!/^\d{6}$/.test(code)) return json(res, { ok: false, error: 'code 须为 6 位数字' }, 400);
       try {
-        const [profile, rates] = await lookupFundOnce(code);
+        const [profile, rates] = await Promise.all([fundProfile.lookup(code), fetchers.fetchFundRates(code).catch(() => null)]);
         const purchaseStatus = rates ? feeSync.normalizePurchaseStatus(rates, Date.now()) : { state: 'unknown', raw: null, maxBuy: null, unlimited: false, updatedAt: Date.now() };
         return json(res, Object.assign({ ok: true }, profile, {
           feeRate: rates && rates.sub ? rates.sub.rate : null,
@@ -346,6 +264,53 @@ const server = http.createServer(async (req, res) => {
           purchaseStatus,
         }));
       } catch (e) { return json(res, { ok: false, error: (e && e.message) || String(e) }, 500); }
+    }
+    if (p === '/api/funds' && req.method === 'POST' || /^\/api\/funds\/\d{6}\/reidentify$/.test(p) && req.method === 'POST') {
+      const ak = config.getApiKey();
+      if (!ak || req.headers['x-api-key'] !== ak) return json(res, { ok: false, error: '鉴权失败' }, 401);
+      let body;
+      try { body = JSON.parse(await readBody(req)); } catch { return json(res, { ok: false, error: 'JSON 解析失败' }, 400); }
+      const reidentify = p !== '/api/funds';
+      const code = reidentify ? p.split('/')[3] : String(body.code || '');
+      if (!/^\d{6}$/.test(code) || reidentify && body.code != null && body.code !== code)
+        return json(res, { ok: false, error: '基金代码无效' }, 400);
+      const preview = reidentify && body.action === 'preview';
+      if (reidentify && body.action !== 'preview' && body.action !== 'confirm') return json(res, { ok: false, error: 'action 无效' }, 400);
+      const looked = await fundProfile.lookup(code, preview);
+      if (!looked.found) return json(res, { ok: false, error: '未找到基金档案' }, 404);
+      if (preview) {
+        const cur = store.readJSON('holdings.json').funds.find(f => f.code === code);
+        if (!cur) return json(res, { ok: false, error: '基金不存在' }, 404);
+        const canApply = !(((cur.indexCode || cur.indexName || cur.trackIndex) && !looked.archiveFound) ||
+          (cur.estimateIndex && looked.estimateStatus === 'temporarily_unavailable'));
+        return json(res, { ok: true, ...looked, canApply,
+          warning: canApply ? null : '档案或行情源暂不可用，本次不能替换原自动档案',
+          diff: fundProfile.diff(cur, looked.autoProfile) });
+      }
+      if (reidentify) {
+        const cur = store.readJSON('holdings.json').funds.find(f => f.code === code);
+        if (cur && (((cur.indexCode || cur.indexName || cur.trackIndex) && !looked.archiveFound) ||
+          (cur.estimateIndex && looked.estimateStatus === 'temporarily_unavailable'))) {
+          return json(res, { ok: false, code: 'PROFILE_SOURCE_UNAVAILABLE', error: '档案或行情源暂不可用，请稍后重新识别' }, 503);
+        }
+      }
+      const selected = fundProfile.applySelected(looked, body.profileRevision, body.confirmations);
+      if (selected.error) return json(res, { ok: false, code: selected.error, error: selected.error }, selected.error === 'PROFILE_REVISION_STALE' ? 409 : 400);
+      const result = await store.withFileLocks(['holdings.json'], async () => {
+        const holdings = store.readJSON('holdings.json');
+        const i = holdings.funds.findIndex(f => f.code === code);
+        if (reidentify && i < 0 || !reidentify && i >= 0) return { conflict: true };
+        if (reidentify) holdings.funds[i] = { ...holdings.funds[i], ...selected.profile };
+        else holdings.funds.push({ code, ...selected.profile, purchases: [] });
+        return { ok: store.writeJSONSafe('holdings.json', holdings) };
+      });
+      if (result.conflict) return json(res, { ok: false, error: reidentify ? '基金不存在' : '基金已存在' }, 409);
+      if (!result.ok) return json(res, { ok: false, error: '保存失败' }, 500);
+      if (!reidentify) {
+        try { await Promise.race([feeSync.syncFundFees({ codes: [code] }), new Promise(resolve => setTimeout(resolve, 3000))]); }
+        catch (e) { console.warn('[fee-sync] 新基金费率抓取失败:', e.message); }
+      }
+      return json(res, { ok: true, fund: selected.profile });
     }
     if (p === '/api/track-index') {
       // 支持「指数估值锚」的指数白名单（前端下拉 + 手填用）。只读免鉴权。
@@ -400,7 +365,7 @@ const server = http.createServer(async (req, res) => {
       const fails = [];
       const okCaliber = (v) => v === undefined || v === null || v === 'cn' || v === 'us';
       const okFund = (f) => f && typeof f.code === 'string' && typeof f.name === 'string' &&
-        Array.isArray(f.purchases || []) && typeof f.category === 'string' && allowedCategories().includes(f.category) &&
+        Array.isArray(f.purchases || []) && typeof f.category === 'string' &&
         okCaliber(f.caliber);
       const okHoldings = (h) => h && Array.isArray(h.funds) && h.funds.every(okFund);
       // categories 结构校验。presets / customCategories（2026-09-19 新增）都是**可选段**，
@@ -414,16 +379,27 @@ const server = http.createServer(async (req, res) => {
       if (data.categories !== undefined && !okCategories(data.categories)) fails.push('categories 结构不合法');
       if (data.config !== undefined && !okConfig(data.config)) fails.push('config 结构不合法');
       if (fails.length) return json(res, { ok: false, error: '校验失败：' + fails.join('；') }, 400);
-      let addedFunds = [];
       if (data.holdings) {
         const ok = await store.withFileLocks(['holdings.json'], async () => {
-          addedFunds = pinFundFees(data.holdings); // 自动信息后端只读：写盘前用磁盘值覆盖
-          return store.writeJSONSafe('holdings.json', data.holdings);
+          const cur = store.readJSON('holdings.json');
+          const err = fundProfile.profileWriteError(data.holdings, cur);
+          if (err) return { profileError: err };
+          // 此通道仅保留旧页面的「删除基金」能力。现有基金的档案、流水、费率及
+          // 顶层 schema/迁移元数据均以锁内的服务端最新文件为准，避免旧视图回写丢记录。
+          const keep = new Set(data.holdings.funds.map(f => f.code));
+          const next = { ...cur, funds: cur.funds.filter(f => keep.has(f.code)) };
+          return store.writeJSONSafe('holdings.json', next);
         });
+        if (ok && ok.profileError) return json(res, { ok: false, code: 'PROFILE_READ_ONLY', error: ok.profileError }, 409);
         if (!ok) fails.push('holdings.json');
       }
       if (data.categories) {
-        const ok = await store.withFileLocks(['categories.json'], async () => store.writeJSONSafe('categories.json', data.categories));
+        const ok = await store.withFileLocks(['categories.json'], async () => {
+          const cur = store.readJSON('categories.json');
+          if (JSON.stringify(data.categories) !== JSON.stringify(cur)) return { profileError: '系统类别只读；旧自定义分类数据仍保留在配置文件中' };
+          return true;
+        });
+        if (ok && ok.profileError) return json(res, { ok: false, code: 'PROFILE_READ_ONLY', error: ok.profileError }, 409);
         if (!ok) fails.push('categories.json');
       }
       // ★config 必须 merge 而非整份替换：/api/state 已剥离 apiKey/llm.apiKey/news.*.key，
@@ -438,16 +414,6 @@ const server = http.createServer(async (req, res) => {
         if (!ok) fails.push('config.json');
       }
       if (fails.length) return json(res, { ok: false, error: '保存失败（文件被占用，可能是 OneDrive/杀软锁定）：' + fails.join(',') }, 500);
-      // 新增基金：立刻抓一次费率（3 秒封顶）。抓失败也不影响保存结果 —— 后台定时任务会兜底。
-      // 必须等这一下：新基金若留着"没有费率"，用户紧接着记的那一笔会按 0 费率推导份额。
-      if (addedFunds.length) {
-        try {
-          await Promise.race([
-            Promise.all([feeSync.syncFundFees({ codes: addedFunds }), syncFundProfiles(addedFunds)]),
-            new Promise((r) => setTimeout(r, 3000)),
-          ]);
-        } catch (e) { console.warn('[fee-sync] 新增基金费率抓取失败:', e && e.message || e); }
-      }
       return json(res, { ok: true });
     }
     if (p === '/api/fees/refresh' && req.method === 'POST') {
@@ -591,8 +557,12 @@ if (require.main === module) {
   }
 
   // 严格迁移异步运行：服务先进入只读模式，读接口可用于展示进度/缺失清单；成功后自动开放写入。
-  shareMigration.ensureMigration().then((m) => {
-    if (m.status === 'complete') console.log('[share-migration] v2 迁移完成');
+  shareMigration.ensureMigration().then(async (m) => {
+    if (m.status === 'complete') {
+      console.log('[share-migration] v2 迁移完成');
+      try { const r = await fundProfile.migrateExisting(); if (r.changed) console.log('[fund-profile] 已补充旧档案，备份：' + r.backup); }
+      catch (e) { console.warn('[fund-profile] 旧档案补充失败，下次启动重试:', e.message); }
+    }
     else console.warn('[share-migration] ⚠ 迁移未完成，保持只读：' + (m.errors || []).map((x) => x.code).join(','));
   }).catch((e) => console.warn('[share-migration] ⚠ ' + (e && e.message || e)));
 

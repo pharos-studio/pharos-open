@@ -272,22 +272,23 @@ async function buildAdvice(session = 'am') {
   const decMap = {}; // 买入时机复盘：am 会话收集全量基金当日判定（code → action/matrix/name/category），matrix 需带 _type
 
   for (const f of a.funds) {
-    const hit = resolveRegistry(f);
+    const hit = f.profileState === 'needs_review' ? null : resolveRegistry(f);
     if (!hit) {
       // ★ 类别没有对应算法 → **不再静默丢弃**。
       //   旧实现这里是 `continue`，该基金在决策页整只消失，用户只会觉得"少了一只"、看不出原因
       //   （净值行虽有复盘页 live.funds 兜底，决策页没有任何兜底）。
       //   现在改为产出显式卡片：待建设的类别说明「暂不判定」，未归类的类别提示去改类别。
       const pending = isPendingCategory(f.category);
+      const needsReview = f.profileState === 'needs_review';
       funds.push({
         code: f.code, name: f.name, category: f.category,
         caliber: util.caliberOf(f) || null,
-        categoryName: pending ? '待建设' : '未归类',
+        categoryName: needsReview ? '待确认' : pending ? '待建设' : '未归类',
         unsupported: true,
-        unsupportedReason: pending ? 'pending' : 'unknown',
+        unsupportedReason: needsReview ? 'needs_review' : pending ? 'pending' : 'unknown',
         verdict: null,
-        title: (pending ? '暂不支持：' : '未归类：') + f.name,
-        detail: pending
+        title: (needsReview ? '待确认：' : pending ? '暂不支持：' : '未归类：') + f.name,
+        detail: needsReview ? '自动档案分类待确认；市值照常显示，暂不提供可执行建议。' : pending
           ? '该类别的决策算法尚未开放（待建设），不参与买卖判定；市值仍计入总资产与配置占比。'
           : '该类别没有对应算法，请到「配置」页把它改到已有类别上；市值仍计入总资产与配置占比。',
         factors: [], matrix: null,
@@ -295,7 +296,7 @@ async function buildAdvice(session = 'am') {
         valueScore: null, momentumScore: null,
         compositeLabel: pending ? '待建设' : '未归类',
         weights: null, degraded: [],
-        conclusion: pending ? '待建设 · 暂不判定' : '未归类 · 暂不判定',
+        conclusion: needsReview ? '分类待确认 · 暂不判定' : pending ? '待建设 · 暂不判定' : '未归类 · 暂不判定',
         suspended: false, dailyLimit: null,
         currentValue: f.currentValue != null ? f.currentValue : 0,
         latestNav: f.latestNav,

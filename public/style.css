@@ -354,6 +354,12 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
   font-size: 13px;
 }
 .input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+.input[readonly], select:disabled {
+  background: rgba(154,163,192,.09);
+  border-color: rgba(154,163,192,.22);
+  color: var(--text-muted);
+  cursor: default;
+}
 
 /* 原生日期控件：Chromium 默认日历图标是纯黑，在深藏蓝画布上看不见 → 换成鎏金（= var(--accent) #D9A441）
    color-scheme: dark 让弹出的日历面板也是深色，不再闪一块白。 */
