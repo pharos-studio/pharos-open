@@ -41,72 +41,20 @@ html.hero-3d .hero-svg{display:none}
    文字 7 层占满整屏，3D 只从底部露出一条。
    ══════════════════════════════════════════════════════════════ */
 
-/* ── 方案 A：文字收简 + 3D 占下半屏 ──
-   文字收到 4 层（eyebrow / h1 / sub / btns），隐藏 quote / lede / small。
-   ★ 隐藏 ≠ 删除：三条仍在 DOM 里，桌面端与 ?long=1 长滚动版照常可读；
-     这里的 display:none 只在窄屏 + deck 模式成立，且只作用于视觉。 */
+/* ── 窄屏封面：3D 全屏作背景 + 文字浮其上 ──
+   ★ 选择器一律用 `.hero.page` 而非 `.hero`：该元素的 class 实测就是 `hero page`，
+     两种写法权重完全相同（3 类 + 1 元素），但 `.hero.page` 能稳定压过
+     deck.css 最后加载的 `html.deck-mode .page`（同权重时后加载者胜）。
+     这样既不需要任何开关类名，也不改变原有任何一条规则的胜负。 */
 @media (max-width:760px){
-  html.deck-mode.m-cover-a .hero{
-    /* ★ 不能写 padding:0 —— deck.css:13 给每个 .page 的
-       `padding-top: calc(var(--topbar-h) + 32px)` 是用来避开吸顶栏的；
-       归零后内容会直接钻到顶栏底下（截图里 eyebrow 被切成两半）。
-       这里只压缩底部与左右，顶部保留一个够用的安全距离。 */
-    padding:calc(var(--topbar-h) + 8px) 0 calc(var(--pager-h) + 20px);
-    display:flex;flex-direction:column;
-  }
-  /* ★ 必须中和 deck.css:20 的居中规则。
-     .hero 在窄屏下改用 flex 排布后，其两个 .wrap 子元素仍是 flex item；
-     而 `margin-top:auto/margin-bottom:auto` 在 flex 容器里会吃掉全部剩余空间，
-     把文字块和统计条分别顶到上下两端、标题被挤出视口。
-     （踩过：不改这条时 <h1> 直接滚出屏幕外，截图里只剩副标题。） */
-  html.deck-mode.m-cover-a .hero > .wrap{
-    margin-top:0;margin-bottom:0;
-  }
-  html.deck-mode.m-cover-a .hero > .wrap.grid{
-    display:flex;flex-direction:column;
-    flex:0 0 auto;
-    gap:0;padding-bottom:10px;
-  }
-  /* 文字块：不再吃剩余空间，按内容自然高度。
-     ★ 选择器不能写 `.hero .reveal:first-child` —— 统计条自己也带 .reveal，
-       且它是 `.wrap:last-child` 的第一个子元素，会被这条命中并强制 display:flex，
-       从而把统计条的 grid 布局打散成单列（导致封面永远装不进一屏）。
-       改用 `.wrap.grid > .reveal` 精确锁定"封面左侧文字块"。 */
-  html.deck-mode.m-cover-a .hero > .wrap.grid > .reveal{
-    flex:0 0 auto;
-    display:flex;flex-direction:column;
-  }
-  /* 收简：这三层窄屏不显示（DOM 里仍在，桌面端与 ?long=1 照常可读） */
-  html.deck-mode.m-cover-a .hero .quote,
-  html.deck-mode.m-cover-a .hero .lede,
-  html.deck-mode.m-cover-a .hero .small{display:none}
-  html.deck-mode.m-cover-a .hero .sub{margin:0 0 4px}
-  html.deck-mode.m-cover-a .hero .btns{margin-top:16px}
-  /* 3D：占下半屏（用小屏优先的 vh 上限，避免把统计条挤出一屏） */
-  html.deck-mode.m-cover-a .hero .hero-art{
-    flex:0 0 auto;margin:0;
-    display:flex;flex-direction:column;justify-content:flex-start;
-  }
-  html.deck-mode.m-cover-a .hero .hero-canvas,
-  html.deck-mode.m-cover-a .hero .hero-svg{
-    width:100%;height:auto;
-    aspect-ratio:520/440;max-height:30vh;
-    object-fit:contain;
-  }
-  html.deck-mode.m-cover-a .hero .hero-art figcaption{display:none}
-  html.deck-mode.m-cover-a .hero > .wrap:last-child{flex:0 0 auto;margin-top:10px}
-}
-
-/* ── 方案 B：3D 全屏作背景 + 文字浮其上 ── */
-@media (max-width:760px){
-  html.deck-mode.m-cover-b .hero{
+  html.deck-mode .hero.page{
     position:relative;
     /* ★ 同上：保留避开吸顶栏的顶部安全距离（不能 padding:0） */
     padding:calc(var(--topbar-h) + 8px) 0 calc(var(--pager-h) + 20px);
     display:flex;flex-direction:column;justify-content:flex-start;
   }
   /* ★ 同上：中和 deck.css:20 的 auto 居中，否则文字被顶出视口 */
-  html.deck-mode.m-cover-b .hero > .wrap{margin-top:0;margin-bottom:0}
+  html.deck-mode .hero.page > .wrap{margin-top:0;margin-bottom:0}
   /* 3D 退为背景：向外扩到页面 padding 之外，铺满整页（含顶栏下方那条）。
      ★ z-index 必须为 -1，不能用 0 —— 实测（_probe/diag-stack-exp.js）：
        `.hero` 自己带 z-index:1 成为层叠上下文，此时把背景设成 0、文字设成 2/10
@@ -114,13 +62,13 @@ html.hero-3d .hero-svg{display:none}
        唯有把背景压到 -1，文字才回到最上层（试验1 是唯一生效的选项）。
        原因：deck/hero 上存在多层 position:relative + z-index，同层内"后来的"胜出，
        而 .hero-art 在 DOM 中位于文字之后 → 必须用负 z-index 才能稳定沉到文字下面。 */
-  html.deck-mode.m-cover-b .hero .hero-art{
+  html.deck-mode .hero.page .hero-art{
     position:absolute;inset:0;margin:0;z-index:-1;
     display:flex;align-items:center;justify-content:center;
     top:calc(-1 * (var(--topbar-h) + 8px));   /* 抵掉 hero 的 padding-top */
   }
-  html.deck-mode.m-cover-b .hero .hero-canvas,
-  html.deck-mode.m-cover-b .hero .hero-svg{
+  html.deck-mode .hero.page .hero-canvas,
+  html.deck-mode .hero.page .hero-svg{
     width:100%;height:100%;object-fit:cover;
     aspect-ratio:auto;max-height:none;
     border-radius:0;
@@ -129,9 +77,9 @@ html.hero-3d .hero-svg{display:none}
     object-position:center 72%;
     -webkit-mask-image:none;mask-image:none;
   }
-  html.deck-mode.m-cover-b .hero .hero-art figcaption{display:none}
+  html.deck-mode .hero.page .hero-art figcaption{display:none}
   /* 暗遮罩：上方更暗（保文字对比度），下方留亮（让灯塔与海面可见） */
-  html.deck-mode.m-cover-b .hero::before{
+  html.deck-mode .hero.page::before{
     content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
     top:calc(-1 * (var(--topbar-h) + 8px));
     background:linear-gradient(180deg,
@@ -139,18 +87,18 @@ html.hero-3d .hero-svg{display:none}
       rgba(10,16,32,.42) 62%, rgba(10,16,32,.30) 78%, rgba(10,16,32,.72) 100%);
   }
   /* 文字层浮上来：只用上半屏，把下半屏留给灯塔（背景才看得见） */
-  html.deck-mode.m-cover-b .hero > .wrap.grid{
+  html.deck-mode .hero.page > .wrap.grid{
     position:relative;z-index:2;
     display:flex;flex-direction:column;justify-content:flex-start;
     gap:0;flex:0 0 auto;
   }
-  /* 方案 B 保留全部 7 层（背景态信息量本该更全），但收紧行距，给背景留出可见区 */
-  html.deck-mode.m-cover-b .hero .small{display:none}
-  html.deck-mode.m-cover-b .hero .quote{margin:12px 0;font-size:16px}
-  html.deck-mode.m-cover-b .hero .lede{font-size:14px}
-  html.deck-mode.m-cover-b .hero .btns{margin-top:16px}
+  /* 保留全部 7 层（背景态信息量本该更全），但收紧行距，给背景留出可见区 */
+  html.deck-mode .hero.page .small{display:none}
+  html.deck-mode .hero.page .quote{margin:12px 0;font-size:16px}
+  html.deck-mode .hero.page .lede{font-size:14px}
+  html.deck-mode .hero.page .btns{margin-top:16px}
   /* 统计条压到遮罩之上 */
-  html.deck-mode.m-cover-b .hero > .wrap:last-child{
+  html.deck-mode .hero.page > .wrap:last-child{
     position:relative;z-index:2;flex:0 0 auto;margin-top:16px;
   }
 }
@@ -167,11 +115,6 @@ html.hero-3d .hero-svg{display:none}
    同特异度下"后写者胜"，放前面会被基础定义的 grid-template-columns 覆盖掉。
    踩过：放前面时 375px 下仍是单列 4 项、封面因此装不进一屏。） */
 @media (max-width:760px){
-  /* 方案 A 的封面是"文字 + 3D + 统计条"三段，667px 屏放不下三段 ——
-     因此把 3D 收到只作"下半屏一瞥"（26vh），统计条压到最紧，尽量贴近一屏。
-     装不下的那几十 px 由页内滚动承接（底部渐变提示见 deck.css）。 */
-  html.deck-mode.m-cover-a .hero .hero-canvas,
-  html.deck-mode.m-cover-a .hero .hero-svg{max-height:26vh}
   html.deck-mode .hero .stats{grid-template-columns:1fr 1fr;margin-top:10px}
   html.deck-mode .hero .stat{padding:9px 10px}
   html.deck-mode .hero .stat .v{font-size:19px}
