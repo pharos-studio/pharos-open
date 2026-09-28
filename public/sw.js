@@ -9,7 +9,8 @@
 //   ⇒ 不升版本时用户**首次加载仍看到旧页**（要刷第二次才更新）。升版本会让 activate 删掉旧桶，
 //   首次加载即拿到新版。（v23 那次漏升，导致 09-18 持仓页改造可能被旧缓存挡住，本次一并冲掉。）
 // v27：我的基金合并、申购 v2、积分抵扣与迁移状态界面。
-const CACHE = 'fund-board-v28';
+// v29：添加基金时基础分类自动选好（改了 holdings 下的添加面板 / 批量添加 / 重新识别三处）。
+const CACHE = 'fund-board-v29';
 const SHELL = [
   '/', '/index.html', '/style.css',
   '/js/app.js', '/js/store.js', '/js/api.js', '/js/util.js',

@@ -47,19 +47,21 @@ export function fundSettings(state, code, liveFund) {
       const pretty = value => value == null ? '空' : typeof value === 'number' && value > 1e12
         ? new Date(value).toLocaleString('zh-CN') : String(value);
       diffs.forEach(d => detail.appendChild(el('div', { text: (labels[d.field] || d.field) + '：' + pretty(d.before) + ' → ' + pretty(d.after) })));
-      const cat = el('select', {}, [el('option', { value: '', text: '确认基础分类' }), ...CATS_FALLBACK.map(c => el('option', { value: c.key, text: c.name }))]);
+      const cat = el('select', {}, [el('option', { value: '', text: '请选择基础分类' }), ...CATS_FALLBACK.map(c => el('option', { value: c.key, text: c.name }))]);
       cat.value = preview.autoProfile.category || '';
-      if (preview.confirmations.category) detail.appendChild(el('label', {}, [el('span', { text: '分类确认：' }), cat]));
+      // ★ 无条件显示：确认开关取消后若还按旧条件隐藏，
+      //   老基金（含 profileState 为待确认的存量）将彻底失去改分类的入口。
+      detail.appendChild(el('label', {}, [el('span', { text: '基础分类：' }), cat]));
       const proxy = el('input', { type: 'checkbox' });
       if (preview.confirmations.proxy) detail.appendChild(el('label', {}, [proxy, el('span', { text: ' 确认使用代理指数' })]));
       const confirm = el('button', { class: 'btn btn-primary', text: '确认替换自动档案' });
       confirm.disabled = !preview.canApply;
       confirm.addEventListener('click', async () => {
-        if (preview.confirmations.category && !cat.value) { alert('请确认基础类别'); return; }
+        if (!cat.value) { alert('请选择基础类别'); return; }
         confirm.disabled = true;
         try {
           await api.reidentifyFund(code, 'confirm', preview.profileRevision, {
-            ...(preview.confirmations.category ? { category: cat.value } : {}),
+            category: cat.value,
             ...(preview.confirmations.proxy ? { proxy: proxy.checked } : {}),
           });
           await refreshPage();

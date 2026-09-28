@@ -32,7 +32,7 @@ export async function parseBulkRows(text) {
       if (!lookup.found || !lookup.autoProfile) throw new Error('没有找到基金档案');
       out.push({ code, date, amount, lookup, name: lookup.autoProfile.name,
         category: lookup.autoProfile.category, market: lookup.autoProfile.market,
-        confirmedCategory: !lookup.confirmations.category, proxy: false,
+        confirmedCategory: !!lookup.autoProfile.category, proxy: false,
         exists: readFunds(store.getState()).some(f => f.code === code) });
     } catch (e) { out.push({ raw, code, err: e.message }); }
   }
@@ -45,13 +45,12 @@ export async function commitBulkRows(items) {
   const created = new Set(readFunds(store.getState()).map(f => f.code));
   for (const r of items) {
     if (r.err) { report.push('✗ ' + (r.code || r.raw) + '：' + r.err); continue; }
-    if (r.lookup.confirmations.category && (!r.category || !r.confirmedCategory)) {
-      report.push('✗ ' + r.code + '：请确认基础类别'); continue;
-    }
+    // 只保留「必须有分类」这一条闸门：推断不出的那只单独报错，其余照常写入。
+    if (!r.category) { report.push('✗ ' + r.code + '：请选择基础类别'); continue; }
     if (!created.has(r.code)) {
       try {
         await api.createFund(r.code, r.lookup.profileRevision, {
-          ...(r.lookup.confirmations.category ? { category: r.category } : {}),
+          category: r.category,
           ...(r.lookup.confirmations.proxy ? { proxy: r.proxy } : {}),
         });
         report.push('✓ 新建 ' + r.code);
@@ -90,18 +89,23 @@ export function renderBulkPreview(container, items) {
     const cat = el('select', {}, [el('option', { value: '', text: '请选择' }),
       ...CATS_FALLBACK.map(x => el('option', { value: x.key, text: x.name }))]);
     cat.value = r.category || '';
-    cat.disabled = !r.lookup.confirmations.category;
-    cat.addEventListener('change', () => { r.category = cat.value; r.confirmedCategory = !!cat.value; });
+    cat.disabled = false;
+    const caliberCell = el('td', { text: p.caliber || '—' });
+    cat.addEventListener('change', () => {
+      r.category = cat.value; r.confirmedCategory = !!cat.value;
+      // 口径随分类联动，否则预览表会显示与最终落库不符的旧口径。
+      caliberCell.textContent = (cat.value === 'broad' ? (p.market === 'QDII' ? 'us' : 'cn') : null) || '—';
+    });
     const estimateCell = el('td', { text: p.estimateIndex ? (p.estimateIndexName + ' · ' + p.estimateProvider) : '不估算' });
     if (r.lookup.confirmations.proxy) {
       const check = el('input', { type: 'checkbox' });
       check.addEventListener('change', () => { r.proxy = check.checked; });
       estimateCell.appendChild(el('label', { class: 'hint', style: 'display:block' }, [check, el('span', { text: ' 确认代理指数' })]));
     }
-    const status = r.exists ? '已存在，仅补买入' : r.lookup.confirmations.category ? '需确认分类' : '可添加';
+    const status = r.exists ? '已存在，仅补买入' : r.category ? '可添加' : '需选择分类';
     [r.code, r.name, r.market].forEach(x => tr.appendChild(el('td', { text: x })));
     tr.appendChild(el('td', {}, [cat]));
-    tr.appendChild(el('td', { text: p.caliber || '—' }));
+    tr.appendChild(caliberCell);
     tr.appendChild(estimateCell);
     tr.appendChild(el('td', { text: r.amount > 0 ? '¥' + r.amount : '—' }));
     tr.appendChild(el('td', { text: status }));

@@ -18,10 +18,11 @@ function revision(profile) {
 function cleanProfile(p) {
   return Object.fromEntries(FIELDS.map(k => [k, p[k] === undefined ? null : p[k]]));
 }
+// 「能否改分类」只看传入值本身是否在内置类别白名单里，**不看** confirmations.category 开关。
+// 旧写法把「不要求确认」等价于「不接受分类」，一旦自动化就会连带封死用户改分类的路径。
 function choiceIsValid(lookup, confirmations) {
   const c = confirmations || {};
-  if (lookup.confirmations.category && !categories.BASE_CATEGORY_KEYS.includes(c.category)) return false;
-  if (!lookup.confirmations.category && c.category != null) return false;
+  if (c.category != null && !categories.BASE_CATEGORY_KEYS.includes(c.category)) return false;
   if (lookup.confirmations.proxy && c.proxy !== true && c.proxy !== false) return false;
   if (!lookup.confirmations.proxy && c.proxy != null) return false;
   return true;
@@ -29,11 +30,13 @@ function choiceIsValid(lookup, confirmations) {
 function selectedProfile(lookup, confirmations = {}) {
   if (!choiceIsValid(lookup, confirmations)) return null;
   const p = { ...lookup.autoProfile };
-  if (lookup.confirmations.category) {
+  if (confirmations.category != null) {
     p.category = confirmations.category;
     p.caliber = p.category === 'broad' ? (p.market === 'QDII' ? 'us' : 'cn') : null;
-    p.profileState = 'ready';
   }
+  // 无条件按最终类别重算：重新识别里把 growth 改成 broad 时，
+  // 状态若沿用旧值，决策引擎会因 needs_review 直接跳过算法。
+  p.profileState = categories.BASE_CATEGORY_KEYS.includes(p.category) ? 'ready' : 'needs_review';
   if (lookup.confirmations.proxy && confirmations.proxy !== true) {
     p.estimateIndex = null; p.estimateIndexName = null; p.estimateLabel = null;
     p.estimateProvider = null; p.estimateRelation = null; p.estimateVerifiedAt = null;
@@ -45,13 +48,14 @@ async function compute(code) {
   const base = await fetchers.fundAutoFill(code);
   if (!base || !base.found || !base.name) return { ok: true, found: false, code };
   let category = categories.BASE_CATEGORY_KEYS.includes(base.suggestedCategory) ? base.suggestedCategory : null;
-  let needsCategory = !category || base.suggestedBy === 'name';
+  // 置信度只作软提示，不再决定是否拦截确认（自动采用推断值，用户仍可改）。
+  let catConfidence = category ? (base.suggestedBy || 'derived') : 'unknown';
   if (/^指数型/.test(base.type || '') && base.indexName && !base.trackIndex && category === 'broad') {
     const n = base.indexName;
     if (/红利|低波|股息/.test(n)) category = 'dividend';
     else if (/黄金|上海金|白银|原油|商品/.test(n)) category = 'cycle';
     else if (/白酒|医药|新能源|半导体|消费|军工|科技|信息|证券|银行|传媒/.test(n)) category = 'growth';
-    needsCategory = true; // 指数型-股票只说明基金类型，不能证明一定是宽基。
+    catConfidence = 'heuristic'; // 指数型-股票只说明基金类型，不能证明一定是宽基。
   }
   const market = base.market === 'QDII' || /QDII|海外/.test(base.type || '') ? 'QDII' : 'A';
   const p = {
@@ -60,7 +64,7 @@ async function compute(code) {
     indexCode: base.indexCode || null, indexName: base.indexName || null, trackIndex: base.trackIndex || null,
     estimateIndex: null, estimateIndexName: null, estimateLabel: null, estimateProvider: null,
     estimateRelation: null, estimateVerifiedAt: null,
-    profileState: needsCategory ? 'needs_review' : 'ready', profileUpdatedAt: Date.now(),
+    profileState: category ? 'ready' : 'needs_review', profileUpdatedAt: Date.now(),
   };
   let estimateStatus = market === 'QDII' ? 'not_applicable' : 'unsupported';
   let quote = null, relation = null, symbol = null, provider = null;
@@ -83,11 +87,12 @@ async function compute(code) {
     } else if (estimateStatus !== 'temporarily_unavailable') estimateStatus = 'temporarily_unavailable';
   }
   const autoProfile = cleanProfile(p);
-  const confirmations = { category: needsCategory, proxy: relation === 'proxy' && !!quote };
+  // category 恒 false = 不再拦截确认（保留字段以稳定 payload）；推断不出时由后端 requireCategory 兜底。
+  const confirmations = { category: false, proxy: relation === 'proxy' && !!quote };
   return {
     ok: true, found: true, code, ...base, autoProfile, confirmations,
-    confidence: { name: base.source === 'archive' ? 'archive' : 'list', category: needsCategory ? 'heuristic' : base.suggestedBy || 'unknown',
-      market: base.type ? 'type' : 'list', caliber: needsCategory ? 'heuristic' : 'derived', estimate: quote ? relation : estimateStatus },
+    confidence: { name: base.source === 'archive' ? 'archive' : 'list', category: catConfidence,
+      market: base.type ? 'type' : 'list', caliber: catConfidence === 'unknown' ? 'unknown' : 'derived', estimate: quote ? relation : estimateStatus },
     estimateStatus,
     estimateCandidates: quote ? [{ index: symbol, name: p.estimateIndexName, provider, relation, verifiedAt: p.estimateVerifiedAt }] : [],
     profileRevision: revision(autoProfile),
@@ -105,8 +110,12 @@ async function lookup(code, force = false) {
   inflight.set(code, task);
   return task;
 }
-function applySelected(lookupResult, revisionValue, confirmations) {
+// opts.requireCategory：最终类别必须落在内置白名单内，否则返回 CATEGORY_REQUIRED。
+// 用于「完全推断不出分类」时由后端兜底 —— 前端闸门可被旧缓存或绕过，后端必须再守一道。
+function applySelected(lookupResult, revisionValue, confirmations, opts = {}) {
   if (!lookupResult.found || lookupResult.profileRevision !== revisionValue) return { error: 'PROFILE_REVISION_STALE' };
+  const wanted = (confirmations && confirmations.category != null) ? confirmations.category : lookupResult.autoProfile.category;
+  if (opts.requireCategory && !categories.BASE_CATEGORY_KEYS.includes(wanted)) return { error: 'CATEGORY_REQUIRED' };
   const p = selectedProfile(lookupResult, confirmations);
   return p ? { profile: p } : { error: 'INVALID_CONFIRMATION' };
 }
