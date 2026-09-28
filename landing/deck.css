@@ -50,13 +50,28 @@ html.deck-mode .page[data-left]{transform:translateY(-7%);opacity:0}
 .pager button:hover .plabel,
 .pager button:focus-visible .plabel{opacity:1}
 
+/* ── 窄屏点条：胶囊浮条 ──
+   实测（_probe/out/mobile-audit.json）：13 个 20px 按钮 + 12×10px 间距 + 16px padding = 396px，
+   在 375px 机型下 box 为 -10~386 → 两端被裁；且原先无背景，会压住正文。
+   改法：按钮缩到 16px、间距 8px（13×16 + 12×8 + 2×12 = 328px，375px 下宽裕），
+   并给整条加胶囊背景，让它从正文里"浮"出来。 */
 @media (max-width:760px){
+  :root{ --pager-h:44px; }
   .pager{
-    right:auto;top:auto;left:50%;bottom:14px;transform:translateX(-50%);
-    flex-direction:row;gap:10px;
+    right:auto;top:auto;left:50%;bottom:12px;transform:translateX(-50%);
+    flex-direction:row;gap:8px;
+    max-width:calc(100vw - 24px);
+    padding:8px 12px;border-radius:999px;
+    background:rgba(10,16,32,.86);backdrop-filter:blur(10px);
+    border:1px solid var(--border);
   }
-  .pager .plabel{right:auto;left:50%;top:auto;bottom:26px;transform:translateX(-50%)}
-  html.deck-mode .page{padding:calc(var(--topbar-h) + 20px) 0 64px}
+  .pager button{width:16px;height:16px}
+  .pager button::before{width:7px;height:7px}
+  /* 点阵形态不显示页名浮层：胶囊浮条已很窄，浮层会压住正文（实测概览页/FAQ 页都被压）。
+     页名在移动端由 aria-label 提供给读屏，视觉上不需要。 */
+  .pager .plabel{display:none}
+  /* 底部留白 = 点条高度 + 12px 上间距 + 12px 安全边 */
+  html.deck-mode .page{padding:calc(var(--topbar-h) + 20px) 0 calc(var(--pager-h) + 24px)}
 }
 
 /* ── 弧形滚轮（移植 OptionWheel：圆环布局 + 帧率无关平滑 + 远处模糊淡出）──
