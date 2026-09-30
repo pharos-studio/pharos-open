@@ -13,6 +13,8 @@ async function main() {
     '000216': { name: '上海金ETF联接', type: '指数型-其他', market: 'A', indexCode: 'AU9999', indexName: '上海金', suggestedCategory: 'cycle', suggestedBy: 'type' },
     '270042': { name: '纳指QDII', type: 'QDII-指数', market: 'QDII', indexCode: 'NDX100', indexName: '纳斯达克100', suggestedCategory: 'broad', suggestedCaliber: 'us', suggestedBy: 'type' },
     '110022': { name: '主动股票基金', type: '股票型', market: 'A', suggestedCategory: 'growth', suggestedBy: 'type' },
+    // 类型与名称都不命中 ⇒ 推断不出分类（走「让你从下拉里挑一个」的兜底路径）
+    '519999': { name: '某某其他基金', type: '其他', market: 'A', suggestedCategory: null, suggestedBy: null },
   };
   try {
     assert.strictEqual(quote.eastmoneySymbol('000300'), '1.000300');
@@ -33,6 +35,8 @@ async function main() {
     assert.strictEqual(tracked.autoProfile.estimateRelation, 'tracked');
     assert.strictEqual(tracked.confirmations.proxy, false);
     assert.strictEqual(profile.applySelected(tracked, tracked.profileRevision, {}).profile.category, 'broad');
+    // 自动落地：不再要求确认，状态必须是 ready，否则决策引擎会跳过算法。
+    assert.strictEqual(profile.applySelected(tracked, tracked.profileRevision, {}).profile.profileState, 'ready');
     const saved = { funds: [{ code: '000311', ...tracked.autoProfile, purchases: [{ amount: 10 }] }] };
     assert(profile.profileWriteError({ funds: [{ code: '000311', ...tracked.autoProfile, name: '伪造名称' }] }, saved));
     assert(profile.profileWriteError({ funds: [{ code: '123456', ...tracked.autoProfile }] }, saved));
@@ -40,9 +44,32 @@ async function main() {
     assert.strictEqual(profile.applySelected(tracked, 'stale', {}).error, 'PROFILE_REVISION_STALE');
     const sector = await profile.lookup('161725');
     assert.strictEqual(sector.autoProfile.estimateIndex, '0.399997');
-    assert.strictEqual(sector.confirmations.category, true);
-    assert.strictEqual(profile.applySelected(sector, sector.profileRevision, {}).error, 'INVALID_CONFIRMATION');
-    assert.strictEqual(profile.applySelected(sector, sector.profileRevision, { category: 'growth' }).profile.category, 'growth');
+    // 自动选好分类：不再拦截确认，但仍自动选中推断值、状态为 ready（否则决策引擎跳过算法）。
+    assert.strictEqual(sector.confirmations.category, false);
+    assert.strictEqual(sector.autoProfile.category, 'growth');
+    assert.strictEqual(sector.autoProfile.profileState, 'ready');
+    assert.strictEqual(sector.confidence.category, 'heuristic');
+    assert.strictEqual(profile.applySelected(sector, sector.profileRevision, {}).profile.category, 'growth');
+    // 白名单校验仍在：非法类别一律拒绝，且不因「不需要确认」而放行。
+    assert.strictEqual(profile.applySelected(sector, sector.profileRevision, { category: 'custom:evil' }).error, 'INVALID_CONFIRMATION');
+    assert.strictEqual(profile.applySelected(sector, sector.profileRevision, { category: 'nope' }).error, 'INVALID_CONFIRMATION');
+    // 手动改分类：口径与状态必须联动（growth→broad 时 caliber 要从 null 变 cn）。
+    const asGrowth = profile.applySelected(sector, sector.profileRevision, { category: 'growth' }).profile;
+    assert.strictEqual(asGrowth.category, 'growth');
+    assert.strictEqual(asGrowth.caliber, null);
+    assert.strictEqual(asGrowth.profileState, 'ready');
+    const asBroad = profile.applySelected(sector, sector.profileRevision, { category: 'broad' }).profile;
+    assert.strictEqual(asBroad.category, 'broad');
+    assert.strictEqual(asBroad.caliber, 'cn');
+    assert.strictEqual(asBroad.profileState, 'ready');
+    // 完全推断不出：状态为待确认，且后端 requireCategory 兜底要求给出合法类别。
+    const unknown = await profile.lookup('519999');
+    assert.strictEqual(unknown.autoProfile.category, null);
+    assert.strictEqual(unknown.autoProfile.profileState, 'needs_review');
+    assert.strictEqual(profile.applySelected(unknown, unknown.profileRevision, {}, { requireCategory: true }).error, 'CATEGORY_REQUIRED');
+    assert.strictEqual(profile.applySelected(unknown, unknown.profileRevision, {}).profile.profileState, 'needs_review');
+    assert.strictEqual(profile.applySelected(unknown, unknown.profileRevision, { category: 'bond' }).profile.category, 'bond');
+    assert.strictEqual(profile.applySelected(unknown, unknown.profileRevision, { category: 'bond' }).profile.profileState, 'ready');
     const gold = await profile.lookup('000216');
     assert.strictEqual(gold.confirmations.proxy, true);
     assert.strictEqual(profile.applySelected(gold, gold.profileRevision, { proxy: false }).profile.estimateIndex, null);

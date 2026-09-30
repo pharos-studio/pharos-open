@@ -40,7 +40,7 @@ export function addFundPanel() {
     const p = d.autoProfile;
     name.value = p.name || ''; type.value = p.fundType || '未知'; market.value = p.market || '未知';
     category.value = p.category || '';
-    category.disabled = !d.confirmations.category;
+    category.disabled = false; // 恒可改：猜错时的第一条纠错路径
     caliber.value = p.caliber === 'us' ? '海外口径' : p.caliber === 'cn' ? 'A 股口径' : '不适用';
     tracked.value = [p.indexName, p.indexCode].filter(Boolean).join(' · ') || '无';
     estimate.value = p.estimateIndex
@@ -48,9 +48,9 @@ export function addFundPanel() {
       : d.estimateStatus === 'temporarily_unavailable' ? '行情暂不可用，本次不估算' : '不估算';
     estimate.title = estimate.value;
     proxyRow.style.display = d.confirmations.proxy ? 'flex' : 'none';
-    msg.textContent = d.confirmations.category ? '分类仅为启发式推断，请从基础类别中确认。'
+    msg.textContent = !category.value ? '未识别到基础类别，请从下拉中选择。'
       : d.confirmations.proxy ? '代理指数需确认后启用；不勾选则保存为不估算。'
-      : '自动档案已识别。盘中估算仅为近似值。';
+      : '已自动选好基础分类，可直接添加；猜错可在此下拉或持仓页「重新识别」中修改。盘中估算仅为近似值。';
     addBtn.disabled = hasFund(d.code);
   };
   const lookupCode = async value => {
@@ -79,13 +79,17 @@ export function addFundPanel() {
     const rows = await ensureFundList().catch(() => null);
     if (rows && !code.value) suggestions.textContent = '基金名单已就绪，可输入代码查询';
   });
+  // 改分类后口径要跟着变，否则只读的口径栏会与实际不符。
+  category.addEventListener('change', () => {
+    caliber.value = category.value === 'broad' ? (market.value === 'QDII' ? '海外口径' : 'A 股口径') : '不适用';
+  });
   addBtn.addEventListener('click', async () => {
     if (!lookup || lookup.code !== code.value.trim()) return;
-    if (lookup.confirmations.category && !category.value) { msg.textContent = '请先确认基础类别'; return; }
+    if (!category.value) { msg.textContent = '请选择基础类别'; return; }
     addBtn.disabled = true;
     try {
       await addFund(lookup.code, lookup.profileRevision, {
-        ...(lookup.confirmations.category ? { category: category.value } : {}),
+        category: category.value,
         ...(lookup.confirmations.proxy ? { proxy: proxy.checked } : {}),
       });
     } catch (e) { msg.textContent = '添加失败：' + e.message; addBtn.disabled = false; }

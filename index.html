@@ -50,7 +50,10 @@
 <!-- v2 整页翻页：main 作翻页容器（.deck），每个 section 是一页（.page + data-page）-->
 <main id="top" class="deck">
 
-<!-- ==================== HERO / 封面 ==================== -->
+<!-- ==================== HERO / 封面 ====================
+     窄屏（≤760px）封面采用「3D 全屏作背景 + 文字浮其上」：
+     3D 铺满整屏、退为背景，文字与统计条浮在其上，靠一层暗遮罩保证对比度。
+     规则见 landing/blocks.css 的 max-width:760px 段（选择器用 .hero.page）。 -->
 <section class="hero page" id="cover" data-page="cover">
   <div class="wrap grid">
     <div class="reveal">

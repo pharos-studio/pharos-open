@@ -99,3 +99,16 @@ h3{font-family:var(--serif);font-size:16px;font-weight:600;letter-spacing:.3px;m
 .muted{color:var(--muted)}
 .small{font-size:12.5px;color:var(--dim);line-height:1.7}
 code{background:rgba(255,255,255,.07);border-radius:4px;padding:1px 6px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+/* ---------- 窄屏阅读性（实测：手机上一臂距离读 14px/1.75 偏吃力） ---------- */
+@media (max-width:760px){
+  body{font-size:15px}
+  .wrap{padding:0 18px}
+  section{padding:44px 0}
+  /* 独立成段的链接补足触控高度（实测 start 页 nodejs.org 仅 71×19px）。
+     只对「段落级」链接生效，行内链接保持文本流不被撑开。 */
+  .small a,.lede a,.note a,.warn a,li > a:only-child{display:inline-block;padding:11px 0}
+}
+@media (max-width:400px){
+  h1{font-size:30px}
+}

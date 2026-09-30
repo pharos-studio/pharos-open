@@ -294,7 +294,9 @@ const server = http.createServer(async (req, res) => {
           return json(res, { ok: false, code: 'PROFILE_SOURCE_UNAVAILABLE', error: '档案或行情源暂不可用，请稍后重新识别' }, 503);
         }
       }
-      const selected = fundProfile.applySelected(looked, body.profileRevision, body.confirmations);
+      // 推断得出 ⇒ 直接用推断值；推断不出 ⇒ 客户端必须给一个合法类别（后端兜底）。
+      const selected = fundProfile.applySelected(looked, body.profileRevision, body.confirmations,
+        { requireCategory: !looked.autoProfile.category });
       if (selected.error) return json(res, { ok: false, code: selected.error, error: selected.error }, selected.error === 'PROFILE_REVISION_STALE' ? 409 : 400);
       const result = await store.withFileLocks(['holdings.json'], async () => {
         const holdings = store.readJSON('holdings.json');
