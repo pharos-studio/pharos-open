@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1510" width="900" height="1510" role="img" aria-labelledby="title desc">
+<title id="title">海外宽基 · 双通道估值判定</title>
+<desc id="desc">当前海外宽基规则。滚动PE低分位与PE高点回撤两通道并联；滚动分位急涨总闸优先。均线与美债ERP仅作评分或参考，不是默认买入确认门槛。</desc>
+<defs><radialGradient id="g0-halo"><stop stop-color="#7C8CF8" stop-opacity=".16"/><stop offset="1" stop-color="#7C8CF8" stop-opacity="0"/></radialGradient><radialGradient id="g0-gold"><stop stop-color="#D9A441" stop-opacity=".08"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9AA3C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}.title,.heading,text[font-weight="500"]{font-family:"Songti SC",STSong,"Noto Serif CJK SC","Source Han Serif SC",SimSun,Georgia,serif}.title,.heading{fill:#EDEFF7}rect{stroke-linejoin:round}</style>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}
+.title{font-size:30px;font-weight:600;fill:#EDEFF7}
+.heading{font-size:23px;font-weight:600;fill:#EDEFF7}
+.body{font-size:20px;fill:#EDEFF7}
+.note{font-size:18px;fill:#9AA3C0}
+.label{font-size:17px;letter-spacing:1px;fill:#D9A441}
+.line{fill:none;stroke:#9AA3C0;stroke-width:2;stroke-linejoin:round;marker-end:url(#arrow)}
+</style>
+<rect width="900" height="1510" rx="12" fill="#0A1020"/>
+<ellipse cx="200" cy="0" rx="800" ry="500" fill="url(#g0-halo)"/><ellipse cx="840" cy="0" rx="450" ry="350" fill="url(#g0-gold)"/>
+<rect x="36" y="36" width="5" height="44" rx="2" fill="#D9A441"/>
+<text x="56" y="48" class="label">PHAROS / 策略细节 04</text>
+<text x="56" y="86" class="title">海外宽基 · 双通道估值判定</text>
+<text x="36" y="125" class="note">broad / caliber=us / PE 回撤不是基金净值回撤</text>
+<rect x="652" y="40" width="212" height="36" rx="7" fill="rgba(255,255,255,.05)" stroke="#D9A441"/>
+<text x="758" y="64" text-anchor="middle" font-size="17" fill="#D9A441">当前运行 · 未改规则</text>
+<g data-panel="① 输入 · 指数 PE 历史与基金净值">
+<rect x="36" y="166" width="828" height="152" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="202" class="heading">① 输入 · 指数 PE 历史与基金净值</text>
+<text x="58" y="238" class="body">指数 PE 历史序列用于滚动分位与 PE 回撤</text>
+<text x="58" y="267" class="body">基金净值用于均线、止跌与近20日涨幅</text>
+<text x="58" y="296" class="body">滚动分位不可算时，总闸按现有代码回退当期 PE 分位</text>
+</g>
+<path class="line" d="M450 318V348"/>
+<g data-panel="② 便宜判定 · 两条通道任一成立">
+<rect x="36" y="350" width="828" height="182" rx="12" fill="rgba(255,255,255,.05)" stroke="#D9A441" stroke-width="1.3"/>
+<text x="58" y="386" class="heading">② 便宜判定 · 两条通道任一成立</text>
+<text x="58" y="422" class="body">通道 A：PE 在滚动156周窗口内处于低分位</text>
+<text x="58" y="451" class="body">通道 B：PE 距近52周高点的回撤达到要求</text>
+<text x="58" y="480" class="body">B 默认不要求止跌；仅显式开启现有止跌选项时增加确认</text>
+<text x="58" y="509" class="body">一个通道不可算不自动否决另一个；均未触发 → 不动</text>
+</g>
+<path class="line" d="M450 532V562"/>
+<g data-panel="③ PE 总闸 · 高分位且急涨">
+<rect x="36" y="564" width="828" height="124" rx="12" fill="rgba(255,255,255,.05)" stroke="#D9A441" stroke-width="1.3"/>
+<text x="58" y="600" class="heading">③ PE 总闸 · 高分位且急涨</text>
+<text x="58" y="636" class="body">总闸分位达到高线，且基金近20日涨幅超过急涨线</text>
+<text x="58" y="665" class="body">两项同时成立 → 强制不动；否则保留双通道结果</text>
+</g>
+<path class="line" d="M450 688V718"/>
+<g data-panel="④ 决策合并">
+<rect x="36" y="720" width="828" height="124" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="756" class="heading">④ 决策合并</text>
+<text x="58" y="792" class="body">任一通道成立且未被总闸拦截 → add；否则 → hold</text>
+<text x="58" y="821" class="body">同日两通道成立仍是一项基金判断，不重复生成候选</text>
+</g>
+<path class="line" d="M450 844V874"/>
+<g data-panel="⑤ 判断与评分 · 保持现有输出">
+<rect x="36" y="876" width="828" height="152" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="912" class="heading">⑤ 判断与评分 · 保持现有输出</text>
+<text x="58" y="948" class="body">矩阵输出 add／hold 与触发理由；V／M 另算综合分</text>
+<text x="58" y="977" class="body">申购与用户限额约束执行；资金政策标注 eligible</text>
+<text x="58" y="1006" class="body">参考／评分数据缺失，不改写成新的价格确认要求</text>
+</g>
+<g data-panel="独立参考与评分 · 不连入通道判定">
+<rect x="36" y="1080" width="828" height="182" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3" stroke-dasharray="6 5"/>
+<text x="58" y="1116" class="heading">独立参考与评分 · 不连入通道判定</text>
+<text x="58" y="1152" class="note">MA60／120／250、止跌强度、趋势偏离 → 评分／参考</text>
+<text x="58" y="1181" class="note">ERP = 1 / PE − 美债10年收益率 → 综合分副锚／展示</text>
+<text x="58" y="1210" class="note">只认美债；固定历史 PE 分位仅作对照（总闸回退除外）</text>
+<text x="58" y="1239" class="note">不要求均线向上，也不以 ERP 是否够高触发买入</text>
+</g>
+<line x1="36" y1="1420" x2="864" y2="1420" stroke="rgba(255,255,255,.12)"/>
+<text x="36" y="1451" class="note">虚线框不是默认触发前提；可选止跌规则仍按现有配置。</text>
+<text x="36" y="1481" class="note">依据：broadGlobal / decisionPipeline / scoring / tradeConstraints</text>
+</svg>

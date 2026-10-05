@@ -21,6 +21,15 @@ const store = require('../lib/store');
 const util = require('../lib/util');
 const config = require('../lib/config');
 const fetchers = require('../fetchers');
+const DIVIDEND_VERSION = require('../lib/dividendTrend').VERSION;
+const HS300_VERSION = require('../lib/hs300Signal').VERSION;
+const {isHs300Route}=require('../lib/hs300Identity');
+const NASDAQ_VERSION=require('../lib/nasdaqSignal').VERSION;
+const {isNasdaqRoute}=require('../lib/nasdaqIdentity');
+const ACTIVE_EQUITY_VERSION=require('../lib/activeEquitySignal').VERSION;
+const {isActiveEquityRoute}=require('../lib/activeEquityIdentity');
+const GOLD_VERSION=require('../lib/goldSignal').VERSION;
+const {isGoldRoute}=require('../lib/goldIdentity');
 
 const STATE_FILE = 'timing_state.json';
 const SAMPLES_FILE = 'timing_samples.json';
@@ -78,6 +87,15 @@ function params(cfg) {
 function pickPath(matrix) {
   const m = matrix || {};
   const type = m._type || 'unknown';
+  if(m.strategyVersion===GOLD_VERSION)return {strategyVersion:GOLD_VERSION,route:m.route||null,marketState:m.marketState,pathStates:m.pathStates,conditions:JSON.parse(JSON.stringify(m.conditions||{})),buyOnly:true};
+  if(m.strategyVersion===ACTIVE_EQUITY_VERSION)return {strategyVersion:ACTIVE_EQUITY_VERSION,route:m.route||null,marketState:m.marketState,
+    pathStates:m.pathStates,conditions:JSON.parse(JSON.stringify(m.conditions||{})),buyOnly:true};
+  if(m.strategyVersion===NASDAQ_VERSION)return {strategyVersion:NASDAQ_VERSION,route:m.route||null,marketState:m.marketState,
+    pathStates:m.pathStates,conditions:JSON.parse(JSON.stringify(m.conditions||{}))};
+  if(m.strategyVersion===HS300_VERSION) return {strategyVersion:HS300_VERSION,route:m.route||null,
+    marketState:m.marketState,conditions:JSON.parse(JSON.stringify(m.conditions||{}))};
+  if (type === 'dividendTrend') return {strategyVersion:DIVIDEND_VERSION,route:'trend',
+    marketState:m.marketState,conditions:Object.assign({},m.conditions)};
   if (type === 'tech') {
     return {
       dipReady: !!m.dipReady, drawdown: m.drawdown != null ? +(+m.drawdown).toFixed(2) : null,
@@ -95,6 +113,10 @@ function pickPath(matrix) {
       yieldZone: m.yieldZone || 'na', maZone: m.maZone || 'na',
       ratio: m.ratio != null ? +m.ratio.toFixed(3) : null, gate: m.gate || 'pass'
     };
+  }
+  if (type === 'broad300') {
+    return { caliber: 'hs300', marketState: m.marketState || 'insufficient',
+      biasMa: m.biasMa || null, rsiPeriod: m.rsiPeriod || null };
   }
   if (type === 'broad') {
     // 宽基·海外（caliber=us）：字段与 A 股完全不同（两通道），必须自成一类，否则与 A 股样本混组、误导校准统计。
@@ -120,6 +142,9 @@ function pickPath(matrix) {
 // 判定路径 → 人类可读标签（诊断分组展示）
 function pathLabelOf(category, p) {
   p = p || {};
+  if(p.strategyVersion===GOLD_VERSION)return '黄金双路径 v1 · '+({A:'回撤修复',B:'趋势回踩',both:'双路径'})[p.route]+'（复权，费用未计；仅买入）';
+  if(p.strategyVersion===NASDAQ_VERSION)return '纳指双通道 v1 · '+({draw:'回撤修复',trend:'趋势回踩',both:'双通道'})[p.route]+'（复权，费用未计）';
+  if(p.strategyVersion===HS300_VERSION) return '沪深300双通道 v1 · '+({deep:'回撤修复',trend:'趋势回踩',both:'双通道'})[p.route]+'（复权，费用未计）';
   if (category === 'tech') {
     const chan = p.dipReady ? '深跌止跌' : '非深跌';
     const golden = p.goldenState ? '+金叉' : '+非金叉';
@@ -134,11 +159,13 @@ function pathLabelOf(category, p) {
     return `${zoneTxt}${extra}${stop}${surge}${p.gate === 'block' ? '·总闸拦' : ''}`;
   }
   if (category === 'dividend') {
+    if(p.strategyVersion===DIVIDEND_VERSION) return '红利趋势回踩 v1（复权，费用未计）';
     const zoneTxt = { cheap: '股息便宜', expensive: '股息贵', neutral: '股息中性', na: '数据缺失' }[p.yieldZone] || p.yieldZone;
     const ma = { below: '·跌破年线', above: '·年线上方', near: '·年线附近' }[p.maZone] || '';
     return `${zoneTxt}${ma}${p.gate === 'block' ? '·总闸拦' : ''}`;
   }
   if (category === 'broad') {
+    if (p.caliber === 'hs300') return `沪深300·${({ waiting: '等待机会', observe: '机会观察', candidate: '候选可加仓', insufficient: '数据不足' })[p.marketState] || '数据不足'}`;
     // 海外口径：两通道表述（与 A 股「PE便宜/ERP低」不是一套语言，故不走下面的模板）
     // 旧样本无 caliber 键 → 不会命中本分支 → 历史标签零变化。
     if (p.caliber === 'us') {
@@ -160,7 +187,7 @@ function pathLabelOf(category, p) {
 function groupKeyOf(category, p) {
   p = p || {};
   // ASCII 稳定键（跨 category 不会撞）
-  const k = Object.keys(p).sort().map(kk => `${kk}=${p[kk]}`).join('|');
+  const k = Object.keys(p).sort().map(kk => `${kk}=${typeof p[kk]==='object'?JSON.stringify(p[kk]):p[kk]}`).join('|');
   return `${category}|${k}`;
 }
 
@@ -173,15 +200,25 @@ function onDecide(decMap, cfgOverride) {
   const today = env.today();
   const state = loadState();
   const samples = loadSamples();
+  const beforeDividendSamples=samples.length;
   let changed = false;
   let opened = 0, closed = 0;
 
-  const firstRun = !state.baselineDate;
+  const legacyCodes=Object.keys(decMap||{}).filter(code=>decMap[code]?.category!=='dividend'&&decMap[code]?.matrix?._type!=='dividend'&&decMap[code]?.matrix?._type!=='broad300'&&decMap[code]?.matrix?._type!=='nasdaq'&&decMap[code]?.matrix?._type!=='activeEquity'&&decMap[code]?.matrix?._type!=='goldDual'&&!isGoldRoute({code,name:decMap[code]?.name}));
+  const redChanged=collectDividend(decMap,state,samples,today,P);
+  const hsChanged=collectHs300(decMap,state,samples,today,P);
+  const nasdaqChanged=collectNasdaq(decMap,state,samples,today,P);
+  const activeChanged=collectActiveEquity(decMap,state,samples,today,P);
+  const goldChanged=collectGold(decMap,state,samples,today,P);
+  if (!legacyCodes.length && !redChanged && !hsChanged && !nasdaqChanged && !activeChanged && !goldChanged) return {opened:0,closed:0,baseline:false};
+  const firstRun = legacyCodes.length>0 && !state.baselineDate;
   if (firstRun) state.baselineDate = today;
 
   for (const code of Object.keys(decMap || {})) {
     const d = decMap[code];
     if (!d || !d.matrix || !d.matrix._type) continue;
+    // Disabled dividend rules cannot open/close campaigns, even from stale callers.
+    if (d.unsupportedReason === 'rule_disabled' || d.category === 'dividend' || d.matrix._type === 'dividend' || d.matrix._type==='broad300'||d.matrix._type==='nasdaq'||d.matrix._type==='activeEquity'||d.matrix._type==='goldDual'||isGoldRoute({code,name:d.name})) continue;
     const action = d.action === 'add' ? 'add' : 'hold';
     const f = state.funds[code] || (state.funds[code] = { lastVerdict: null, campaignId: null, campaignOpenDate: null, lastAddDate: null, lastRun: null });
     if (f.lastRun === today) continue; // 同日重入免疫（同一天多次决策刷新不重复处理）
@@ -237,7 +274,136 @@ function onDecide(decMap, cfgOverride) {
 
   saveState(state);
   saveSamples(samples);
-  return { opened, closed, baseline: firstRun };
+  const redEvents=samples.slice(beforeDividendSamples).filter(s=>[DIVIDEND_VERSION,HS300_VERSION,NASDAQ_VERSION,ACTIVE_EQUITY_VERSION,GOLD_VERSION].includes(s.strategyVersion));
+  return { opened:opened+redEvents.filter(s=>s.type==='advice-open').length,
+    closed:closed+redEvents.filter(s=>s.type==='advice-close').length, baseline: firstRun };
+}
+
+// Version-owned state: legacy fund cursors are never reused or closed by rollout.
+function collectHs300(decMap,state,samples,today,P) {
+  let changed=false;
+  for(const [code,d] of Object.entries(decMap||{})) {
+    if(d.strategyVersion!==HS300_VERSION || d.matrix?.strategyVersion!==HS300_VERSION ||
+      !['add','hold'].includes(d.action) || d.unsupported || d.blockedReason || d.matrix.dataError)continue;
+    state.strategyFunds=state.strategyFunds||{};
+    const ns=state.strategyFunds[HS300_VERSION]||(state.strategyFunds[HS300_VERSION]={});
+    let f=ns[code];
+    if(!f){ns[code]={baselineDate:today,lastRun:today,lastVerdict:d.action,campaignId:null};changed=true;continue;}
+    if(f.lastRun===today)continue;
+    const prev=f.lastRun;f.lastRun=today;changed=true;
+    const sample=type=>({type,code,name:d.name||code,category:'broad',strategyVersion:HS300_VERSION,eventDate:today,
+      approx:!prev||util.daysBetween(prev,today)>1,path:pickPath(d.matrix),metrics:d.matrix.metrics,
+      signalNavDate:d.matrix.metrics?.navDate||null,orderDate:d.matrix.orderDate,backfill:'pending'});
+    if(d.action==='add') {
+      if(!f.campaignId&&f.lastVerdict==='hold') {
+        const id=`${code}#${HS300_VERSION}#${today}`;
+        samples.push({...sample('advice-open'),campaign:{id,openDate:today}});
+        f.campaignId=id;f.campaignOpenDate=today;
+      }
+      f.lastVerdict='add';f.lastAddDate=today;
+    }else {
+      if(f.campaignId&&util.daysBetween(f.lastAddDate,today)>P.gapDays) {
+        // The first observed valid hold closes today; never fabricate a transition during interruption.
+        samples.push({...sample('advice-close'),campaign:{id:f.campaignId,openDate:f.campaignOpenDate,closeDate:today,
+          days:util.daysBetween(f.campaignOpenDate,today)}});
+        f.campaignId=null;f.campaignOpenDate=null;f.lastAddDate=null;
+      }
+      if(!f.campaignId)f.lastVerdict='hold';
+    }
+  }
+  return changed;
+}
+function collectNasdaq(decMap,state,samples,today,P) {
+  let changed=false;
+  for(const [code,d] of Object.entries(decMap||{})) {
+    if(d.strategyVersion!==NASDAQ_VERSION || d.matrix?.strategyVersion!==NASDAQ_VERSION ||
+      !['add','hold'].includes(d.action) || d.unsupported || d.blockedReason || d.matrix.dataError||d.matrix.futureOrder)continue;
+    state.strategyFunds=state.strategyFunds||{};
+    const ns=state.strategyFunds[NASDAQ_VERSION]||(state.strategyFunds[NASDAQ_VERSION]={});
+    let f=ns[code];
+    if(!f){ns[code]={baselineDate:today,lastRun:today,lastVerdict:d.action,campaignId:null};changed=true;continue;}
+    if(f.lastRun===today)continue;
+    const prev=f.lastRun;f.lastRun=today;changed=true;
+    const sample=type=>({type,code,name:d.name||code,category:'broad',strategyVersion:NASDAQ_VERSION,eventDate:today,
+      approx:!prev||util.daysBetween(prev,today)>1,path:pickPath(d.matrix),metrics:d.matrix.metrics,
+      signalNavDate:d.matrix.metrics?.navDate||null,orderDate:d.matrix.orderDate,computedAt:d.matrix.computedAt,
+      sourceHash:d.matrix.sourceHash,actionHash:d.matrix.actionHash,peHash:d.matrix.peHash,inputVersion:d.matrix.inputVersion,backfill:'pending'});
+    if(d.action==='add') {
+      if(!f.campaignId&&f.lastVerdict==='hold') {
+        const id=`${code}#${NASDAQ_VERSION}#${today}`;
+        samples.push({...sample('advice-open'),campaign:{id,openDate:today}});
+        f.campaignId=id;f.campaignOpenDate=today;
+      }
+      f.lastVerdict='add';f.lastAddDate=today;
+    }else {
+      if(f.campaignId&&util.daysBetween(f.lastAddDate,today)>P.gapDays) {
+        // The first observed valid hold closes today; never fabricate a transition during interruption.
+        samples.push({...sample('advice-close'),campaign:{id:f.campaignId,openDate:f.campaignOpenDate,closeDate:today,
+          days:util.daysBetween(f.campaignOpenDate,today)}});
+        f.campaignId=null;f.campaignOpenDate=null;f.lastAddDate=null;
+      }
+      if(!f.campaignId)f.lastVerdict='hold';
+    }
+  }
+  return changed;
+}
+function collectGold(decMap,state,samples,today,P){
+  // Caller snapshots can outlive rollback: the current gate owns collection.
+  if(require('../data/goldIdentity.json').releaseEnabled!==true)return false;
+  let changed=false;for(const [code,d] of Object.entries(decMap||{})){
+    if(d.strategyVersion!==GOLD_VERSION||d.matrix?.strategyVersion!==GOLD_VERSION||!d.matrix.releaseEnabled||!['add','hold'].includes(d.action)||d.unsupported||d.blockedReason||d.matrix.dataError||d.matrix.futureOrder)continue;
+    state.strategyFunds=state.strategyFunds||{};const ns=state.strategyFunds[GOLD_VERSION]||(state.strategyFunds[GOLD_VERSION]={});let f=ns[code];
+    if(!f){ns[code]={baselineDate:today,lastRun:today,lastVerdict:d.action,campaignId:null};changed=true;continue;}if(f.lastRun===today)continue;const prev=f.lastRun;f.lastRun=today;changed=true;
+    const sample=type=>({type,code,name:d.name||code,category:d.category||'cycle',strategyVersion:GOLD_VERSION,eventDate:today,approx:!prev||util.daysBetween(prev,today)>1,path:pickPath(d.matrix),metrics:d.matrix.metrics,signalNavDate:d.matrix.metrics?.navDate||null,orderDate:d.matrix.orderDate,computedAt:d.matrix.computedAt,sourceHash:d.matrix.sourceHash,actionHash:d.matrix.actionHash,inputVersion:d.matrix.inputVersion,backfill:'pending',buyOnly:true,returnBasis:'复权回填待核验；信号结束不构成赎回指令'});
+    if(d.action==='add'){if(!f.campaignId&&f.lastVerdict==='hold'){const id=`${code}#${GOLD_VERSION}#${today}`;samples.push({...sample('advice-open'),campaign:{id,openDate:today}});f.campaignId=id;f.campaignOpenDate=today;}f.lastVerdict='add';f.lastAddDate=today;}
+    else{if(f.campaignId&&util.daysBetween(f.lastAddDate,today)>P.gapDays){samples.push({...sample('advice-close'),campaign:{id:f.campaignId,openDate:f.campaignOpenDate,closeDate:today,days:util.daysBetween(f.campaignOpenDate,today)}});f.campaignId=null;f.campaignOpenDate=null;f.lastAddDate=null;}if(!f.campaignId)f.lastVerdict='hold';}
+  }return changed;
+}
+function collectActiveEquity(decMap,state,samples,today,P){
+  let changed=false;for(const [code,d] of Object.entries(decMap||{})){
+    if(d.strategyVersion!==ACTIVE_EQUITY_VERSION||d.matrix?.strategyVersion!==ACTIVE_EQUITY_VERSION||!['add','hold'].includes(d.action)||d.unsupported||d.blockedReason||d.matrix.dataError||d.matrix.futureOrder)continue;
+    state.strategyFunds=state.strategyFunds||{};const ns=state.strategyFunds[ACTIVE_EQUITY_VERSION]||(state.strategyFunds[ACTIVE_EQUITY_VERSION]={});let f=ns[code];
+    if(!f){ns[code]={baselineDate:today,lastRun:today,lastVerdict:d.action,campaignId:null};changed=true;continue;}if(f.lastRun===today)continue;const prev=f.lastRun;f.lastRun=today;changed=true;
+    const sample=type=>({type,code,name:d.name||code,category:d.category||'growth',strategyVersion:ACTIVE_EQUITY_VERSION,eventDate:today,approx:!prev||util.daysBetween(prev,today)>1,path:pickPath(d.matrix),metrics:d.matrix.metrics,signalNavDate:d.matrix.metrics?.navDate||null,orderDate:d.matrix.orderDate,computedAt:d.matrix.computedAt,sourceHash:d.matrix.sourceHash,actionHash:d.matrix.actionHash,inputVersion:d.matrix.inputVersion,backfill:'pending',buyOnly:true,returnBasis:'复权回填待核验；信号结束不构成赎回指令'});
+    if(d.action==='add'){if(!f.campaignId&&f.lastVerdict==='hold'){const id=`${code}#${ACTIVE_EQUITY_VERSION}#${today}`;samples.push({...sample('advice-open'),campaign:{id,openDate:today}});f.campaignId=id;f.campaignOpenDate=today;}f.lastVerdict='add';f.lastAddDate=today;}
+    else{if(f.campaignId&&util.daysBetween(f.lastAddDate,today)>P.gapDays){samples.push({...sample('advice-close'),campaign:{id:f.campaignId,openDate:f.campaignOpenDate,closeDate:today,days:util.daysBetween(f.campaignOpenDate,today)}});f.campaignId=null;f.campaignOpenDate=null;f.lastAddDate=null;}if(!f.campaignId)f.lastVerdict='hold';}
+  }return changed;
+}
+function collectDividend(decMap,state,samples,today,P) {
+  let changed=false;
+  for (const [code,d] of Object.entries(decMap||{})) {
+    if (d?.strategyVersion!==DIVIDEND_VERSION || d.unsupported || !['add','hold'].includes(d.action) ||
+      !['candidate','waiting'].includes(d.matrix?.marketState)) continue;
+    state.strategyFunds=state.strategyFunds||{};
+    const ns=state.strategyFunds[DIVIDEND_VERSION]||(state.strategyFunds[DIVIDEND_VERSION]={});
+    let f=ns[code];
+    if(!f) { ns[code]={baselineDate:today,lastRun:today,lastVerdict:d.action,campaignId:null};changed=true;continue; }
+    if(f.lastRun===today) continue;
+    const prev=f.lastRun;f.lastRun=today;changed=true;
+    if(d.action==='add') {
+      if(!f.campaignId && f.lastVerdict==='hold') {
+        const id=`${code}#${DIVIDEND_VERSION}#${today}`;
+        samples.push({type:'advice-open',code,name:d.name||code,category:'dividend',strategyVersion:DIVIDEND_VERSION,
+          eventDate:today,approx:!prev||util.daysBetween(prev,today)>1,
+          campaign:{id,openDate:today,closeDate:null},path:pickPath(d.matrix),metrics:d.matrix.metrics,
+          signalNavDate:d.matrix.metrics?.navDate||null,orderDate:d.matrix.orderDate,
+          executable:d.executable===true,blockedReason:d.blockedReason||null,backfill:'pending'});
+        f.campaignId=id;f.campaignOpenDate=today;
+      }
+      f.lastVerdict='add';f.lastAddDate=today;
+    } else {
+      if(f.campaignId && util.daysBetween(f.lastAddDate,today)>P.gapDays) {
+        const closeDate=addDays(f.lastAddDate,P.gapDays);
+        samples.push({type:'advice-close',code,name:d.name||code,category:'dividend',strategyVersion:DIVIDEND_VERSION,
+          eventDate:closeDate,approx:!prev||util.daysBetween(prev,today)>1,
+          campaign:{id:f.campaignId,openDate:f.campaignOpenDate,closeDate,days:util.daysBetween(f.campaignOpenDate,closeDate)},
+          path:pickPath(d.matrix),metrics:d.matrix.metrics,backfill:'pending'});
+        f.campaignId=null;f.campaignOpenDate=null;f.lastAddDate=null;
+      }
+      if(!f.campaignId) f.lastVerdict='hold';
+    }
+  }
+  return changed;
 }
 
 // ---------- ② buy 幂等补扫（仅执行记录，不进校准） ----------
@@ -248,6 +414,12 @@ function buyScan(cfgOverride) {
   const today = env.today();
   const samples = loadSamples();
   const before = samples.length;
+  const versionState=loadState().strategyFunds?.[DIVIDEND_VERSION]||{};
+  const hsState=loadState().strategyFunds?.[HS300_VERSION]||{};
+  const nasdaqState=loadState().strategyFunds?.[NASDAQ_VERSION]||{};
+  const activeState=loadState().strategyFunds?.[ACTIVE_EQUITY_VERSION]||{};
+  const goldState=loadState().strategyFunds?.[GOLD_VERSION]||{};
+  const goldEnabled=require('../data/goldIdentity.json').releaseEnabled===true;
 
   const holdings = env.read('holdings.json'); // 默认读 data/；测试 _forTest 注入内存
   if (!holdings || !Array.isArray(holdings.funds)) return 0;
@@ -267,19 +439,47 @@ function buyScan(cfgOverride) {
   });
 
   const known = new Set(samples.filter(s => s.type === 'buy').map(s => `${s.code}|${s.eventDate}|${s.amt}`));
-  let added = 0;
+  let added = 0,pricingCompleted=0;
 
   for (const fund of holdings.funds) {
     const code = fund.code;
+    if(isGoldRoute(fund)&&!goldEnabled)continue;
     const purchases = Array.isArray(fund.purchases) ? fund.purchases : [];
     for (const p of purchases) {
       if (!p || !p.date || !p.amount) continue;
+      if(isNasdaqRoute(fund)&&p.date>today)continue;
+      if(isActiveEquityRoute(fund)&&p.date>today)continue;
+      if(isGoldRoute(fund)&&p.date>today)continue;
       const key = `${code}|${p.date}|${Math.round(p.amount * 100) / 100}`;
-      if (known.has(key)) continue;
+      if (known.has(key)) {
+        // Only this version's still-pending, incomplete record can receive later confirmed pricing once.
+        const s=samples.find(s=>s.type==='buy'&&`${s.code}|${s.eventDate}|${s.amt}`===key);
+        if(s?.strategyVersion===GOLD_VERSION&&!goldEnabled)continue;
+        if([NASDAQ_VERSION,GOLD_VERSION].includes(s?.strategyVersion)&&s.backfill==='pending'&&!s.pricingDate&&
+          Number.isFinite(p.shares)&&p.shares>0&&Number.isFinite(p.nav)&&p.nav>0&&require('../lib/nasdaqSignal').validDate(p.pricingDate)){
+          s.pricingDate=p.pricingDate;s.pricingSession=['T','T+1'].includes(p.session)?p.session:null;s.purchaseConfirmed=true;
+          s.pricingCompletedAt=today;s.pricingEvidence={source:'confirmed purchase record',signature:key,sharesSource:p.sharesSource||'record',pricingDate:p.pricingDate};
+          pricingCompleted++;
+        }
+        continue;
+      }
       known.add(key);
       // 匹配战役窗口
       let cid = null;
-      const cams = openIdx[code] || [];
+      const hs=isHs300Route(fund);
+      const nasdaq=isNasdaqRoute(fund);
+      const active=isActiveEquityRoute(fund);
+      const gold=isGoldRoute(fund);
+      // Preserve pre-rollout purchases; do not create or attach legacy gold records.
+      if(gold&&(!goldState[code]||p.date<=goldState[code].baselineDate))continue;
+      // Admission to active equity never imports old growth purchases into a new ledger.
+      if(active&&(!activeState[code]||p.date<=activeState[code].baselineDate))continue;
+      const newVersion=gold?GOLD_VERSION:active&&activeState[code]&&p.date>activeState[code].baselineDate?ACTIVE_EQUITY_VERSION:
+        nasdaq&&nasdaqState[code]&&p.date>nasdaqState[code].baselineDate?NASDAQ_VERSION:
+        hs&&hsState[code]&&p.date>=hsState[code].baselineDate?HS300_VERSION:
+        fund.category==='dividend'&&versionState[code]&&p.date>=versionState[code].baselineDate ? DIVIDEND_VERSION:null;
+      const cams = (openIdx[code] || []).filter(os=>gold?os.strategyVersion===GOLD_VERSION:os.strategyVersion!==GOLD_VERSION&&(active?newVersion===ACTIVE_EQUITY_VERSION&&os.strategyVersion===ACTIVE_EQUITY_VERSION:os.strategyVersion!==ACTIVE_EQUITY_VERSION&&(nasdaq?newVersion===NASDAQ_VERSION&&os.strategyVersion===NASDAQ_VERSION:os.strategyVersion!==NASDAQ_VERSION&&(hs?newVersion===HS300_VERSION&&os.strategyVersion===HS300_VERSION:
+        os.strategyVersion!==HS300_VERSION&&(fund.category!=='dividend'||newVersion&&os.strategyVersion===newVersion)))));
       for (const os of cams) {
         const w = campaignWin[os.campaign.id];
         if (!w) continue;
@@ -290,6 +490,10 @@ function buyScan(cfgOverride) {
       samples.push({
         type: 'buy', code, name: fund.name || code, category: fund.category || 'unknown',
         eventDate: p.date, amt: Math.round(p.amount * 100) / 100,
+        ...(newVersion?{strategyVersion:newVersion}:{}),
+        ...([NASDAQ_VERSION,GOLD_VERSION].includes(newVersion)?{pricingDate:require('../lib/nasdaqSignal').validDate(p.pricingDate)?p.pricingDate:null,
+          pricingSession:['T','T+1'].includes(p.session)?p.session:null,orderDate:p.date,
+          purchaseConfirmed:Number.isFinite(p.shares)&&p.shares>0&&Number.isFinite(p.nav)&&p.nav>0}:{}),
         campaign: cid ? { id: cid } : null,
         backfill: isHistory ? 'skip' : 'pending', // 历史定投（<historyStart）：不抓长历史重算 T+30
         history: isHistory ? true : false
@@ -302,7 +506,14 @@ function buyScan(cfgOverride) {
   let relinked = 0;
   for (const s of samples) {
     if (s.type !== 'buy' || s.campaign || s.history) continue;
-    const cams = openIdx[s.code] || [];
+    if(s.strategyVersion===GOLD_VERSION&&!goldEnabled)continue;
+    if(s.category==='dividend' && s.strategyVersion!==DIVIDEND_VERSION) continue;
+    if((goldState[s.code]||isGoldRoute(holdings.funds.find(f=>f.code===s.code)))&&s.strategyVersion!==GOLD_VERSION)continue;
+    if((activeState[s.code]||isActiveEquityRoute(holdings.funds.find(f=>f.code===s.code)))&&s.strategyVersion!==ACTIVE_EQUITY_VERSION)continue;
+    if((nasdaqState[s.code]||isNasdaqRoute(holdings.funds.find(f=>f.code===s.code)))&&s.strategyVersion!==NASDAQ_VERSION)continue;
+    if((hsState[s.code] || isHs300Route(holdings.funds.find(f=>f.code===s.code))) && s.strategyVersion!==HS300_VERSION)continue;
+    const cams = (openIdx[s.code] || []).filter(os=>s.strategyVersion===GOLD_VERSION?os.strategyVersion===GOLD_VERSION:os.strategyVersion!==GOLD_VERSION&&(s.strategyVersion===ACTIVE_EQUITY_VERSION?os.strategyVersion===ACTIVE_EQUITY_VERSION:os.strategyVersion!==ACTIVE_EQUITY_VERSION&&(s.strategyVersion===NASDAQ_VERSION?os.strategyVersion===NASDAQ_VERSION:os.strategyVersion!==NASDAQ_VERSION&&(s.strategyVersion===HS300_VERSION?os.strategyVersion===HS300_VERSION:
+      os.strategyVersion!==HS300_VERSION&&(s.category!=='dividend'||os.strategyVersion===s.strategyVersion)))));
     let cid = null;
     for (const os of cams) {
       const w = campaignWin[os.campaign.id];
@@ -312,7 +523,7 @@ function buyScan(cfgOverride) {
     }
     if (cid) { s.campaign = { id: cid }; relinked++; }
   }
-  if (added || relinked) saveSamples(samples);
+  if (added || relinked || pricingCompleted) saveSamples(samples);
   return added;
 }
 
@@ -327,28 +538,54 @@ async function runBackfill(cfgOverride) {
   const today = env.today();
   const samples = loadSamples();
   try {
+    const goldBackfill=await require('../services/goldRecap').backfill(samples,{holdDays:P.holdDays,previewDays:P.previewDays});
+    if(goldBackfill.changed)saveSamples(samples);
     // 待回填样本（skip 的历史 buy 不参与）
-    const pending = samples.filter(s => s.backfill === 'pending');
-    if (!pending.length) return { done: 0 };
+    // Runtime sampling/return coverage is still unverified: preserve new pending and old records exactly.
+    const activeCodes=new Set(Object.keys(loadState().strategyFunds?.[ACTIVE_EQUITY_VERSION]||{}));
+    const goldCodes=new Set(Object.keys(loadState().strategyFunds?.[GOLD_VERSION]||{}));
+    for(const f of env.read('holdings.json')?.funds||[])if(isGoldRoute(f))goldCodes.add(f.code);
+    for(const f of env.read('holdings.json')?.funds||[])if(isActiveEquityRoute(f))activeCodes.add(f.code);
+    const pending = samples.filter(s => s.strategyVersion!==GOLD_VERSION&&!goldCodes.has(s.code)&&!isGoldRoute({code:s.code})&&s.strategyVersion!==ACTIVE_EQUITY_VERSION&&!activeCodes.has(s.code)&&!isActiveEquityRoute({code:s.code})&&(s.backfill === 'pending' || [HS300_VERSION,NASDAQ_VERSION].includes(s.strategyVersion)&&s.backfill==='partial'));
+    if (!pending.length) return { done: goldBackfill.done };
     // 过早（事件日距今太近，还拿不到 T+30）→ 留待下次；粗判也要等 ≥10 自然日才有意义
     const due = pending.filter(s => util.daysBetween(s.eventDate, today) >= 10);
-    if (!due.length) return { done: 0, wait: true };
+    if (!due.length) return { done: goldBackfill.done, wait: true };
 
     // 每 code 一次拉取（360 交易日窗口足够覆盖模块启动后的全部事件；cache 复用）
-    const seriesByCode = {};
+    const seriesByCode = {},nasdaqEvidence={};
     for (const s of due) {
-      if (seriesByCode[s.code]) continue;
-      const r = await fetchers.fetchNavHistory(s.code, 360);
-      seriesByCode[s.code] = r && !r.failed ? r.history : null;
+      const versioned=[DIVIDEND_VERSION,HS300_VERSION,NASDAQ_VERSION].includes(s.strategyVersion);
+      const key=versioned?s.code+'#'+s.strategyVersion:s.code;
+      if(seriesByCode[key]) continue;
+      if(versioned) {
+        try {
+          const nasdaq=s.strategyVersion===NASDAQ_VERSION;
+          if(nasdaq){const resolved=await require('../services/nasdaqIdentity').resolve(s.code);if(resolved.error)continue;nasdaqEvidence[key]=resolved.evidence;}
+          const data=await require(nasdaq?'../services/nasdaqData':s.strategyVersion===HS300_VERSION?'../services/hs300Data':'../services/dividendData').fetchFull(s.code);
+          const adj=nasdaq?require('../lib/nasdaqNav').adjust(data.history.filter(r=>r.date<=today),data.actions,s.code):require('../lib/fundAdjustedNav').reinvestedNav(data.history,data.actions);
+          seriesByCode[key]=adj.rows?adj.rows.filter(r=>![HS300_VERSION,NASDAQ_VERSION].includes(s.strategyVersion)||r.date<=today).map(r=>({date:r.date,nav:r.close})).reverse():null;
+        } catch(_) {seriesByCode[key]=null;}
+      } else {
+        const r = await fetchers.fetchNavHistory(s.code, 360);
+        seriesByCode[key] = r && !r.failed ? r.history : null;
+      }
     }
 
     let changed = false;
     for (const s of due) {
-      const hist = seriesByCode[s.code];
+      const versioned=[DIVIDEND_VERSION,HS300_VERSION,NASDAQ_VERSION].includes(s.strategyVersion);
+      const hist = seriesByCode[versioned?s.code+'#'+s.strategyVersion:s.code];
       if (!hist || !hist.length) continue;
-      const i0 = hist.findIndex(h => h.date <= s.eventDate); // 事件日当天/最近的前序净值（desc）
+      const nasdaq=s.strategyVersion===NASDAQ_VERSION;
+      const referenceDate=nasdaq&&s.type==='buy'?s.pricingDate:versioned&&s.orderDate?s.orderDate:s.eventDate;
+      if(nasdaq&&s.type==='buy'&&s.purchaseConfirmed!==true)continue;
+      if(nasdaq&&!require('../lib/nasdaqSignal').validDate(referenceDate))continue;
+      const i0 = hist.findIndex(h => [HS300_VERSION,NASDAQ_VERSION].includes(s.strategyVersion)?h.date===referenceDate:h.date<=referenceDate); // 新版本不得以此前净值冒充申请日
       if (i0 < 0) continue;
       const T = hist[i0];
+      if(nasdaq){const end=hist[Math.max(0,i0-P.holdDays)].date;
+        if(require('../services/nasdaqData').coverageGap(hist,nasdaqEvidence[s.code+'#'+s.strategyVersion],referenceDate,end))continue;}
       // 粗判（previewDays）
       const pv = {};
       for (const dd of P.previewDays) {
@@ -361,6 +598,7 @@ async function runBackfill(cfgOverride) {
         const positive30 = T30.nav > T.nav; // 朴素裁判：T+30 正收益
         s.navRef = { T: { date: T.date, nav: +(+T.nav).toFixed(4) }, T30: { date: T30.date, nav: +(+T30.nav).toFixed(4) } };
         s.positive30 = positive30;
+        if(versioned) s.returnBasis='dividend-reinvested; fees excluded; 30 NAV observations';
         if (s.type === 'advice-open') {
           // d*：d=0..10 中，从 T+d 买入持有到 T+30 收益最大的 d
           let best = 0, bestGain = -Infinity;
@@ -398,7 +636,9 @@ function stats(cfgOverride) {
   const cfg = cfgOverride || config.getConfig();
   const P = params(cfg);
   const today = env.today();
-  const samples = loadSamples();
+  const allSamples = loadSamples();
+  // The pre-existing ledgers retain their exact population; new HS300 has its own statistics.
+  const samples = allSamples.filter(s=>![HS300_VERSION,NASDAQ_VERSION,ACTIVE_EQUITY_VERSION,GOLD_VERSION].includes(s.strategyVersion));
   const state = loadState();
 
   const openS = samples.filter(s => s.type === 'advice-open');
@@ -512,6 +752,15 @@ function stats(cfgOverride) {
 
   return {
     generatedAt: today,
+    strategyVersions: ['legacy',DIVIDEND_VERSION,HS300_VERSION,NASDAQ_VERSION,ACTIVE_EQUITY_VERSION,GOLD_VERSION].map(version=>{
+      const rows=allSamples.filter(s=>(s.strategyVersion||'legacy')===version);
+      return {version,open:rows.filter(s=>s.type==='advice-open').length,close:rows.filter(s=>s.type==='advice-close').length,
+        returnBasis:version===ACTIVE_EQUITY_VERSION?'复权回填待核验；仅买入判断':version===GOLD_VERSION?'基金自身分红再投资复权；费用未计；30个日频净值观察日；缺证据保持待回填':version!=='legacy'?'分红再投资复权；费用未计；30个净值观察日':'历史口径保留'};
+    }),
+    versionLedgers:{[HS300_VERSION]:versionLedger(allSamples.filter(s=>s.strategyVersion===HS300_VERSION),state.strategyFunds?.[HS300_VERSION]||{}),
+      [NASDAQ_VERSION]:versionLedger(allSamples.filter(s=>s.strategyVersion===NASDAQ_VERSION),state.strategyFunds?.[NASDAQ_VERSION]||{},NASDAQ_VERSION),
+      [ACTIVE_EQUITY_VERSION]:versionLedger(allSamples.filter(s=>s.strategyVersion===ACTIVE_EQUITY_VERSION),state.strategyFunds?.[ACTIVE_EQUITY_VERSION]||{},ACTIVE_EQUITY_VERSION),
+      [GOLD_VERSION]:versionLedger(allSamples.filter(s=>s.strategyVersion===GOLD_VERSION),state.strategyFunds?.[GOLD_VERSION]||{},GOLD_VERSION)},
     params: P,
     sampling: {
       mode: '访问驱动（无定时器）：开口日=首次被记录日、收回日≈末次加仓日+gapDays；漏访样本标 approx，统计口径含此偏差',
@@ -528,6 +777,23 @@ function stats(cfgOverride) {
     dstar,
     rows: { open: rowsOpen, close: rowsClose, buy: rowsBuy }
   };
+}
+
+function versionLedger(samples,cursors,version=HS300_VERSION) {
+  const ledger=type=>{
+    const rows=samples.filter(s=>s.type===type),done=rows.filter(s=>typeof s.positive30==='boolean');
+    return {total:rows.length,n:done.length,hits:done.filter(s=>s.positive30).length,
+      hitRate:done.length?+(done.filter(s=>s.positive30).length/done.length*100).toFixed(1):null,
+      rows:rows.map(s=>({date:s.eventDate,code:s.code,name:s.name,campaign:s.campaign,path:s.path,approx:!!s.approx,
+        positive30:s.positive30??null,backfill:s.backfill,navRef:s.navRef||null,orderDate:s.orderDate||null,
+        ...(version===NASDAQ_VERSION?{pricingDate:s.pricingDate||null,pricingSession:s.pricingSession||null,
+          purchaseConfirmed:s.purchaseConfirmed??null,computedAt:s.computedAt||null,inputVersion:s.inputVersion||null,
+          sourceHash:s.sourceHash||null,actionHash:s.actionHash||null,peHash:s.peHash||null}:{}),
+        returnBasis:s.returnBasis||'分红再投资复权；费用未计；30个净值观察日'}))};
+  };
+  return {version,baselineDates:Object.fromEntries(Object.entries(cursors).map(([code,c])=>[code,c.baselineDate])),
+    open:ledger('advice-open'),close:ledger('advice-close'),buy:ledger('buy'),
+    sampling:'访问驱动；仅有效且未被交易约束拦截的市场判断更新；中断不补造信号；approx 表示漏访近似采样'};
 }
 
 // ---------- 修正建议（仅文案/落点标注；真正的阈值修订 = 你批准后我改 config.signals） ----------

@@ -8,7 +8,7 @@
 const config = require('../lib/config');
 const {
   synthesizePositionScore, synthesizeValueScore, synthesizeMomentumScore,
-  synthesizeCompositeScore, legacyPositionScore, relScale
+  synthesizeCompositeScore, relScale
 } = require('../engines/alloc/allocation');
 
 const cfg = config.getConfig();
@@ -105,8 +105,6 @@ const scM = (m, by, cal) => {
   const v = synthesizeMomentumScore({ matrix: m }, AC, by, cal);
   return v == null ? null : +v.toFixed(2);
 };
-// 冻结的旧位置分（含 ±0.1 / ×0.3 二值补丁，用于证明旧逻辑没被改坏）
-const scL = (m, by, cal) => +legacyPositionScore({ matrix: m }, AC, by, cal).toFixed(2);
 // 字符串/布尔严格相等断言（t() 走 Math.abs，对字符串会得 NaN，故单列）
 function ts(name, got, want) {
   const ok = got === want;
@@ -331,31 +329,6 @@ t('★gate=block 一票否决（V/M 皆满也归 0）', sc({ gate: 'block', draw
 t('★暂停申购 一票否决（第4参 suspended）', sc({ drawdown: -30, pricePercentile: 0 }, 'tech', null, true), 0, 0.01);
 t('V 满 + M 满（tech）→ 100', sc({ drawdown: -30, pricePercentile: 0, maSpreadPct: 5, stopRisePct: 3 }, 'tech'), 100, 0.5);
 t('V 零 + M 零（tech）→ 0', sc({ drawdown: 0, pricePercentile: 100, maSpreadPct: -5, stopRisePct: -1 }, 'tech'), 0, 0.5);
-
-console.log('\n--- ★ legacy 旧逻辑冻结回归（证明旧公式没被改坏）---');
-t('legacy 止跌基线 → 88.36', scL({ drawdown: -30, pricePercentile: 20, stopFall: true }, 'tech'), 88.36, 0.3);
-t('legacy 未止跌 ×0.3 → 7.95', scL({ drawdown: -30, pricePercentile: 20, stopFall: false }, 'tech'), 7.95, 0.3);
-t('legacy 金叉 → 100', scL({ drawdown: -30, pricePercentile: 20, stopFall: true, goldenState: true }, 'tech'), 100, 0.5);
-
-console.log('\n--- ★ V ≡ 剥离后的旧公式（随机 50 组，matrix 不含动量字段）---');
-let vMaxDiff = 0, vCnt = 0;
-for (let k = 0; k < 50; k++) {
-  const m = {
-    drawdown: -(Math.random() * 40), pricePercentile: Math.random() * 100,
-    pePercentile: Math.random() * 100, erp: (Math.random() * 0.08 - 0.02),
-    yield: 0.02 + Math.random() * 0.05, cheapYield: 0.055, expensiveYield: 0.038,
-    stopFall: true   // ★让 legacy 的 tech 不执行 ×0.3（V 已剥离该折扣，否则必然不等）
-  };
-  ['tech', 'broad', 'cycle', 'dividend'].forEach(by => {
-    const a1 = synthesizeValueScore({ matrix: m }, AC, by, by === 'broad' ? 'us' : undefined);
-    const a2 = legacyPositionScore({ matrix: m }, AC, by, by === 'broad' ? 'us' : undefined);
-    if (a1 == null || a2 == null) return;
-    vCnt++;
-    vMaxDiff = Math.max(vMaxDiff, Math.abs(a1 - a2));
-  });
-}
-t('★V 与 legacy 最大差 ≤0.01（' + vCnt + ' 组）', vMaxDiff, 0, 0.01);
-
 
 console.log(`\n结果：PASS=${pass} FAIL=${fail}`);
 process.exit(fail ? 1 : 0);

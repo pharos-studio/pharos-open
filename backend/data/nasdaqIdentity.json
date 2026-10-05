@@ -1,0 +1,717 @@
+{
+  "version": "nasdaq-current-evidence-v1",
+  "funds": [
+    {
+      "code": "270042",
+      "name": "广发纳斯达克100ETF联接人民币A",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://www.gffunds.com.cn/jjgg/flwj/202305/P020230524402093849885.pdf",
+      "identitySources": [
+        {
+          "url": "https://www.gffunds.com.cn/jjgg/flwj/202305/P020230524402093849885.pdf",
+          "sha256": "f1529ccd9ad16396734a1f18c569a3e30216e532dff83737acd309d85cf4d486",
+          "retrievedAt": "2026-10-03T09:31:04.095Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Same NDX index to feeder transitions do not reset initialization; continuous historical legal clauses not certified",
+      "initializationFrom": "2012-09-13",
+      "seedEstablishedOn": "2012-09-27",
+      "rulesVerified": true,
+      "sourceVersion": "2026-06-05 prospectus",
+      "checkedAt": "2026-10-04T06:23:28.682Z",
+      "effectiveBoundary": "Current official directory and latest listed document observed at checkedAt; effectiveFrom unknown; not continuous historical rule-vintage proof",
+      "contractSource": "https://www.gffunds.com.cn/jjgg/flwj/202606/P020260605334094923477.pdf",
+      "contractSourceHash": "9becbea6a101cf6b3846d3164ffa1dfa64f28fc7995811fa041f418983d61028",
+      "workCalendar": "cn",
+      "openCalendar": "joint",
+      "valuationCalendar": "joint",
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": 2,
+      "ruleUnknowns": [
+        "Continuous historical legal versions not certified; actual announcement exceptions and channel status remain independent"
+      ],
+      "currentConstraintSource": null,
+      "currentConstraintNote": null,
+      "contractRetrievedAt": "2026-10-04T06:23:28.682Z",
+      "currentContractVerified": true,
+      "currentDirectoryEvidence": {
+        "url": "https://www.gffunds.com.cn/was5/web/search",
+        "method": "POST",
+        "params": {
+          "channelid": "200445",
+          "page": "1",
+          "searchword": "270042"
+        },
+        "sha256": "0888de6bb08ac4f9681a11cdce5558d8e11aa2e73223dc86ee75ae1a31bc3d43",
+        "retrievedAt": "2026-10-04T06:23:26.684Z"
+      },
+      "contractPages": {
+        "work": 11,
+        "open": 58,
+        "valuation": 75,
+        "navPublication": [
+          68,
+          86
+        ]
+      },
+      "effectiveFrom": null
+    },
+    {
+      "code": "040046",
+      "name": "华安纳斯达克100ETF联接A",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://www.huaan.com.cn/funds/040046/index.shtml",
+      "identitySources": [
+        {
+          "url": "https://www.huaan.com.cn/funds/040046/index.shtml",
+          "sha256": "b17c64a4834a7009fc1c4f8ffbb46a09caab2ef2eb6c5e4f4b44ee1a3baa031d",
+          "retrievedAt": "2026-10-03T09:31:04.096Z"
+        },
+        {
+          "url": "https://wap.huaan.com.cn/news/2018-12-05/190914_1.shtml",
+          "sha256": "764a392b7bb6be187cb2b2011e64a57803a0e933b91944bb4d13abb58966f9d0",
+          "retrievedAt": "2026-10-03T09:31:06.559Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Same NDX index to feeder transitions do not reset initialization; continuous historical legal clauses not certified",
+      "initializationFrom": "2013-08-23",
+      "seedEstablishedOn": "2013-09-09",
+      "rulesVerified": false,
+      "sourceVersion": null,
+      "checkedAt": "2026-10-04T05:04:22Z",
+      "effectiveBoundary": "Observed official legal snapshot for current calculation; not a continuous historical publication-vintage claim",
+      "contractSource": null,
+      "contractSourceHash": null,
+      "workCalendar": null,
+      "openCalendar": null,
+      "valuationCalendar": null,
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": null,
+      "ruleUnknowns": [
+        "Complete related securities and futures valuation venue set unknown"
+      ],
+      "currentConstraintSource": null,
+      "currentConstraintNote": null
+    },
+    {
+      "code": "160213",
+      "name": "国泰纳斯达克100指数",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "index",
+      "enhanced": false,
+      "source": "https://www.gtfund.com/product/productlist/haiwai/160213/summary/index.html",
+      "identitySources": [
+        {
+          "url": "https://www.gtfund.com/product/productlist/haiwai/160213/summary/index.html",
+          "sha256": "9874408f0f03bf7cdff0417c3c6fe246e2784fe38201b158c1648b4e3b576350",
+          "retrievedAt": "2026-10-03T09:31:06.561Z"
+        },
+        {
+          "url": "https://st.gtfund.com/report_root/2024/06/%E5%9B%BD%E6%B3%B0%E7%BA%B3%E6%96%AF%E8%BE%BE%E5%85%8B100%E6%8C%87%E6%95%B0%E8%AF%81%E5%88%B8%E6%8A%95%E8%B5%84%E5%9F%BA%E9%87%91%E6%9B%B4%E6%96%B0%E6%8B%9B%E5%8B%9F%E8%AF%B4%E6%98%8E%E4%B9%A6%EF%BC%882024%E5%B9%B4%E7%AC%AC%E4%B8%80%E5%8F%B7%EF%BC%89.pdf",
+          "sha256": "b3537c789dd7e262e1377bf9b1bf8805d898815951b3e0e13c9cde1f79bfcfd0",
+          "retrievedAt": "2026-10-03T09:31:07.549Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Same NDX index to feeder transitions do not reset initialization; continuous historical legal clauses not certified",
+      "initializationFrom": "2010-06-02",
+      "seedEstablishedOn": "2010-06-21",
+      "rulesVerified": true,
+      "sourceVersion": "2026-09-21 prospectus",
+      "checkedAt": "2026-10-04T06:23:30.617Z",
+      "effectiveBoundary": "Current official directory and latest listed document observed at checkedAt; effectiveFrom unknown; not continuous historical rule-vintage proof",
+      "contractSource": "https://st.gtfund.com/report_root/2026/09/国泰纳斯达克100指数证券投资基金更新招募说明书（2026年第一号）.pdf",
+      "contractSourceHash": "10801d399a3870f6af3c8a8747a931c78523d4d61fb3737fa381cdf1da35a2a9",
+      "workCalendar": "joint",
+      "openCalendar": "joint",
+      "valuationCalendar": "joint",
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": 2,
+      "ruleUnknowns": [
+        "Continuous historical legal versions not certified; actual announcement exceptions and channel status remain independent"
+      ],
+      "currentConstraintSource": null,
+      "currentConstraintNote": null,
+      "contractRetrievedAt": "2026-10-04T06:23:30.617Z",
+      "currentContractVerified": true,
+      "currentDirectoryEvidence": {
+        "url": "https://e.gtfund.com/Etrade/Public/cochin/info.fund.report",
+        "method": "POST",
+        "params": {
+          "api": "info.fund.report",
+          "params": {
+            "fundCode": "160213",
+            "type": "basic",
+            "page": 1,
+            "perPage": 15
+          }
+        },
+        "sha256": "48126a6172193fd8274f663ce24a271fc9e032ad776484cc131499d85203b615",
+        "retrievedAt": "2026-10-04T06:23:29.847Z"
+      },
+      "contractPages": {
+        "work": 9,
+        "open": 35,
+        "valuation": 45,
+        "navPublication": [
+          39,
+          53
+        ]
+      },
+      "effectiveFrom": null,
+      "purchaseConstraint": {
+        "status": "suspended",
+        "start": "2026-09-28",
+        "end": null,
+        "source": "https://st.gtfund.com/report/2026/09/国泰纳斯达克100指数证券投资基金暂停申购、定期定额投资业务的公告.pdf",
+        "sha256": "5dc98c199c5dcfdd58dc6a453f674a6ab7c9c50f227a67d5bddb7177f5b40375",
+        "checkedAt": "2026-10-04T06:23:30.627Z",
+        "announcementDate": "2026-09-22",
+        "resumeVerification": "not_verified",
+        "coverage": "All channels purchase and DCA for 160213; requests after 2026-09-24 15:00 Beijing also apply; redemption unaffected",
+        "latestTemporaryDirectoryEvidence": {
+          "url": "https://e.gtfund.com/Etrade/Public/cochin/info.fund.report",
+          "method": "POST",
+          "params": {
+            "api": "info.fund.report",
+            "params": {
+              "fundCode": "160213",
+              "type": "temporary",
+              "page": 1,
+              "perPage": 15
+            }
+          },
+          "sha256": "0d19c47ab9e24812ef6bff85d10e7a9320a0f4b6d5a3130234326c402920f816",
+          "retrievedAt": "2026-10-04T06:23:30.474Z"
+        },
+        "directoryCoverage": "Latest page only; not exhaustive historical resumption audit",
+        "requestsAfter": "2026-09-24T15:00:00+08:00"
+      }
+    },
+    {
+      "code": "161130",
+      "name": "易方达纳斯达克100ETF联接（QDII-LOF）A（人民币份额）",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://www.efunds.com.cn/Mobile/fund/161130.shtml",
+      "identitySources": [
+        {
+          "url": "https://www.efunds.com.cn/Mobile/fund/161130.shtml",
+          "sha256": "949776bca9b5074772e3f2fe42fb0ecba6f0444f0f80c8f95232d6ecdbdfe4e1",
+          "retrievedAt": "2026-10-03T09:31:07.552Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Same NDX index to feeder transitions do not reset initialization; continuous historical legal clauses not certified",
+      "initializationFrom": "2017-07-07",
+      "seedEstablishedOn": "2017-07-21",
+      "rulesVerified": true,
+      "sourceVersion": "2025-11-28 prospectus",
+      "checkedAt": "2026-10-04T06:23:29.730Z",
+      "effectiveBoundary": "Current official directory and latest listed document observed at checkedAt; effectiveFrom unknown; not continuous historical rule-vintage proof",
+      "contractSource": "https://cdn.efunds.com.cn/owch/data/bulletin/20251128/易方达纳斯达克100交易型开放式指数证券投资基金联接基金（LOF）更新的招募说明书.pdf",
+      "contractSourceHash": "e7fd6a1395191546455969f17dedd2f7f5ae30d70e985f440964eb6c9d746f4f",
+      "workCalendar": "cn",
+      "openCalendar": "joint",
+      "valuationCalendar": "joint",
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": 2,
+      "ruleUnknowns": [
+        "Continuous historical legal versions not certified; actual announcement exceptions and channel status remain independent"
+      ],
+      "currentConstraintSource": null,
+      "currentConstraintNote": null,
+      "contractRetrievedAt": "2026-10-04T06:23:29.730Z",
+      "currentContractVerified": true,
+      "currentDirectoryEvidence": {
+        "url": "https://api.efunds.com.cn/xcowch/front/contents",
+        "method": "POST",
+        "params": {
+          "siteID": "1",
+          "title": "",
+          "fundCode": "161130",
+          "isIncludeTransFund": "Y",
+          "pageSize": 5,
+          "pageIndex": 0,
+          "platformID": "Mobile",
+          "catalogAlias": "xxplflwj"
+        },
+        "sha256": "4486e785ed5d4e0c59c78dbc7d326064ff2f69b3aca157f02eed881fbcb74d11",
+        "retrievedAt": "2026-10-04T06:23:26.457Z"
+      },
+      "contractPages": {
+        "work": 10,
+        "open": 55,
+        "valuation": 73,
+        "navPublication": [
+          63,
+          83
+        ]
+      },
+      "effectiveFrom": null,
+      "openRuleLiteral": "上海证券交易所、深圳证券交易所和美国主要证券交易所（纳斯达克证券交易所）同时开放交易的每个工作日，管理人暂停除外",
+      "purchaseConstraint": {
+        "status": "suspended",
+        "start": "2026-03-19",
+        "end": null,
+        "source": "https://cdn.efunds.com.cn/owch/data/bulletin/20260318/易方达纳斯达克100交易型开放式指数证券投资基金联接基金（LOF）暂停申购及定期定额投资业务的公告.pdf",
+        "sha256": "b38f1041be34c61f459b8b150be175422ea4e5d67b7bc8a02a6fa78702ad0761",
+        "checkedAt": "2026-10-04T06:23:29.022Z",
+        "announcementDate": "2026-03-19",
+        "resumeVerification": "not_verified",
+        "coverage": "All channels purchase and DCA, including RMB A161130/C012870; redemption unaffected",
+        "latestTemporaryDirectoryEvidence": {
+          "url": "https://api.efunds.com.cn/xcowch/front/contents",
+          "method": "POST",
+          "params": {
+            "siteID": "1",
+            "title": "",
+            "fundCode": "161130",
+            "isIncludeTransFund": "Y",
+            "pageSize": 5,
+            "pageIndex": 0,
+            "platformID": "Mobile",
+            "catalogAlias": "xxpllsgg"
+          },
+          "sha256": "a11ec35af70a880510883deb03c1ba842d7e73f04d29895519499627e92bc97d",
+          "retrievedAt": "2026-10-04T06:23:26.466Z"
+        },
+        "directoryCoverage": "Latest page only; not exhaustive historical resumption audit"
+      }
+    },
+    {
+      "code": "000834",
+      "name": "大成纳斯达克100ETF联接（QDII）A",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://www.dcfund.com.cn/plat_files/upload/ann_upload/20260430/202604301777542197398.pdf",
+      "identitySources": [
+        {
+          "url": "https://www.dcfund.com.cn/plat_files/upload/ann_upload/20260430/202604301777542197398.pdf",
+          "sha256": "c317e571bd357a09815a8e809146fb9bf0d5bec2ab5145a8a1c28160468c23f7",
+          "retrievedAt": "2026-10-04T06:23:32.960Z",
+          "announcementDate": "2026-05-06",
+          "coverage": "Current A/C identity only; historical announcement limits not treated as current"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Same NDX index to feeder transitions do not reset initialization; continuous historical legal clauses not certified",
+      "initializationFrom": "2014-11-26",
+      "seedEstablishedOn": "2014-12-11",
+      "rulesVerified": false,
+      "sourceVersion": "Official 2026-05-06 A/C identity announcement; current full market-rule set unknown",
+      "checkedAt": "2026-10-04T06:23:32.960Z",
+      "effectiveBoundary": "Observed official legal snapshot for current calculation; not a continuous historical publication-vintage claim",
+      "contractSource": null,
+      "contractSourceHash": null,
+      "workCalendar": null,
+      "openCalendar": null,
+      "valuationCalendar": null,
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": null,
+      "ruleUnknowns": [
+        "Complete main overseas market set unknown"
+      ],
+      "currentConstraintSource": null,
+      "currentConstraintNote": null
+    },
+    {
+      "code": "008971",
+      "name": "大成纳斯达克100ETF联接（QDII）C",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "C",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://www.dcfund.com.cn/plat_files/upload/ann_upload/20260430/202604301777542197398.pdf",
+      "identitySources": [
+        {
+          "url": "https://www.dcfund.com.cn/plat_files/upload/ann_upload/20260430/202604301777542197398.pdf",
+          "sha256": "c317e571bd357a09815a8e809146fb9bf0d5bec2ab5145a8a1c28160468c23f7",
+          "retrievedAt": "2026-10-04T06:23:32.960Z",
+          "announcementDate": "2026-05-06",
+          "coverage": "Current A/C identity only; historical announcement limits not treated as current"
+        }
+      ],
+      "continuityVerified": false,
+      "continuityCaveat": "C-specific historical inception identity not yet verified",
+      "initializationFrom": "2023-06-28",
+      "seedEstablishedOn": "2023-07-13",
+      "rulesVerified": false,
+      "sourceVersion": "Official 2026-05-06 A/C identity announcement; current full market-rule set unknown",
+      "checkedAt": "2026-10-04T06:23:32.960Z",
+      "effectiveBoundary": "Observed official legal snapshot for current calculation; not a continuous historical publication-vintage claim",
+      "contractSource": null,
+      "contractSourceHash": null,
+      "workCalendar": null,
+      "openCalendar": null,
+      "valuationCalendar": null,
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": null,
+      "ruleUnknowns": [
+        "Complete main overseas market set unknown"
+      ],
+      "currentConstraintSource": null,
+      "currentConstraintNote": null
+    },
+    {
+      "code": "015299",
+      "name": "华夏纳斯达克100ETF发起式联接（QDII）A人民币",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://m.chinaamc.com/fund/015299/index.shtml?systemType=wgw",
+      "identitySources": [
+        {
+          "url": "https://m.chinaamc.com/fund/015299/index.shtml?systemType=wgw",
+          "sha256": "975f7772f8f2265b8ffe6432822757b2fb5ec3a70c1322a3d215555e762959d4",
+          "retrievedAt": "2026-10-03T09:31:07.553Z"
+        },
+        {
+          "url": "https://accountquery.chinaamc.com/upload/resources/file/2025/05/29/015299_%E5%8D%8E%E5%A4%8F%E7%BA%B3%E6%96%AF%E8%BE%BE%E5%85%8B100%E4%BA%A4%E6%98%93%E5%9E%8B%E5%BC%80%E6%94%BE%E5%BC%8F%E6%8C%87%E6%95%B0%E8%AF%81%E5%88%B8%E6%8A%95%E8%B5%84%E5%9F%BA%E9%87%91%E5%8F%91%E8%B5%B7%E5%BC%8F%E8%81%94%E6%8E%A5%E5%9F%BA%E9%87%91%EF%BC%88QDII%EF%BC%89%E6%8B%9B%E5%8B%9F%E8%AF%B4%E6%98%8E%E4%B9%A6%E6%9B%B4%E6%96%B0%EF%BC%882025%E5%B9%B45%E6%9C%8830%E6%97%A5%E5%85%AC%E5%91%8A%EF%BC%89.pdf",
+          "sha256": "6a2b6705dd4963b275299215b3a3712cc1644e373e70763a86b5f05937fbce06",
+          "retrievedAt": "2026-10-03T09:34:56.829Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Same NDX index to feeder transitions do not reset initialization; continuous historical legal clauses not certified",
+      "initializationFrom": "2022-04-20",
+      "seedEstablishedOn": "2022-05-09",
+      "rulesVerified": true,
+      "sourceVersion": "2026-05-29 prospectus",
+      "checkedAt": "2026-10-04T06:23:30.359Z",
+      "effectiveBoundary": "Current official directory and latest listed document observed at checkedAt; effectiveFrom unknown; not continuous historical rule-vintage proof",
+      "contractSource": "https://fund.chinaamc.com/upload/resources/file/2026/05/29/d45e72deedaa447fa26b2a60df89e4f7.pdf",
+      "contractSourceHash": "ca12bbc9f6bc42aa6221d76be986a0b8971a56e63d0fdb21bbcda779a4b3dfde",
+      "workCalendar": "cn",
+      "openCalendar": "joint",
+      "valuationCalendar": "cn",
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": 2,
+      "ruleUnknowns": [
+        "Continuous historical legal versions not certified; actual announcement exceptions and channel status remain independent"
+      ],
+      "currentConstraintSource": "https://fund.chinaamc.com/upload/resources/file/2026/08/07/12aa88c189214ed9b660755e4cd5bf35.pdf",
+      "currentConstraintNote": "Official suspension; no verified resumption. Static evidence expires for execution after 24h; explicit re-verification required.",
+      "purchaseConstraint": {
+        "status": "suspended",
+        "start": "2026-08-10",
+        "end": null,
+        "source": "https://fund.chinaamc.com/upload/resources/file/2026/08/07/12aa88c189214ed9b660755e4cd5bf35.pdf",
+        "sha256": "46b431dcbe50c964871a476b11f660607f5fdce938202b5e3ba455852c45e4e7",
+        "checkedAt": "2026-10-04T06:23:29.939Z",
+        "announcementDate": "2026-08-07",
+        "resumeVerification": "not_verified",
+        "coverage": "purchase and DCA across direct and distributor channels"
+      },
+      "contractRetrievedAt": "2026-10-04T06:23:30.359Z",
+      "currentContractVerified": true,
+      "currentDirectoryEvidence": {
+        "url": "https://fund.chinaamc.com/product/publishGgList.do?fundcode=015299",
+        "method": "GET",
+        "params": null,
+        "sha256": "4d5c033d606633b8804de02df68f6751f976ccc4758c7698f2f9cec09f480277",
+        "retrievedAt": "2026-10-04T06:23:28.996Z"
+      },
+      "contractPages": {
+        "work": 8,
+        "open": 47,
+        "valuation": 64,
+        "navPublication": [
+          50
+        ]
+      },
+      "effectiveFrom": null,
+      "openRuleLiteral": "上海证券交易所和纳斯达克证券交易所同时开放交易，公告暂停除外"
+    },
+    {
+      "code": "015300",
+      "name": "华夏纳斯达克100ETF发起式联接（QDII）C人民币",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "C",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://m.chinaamc.com/fund/015300/index.shtml?systemType=wgw",
+      "identitySources": [
+        {
+          "url": "https://m.chinaamc.com/fund/015300/index.shtml?systemType=wgw",
+          "sha256": "c4b8a67eda9c0bf8acf564001f027e560c70ae1f61efd26a37c17670b5a7c0cc",
+          "retrievedAt": "2026-10-03T09:31:09.120Z"
+        },
+        {
+          "url": "https://accountquery.chinaamc.com/upload/resources/file/2025/05/29/015299_%E5%8D%8E%E5%A4%8F%E7%BA%B3%E6%96%AF%E8%BE%BE%E5%85%8B100%E4%BA%A4%E6%98%93%E5%9E%8B%E5%BC%80%E6%94%BE%E5%BC%8F%E6%8C%87%E6%95%B0%E8%AF%81%E5%88%B8%E6%8A%95%E8%B5%84%E5%9F%BA%E9%87%91%E5%8F%91%E8%B5%B7%E5%BC%8F%E8%81%94%E6%8E%A5%E5%9F%BA%E9%87%91%EF%BC%88QDII%EF%BC%89%E6%8B%9B%E5%8B%9F%E8%AF%B4%E6%98%8E%E4%B9%A6%E6%9B%B4%E6%96%B0%EF%BC%882025%E5%B9%B45%E6%9C%8830%E6%97%A5%E5%85%AC%E5%91%8A%EF%BC%89.pdf",
+          "sha256": "6a2b6705dd4963b275299215b3a3712cc1644e373e70763a86b5f05937fbce06",
+          "retrievedAt": "2026-10-03T09:34:56.829Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Same NDX index to feeder transitions do not reset initialization; continuous historical legal clauses not certified",
+      "initializationFrom": "2022-04-20",
+      "seedEstablishedOn": "2022-05-09",
+      "rulesVerified": true,
+      "sourceVersion": "2026-05-29 prospectus",
+      "checkedAt": "2026-10-04T06:23:30.359Z",
+      "effectiveBoundary": "Current official directory and latest listed document observed at checkedAt; effectiveFrom unknown; not continuous historical rule-vintage proof",
+      "contractSource": "https://fund.chinaamc.com/upload/resources/file/2026/05/29/d45e72deedaa447fa26b2a60df89e4f7.pdf",
+      "contractSourceHash": "ca12bbc9f6bc42aa6221d76be986a0b8971a56e63d0fdb21bbcda779a4b3dfde",
+      "workCalendar": "cn",
+      "openCalendar": "joint",
+      "valuationCalendar": "cn",
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "navLagWorkDays": 2,
+      "ruleUnknowns": [
+        "Continuous historical legal versions not certified; actual announcement exceptions and channel status remain independent"
+      ],
+      "currentConstraintSource": "https://fund.chinaamc.com/upload/resources/file/2026/08/07/12aa88c189214ed9b660755e4cd5bf35.pdf",
+      "currentConstraintNote": "Official suspension; no verified resumption. Static evidence expires for execution after 24h; explicit re-verification required.",
+      "purchaseConstraint": {
+        "status": "suspended",
+        "start": "2026-08-10",
+        "end": null,
+        "source": "https://fund.chinaamc.com/upload/resources/file/2026/08/07/12aa88c189214ed9b660755e4cd5bf35.pdf",
+        "sha256": "46b431dcbe50c964871a476b11f660607f5fdce938202b5e3ba455852c45e4e7",
+        "checkedAt": "2026-10-04T06:23:29.939Z",
+        "announcementDate": "2026-08-07",
+        "resumeVerification": "not_verified",
+        "coverage": "purchase and DCA across direct and distributor channels"
+      },
+      "contractRetrievedAt": "2026-10-04T06:23:30.359Z",
+      "currentContractVerified": true,
+      "currentDirectoryEvidence": {
+        "url": "https://fund.chinaamc.com/product/publishGgList.do?fundcode=015300",
+        "method": "GET",
+        "params": null,
+        "sha256": "81a2c4891b224d76a750cd627a3ae1509eb21083ea9a5d5300cad4caaf5c6c1b",
+        "retrievedAt": "2026-10-04T06:23:28.970Z"
+      },
+      "contractPages": {
+        "work": 8,
+        "open": 47,
+        "valuation": 64,
+        "navPublication": [
+          50
+        ]
+      },
+      "effectiveFrom": null,
+      "openRuleLiteral": "上海证券交易所和纳斯达克证券交易所同时开放交易，公告暂停除外"
+    },
+    {
+      "code": "016452",
+      "name": "南方纳斯达克100指数发起（QDII）A",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "index",
+      "enhanced": false,
+      "source": "https://www.nffund.com/main/files/2026/04/21/748850506750.pdf",
+      "identitySources": [
+        {
+          "url": "https://www.nffund.com/main/files/2026/04/21/748850506750.pdf",
+          "sha256": "b6f59d9914a1a11aa69af25be38319049cbcc2809f746598e46a3faaa11f7acb",
+          "retrievedAt": "2026-10-04T05:41:17.641Z"
+        },
+        {
+          "url": "https://www.nffund.com/main/files/2022/11/03/576354613004.pdf",
+          "sha256": "23128724b4ec8cdb943adb066e1c388bc07cf32bc055503a1ea8cb1eaac2f062",
+          "retrievedAt": "2026-10-04T05:43:02.488Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Original NDX contract and current official document consistent; not exhaustive historical announcement-vintage proof",
+      "identityNotBefore": "2022-11-29",
+      "initializationPolicy": "first-ten-joint",
+      "initializationFrom": null,
+      "seedEstablishedOn": null,
+      "rulesVerified": true,
+      "sourceVersion": "2025-10-22 prospectus + 2026-01-08 annual opening calendar",
+      "checkedAt": "2026-10-04T06:23:31.624Z",
+      "effectiveBoundary": "Current official directory and latest listed document observed at checkedAt; effectiveFrom unknown; not continuous historical rule-vintage proof",
+      "contractSource": "https://www.nffund.com/main/files/2025/10/21/373216081474.pdf",
+      "contractSourceHash": "a7f6e3a670dfd33effa74e6e4aa4baed34bb99217c3bbbc375c12ae91db6000a",
+      "workCalendar": "cn",
+      "openCalendar": "joint",
+      "valuationCalendar": "joint",
+      "navLagWorkDays": 2,
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "ruleUnknowns": [
+        "Own initialization established only from validated complete source and immutable persisted origin proof",
+        "Announcement exceptions and actual channel purchase status remain independent"
+      ],
+      "contractRetrievedAt": "2026-10-04T06:23:31.624Z",
+      "annualCalendarSource": {
+        "url": "https://www.nffund.com/main/files/2026/01/07/758031306301.pdf",
+        "method": "GET",
+        "params": null,
+        "sha256": "883406915aaf2d21f8ba6b015728890bb0d26b02e2c1f5dd2f6cfc3f3822af78",
+        "retrievedAt": "2026-10-04T06:23:31.627Z"
+      },
+      "observedPurchaseLimit": {
+        "amountCny": 10,
+        "start": "2026-07-09",
+        "basis": "per fund account per day; combined purchase/DCA/transfer-in; A/C independent",
+        "source": "https://www.nffund.com/main/files/2026/07/08/015716542930.pdf",
+        "sha256": "5fa5eac3e9c21a7abed92c4e958a5f8fb0627835dbaaf0a787520c1a4e3c8970",
+        "checkedAt": "2026-10-04T06:23:31.582Z",
+        "caveat": "Observed official limit only; current channel status and future confirmation must be rechecked"
+      },
+      "currentContractVerified": true,
+      "currentDirectoryEvidence": {
+        "url": "https://www.nffund.com/nfwebApi/notice/legalDocuments",
+        "method": "POST",
+        "params": {
+          "fundCode": "016452",
+          "title": "",
+          "infoType": "",
+          "tabsid": "newgg",
+          "curPage": "1",
+          "pageSize": "15",
+          "typeNo": "1"
+        },
+        "sha256": "c79618b6e37d08365798d13ecce19685f453621cf47b0d06625f1a4694a0ec52",
+        "retrievedAt": "2026-10-04T06:23:31.513Z"
+      },
+      "contractPages": {
+        "work": 8,
+        "open": 30,
+        "valuation": 59,
+        "navPublication": [
+          34,
+          72
+        ]
+      },
+      "effectiveFrom": null
+    },
+    {
+      "code": "018966",
+      "name": "汇添富纳斯达克100ETF联接（QDII）人民币A",
+      "identityVerified": true,
+      "currency": "CNY",
+      "shareClass": "A",
+      "otc": true,
+      "indexCode": "NDX",
+      "kind": "link",
+      "enhanced": false,
+      "source": "https://www.99fund.com/announcement/zx/upload/2026/20260813/6493101051fa41f598580d3f18aa711b.pdf",
+      "identitySources": [
+        {
+          "url": "https://www.99fund.com/announcement/zx/upload/2026/20260813/6493101051fa41f598580d3f18aa711b.pdf",
+          "sha256": "3bc64a31188955503fb630a803c4c321b85354f7a4ad1884298bce9682476722",
+          "retrievedAt": "2026-10-04T06:23:32.095Z"
+        },
+        {
+          "url": "https://www.99fund.com/upload/20230727/202307271690458665001.pdf",
+          "sha256": "2b8d74056ac76a5d6b5e1c4ab38f71a729dd3ddf6783e9c2a473d661912fde9a",
+          "retrievedAt": "2026-10-04T05:43:04.003Z"
+        }
+      ],
+      "continuityVerified": true,
+      "continuityCaveat": "Original NDX contract and current official document consistent; not exhaustive historical announcement-vintage proof",
+      "identityNotBefore": "2023-08-02",
+      "initializationPolicy": "first-ten-joint",
+      "initializationFrom": null,
+      "seedEstablishedOn": null,
+      "rulesVerified": false,
+      "sourceVersion": "2026-08-14 prospectus",
+      "checkedAt": "2026-10-04T06:23:32.095Z",
+      "effectiveBoundary": "Observed original NDX identity and current scope only; current full rules unknown",
+      "contractSource": null,
+      "contractSourceHash": null,
+      "workCalendar": null,
+      "openCalendar": null,
+      "valuationCalendar": null,
+      "navLagWorkDays": null,
+      "statutoryDates": [
+        "06-30",
+        "12-31"
+      ],
+      "ruleUnknowns": [
+        "Complete investment US securities markets and related valuation venues not verified",
+        "Own share-class initialization awaiting validated complete source and persisted first prefix"
+      ],
+      "purchaseConstraint": {
+        "status": "suspended",
+        "start": "2026-09-24",
+        "end": null,
+        "source": "https://www.99fund.com/announcement/zx/upload/2026/20260923/37d76102d2a341e5bf1825a9b369e2da.pdf",
+        "sha256": "a0f00484caea28014183b8fc58489289de210bfc1c3525595baf0ddb9ae30973",
+        "checkedAt": "2026-10-04T06:23:31.934Z",
+        "announcementDate": "2026-09-24",
+        "resumeVerification": "not_verified",
+        "coverage": "RMB A purchase and DCA; redemption unaffected"
+      },
+      "contractObservedEvidence": {
+        "url": "https://www.99fund.com/announcement/zx/upload/2026/20260813/6493101051fa41f598580d3f18aa711b.pdf",
+        "method": "GET",
+        "params": null,
+        "sha256": "3bc64a31188955503fb630a803c4c321b85354f7a4ad1884298bce9682476722",
+        "retrievedAt": "2026-10-04T06:23:32.095Z"
+      }
+    }
+  ]
+}

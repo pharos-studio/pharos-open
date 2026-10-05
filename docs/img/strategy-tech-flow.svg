@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1270" width="900" height="1270" role="img" aria-labelledby="title desc">
+<title id="title">主题行业 · 回撤或均线恢复</title>
+<desc id="desc">当前主题行业高波动策略，非仅科技基金。回撤达标且止跌，或MA20高于MA60，两通道任一成立；PE高分位与急涨同时出现时总闸优先拦截。均线状态不是当天交叉事件。</desc>
+<defs><radialGradient id="g0-halo"><stop stop-color="#7C8CF8" stop-opacity=".16"/><stop offset="1" stop-color="#7C8CF8" stop-opacity="0"/></radialGradient><radialGradient id="g0-gold"><stop stop-color="#D9A441" stop-opacity=".08"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9AA3C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}.title,.heading,text[font-weight="500"]{font-family:"Songti SC",STSong,"Noto Serif CJK SC","Source Han Serif SC",SimSun,Georgia,serif}.title,.heading{fill:#EDEFF7}rect{stroke-linejoin:round}</style>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}
+.title{font-size:30px;font-weight:600;fill:#EDEFF7}
+.heading{font-size:23px;font-weight:600;fill:#EDEFF7}
+.body{font-size:20px;fill:#EDEFF7}
+.note{font-size:18px;fill:#9AA3C0}
+.label{font-size:17px;letter-spacing:1px;fill:#D9A441}
+.line{fill:none;stroke:#9AA3C0;stroke-width:2;stroke-linejoin:round;marker-end:url(#arrow)}
+</style>
+<rect width="900" height="1270" rx="12" fill="#0A1020"/>
+<ellipse cx="200" cy="0" rx="800" ry="500" fill="url(#g0-halo)"/><ellipse cx="840" cy="0" rx="450" ry="350" fill="url(#g0-gold)"/>
+<rect x="36" y="36" width="5" height="44" rx="2" fill="#D9A441"/>
+<text x="56" y="48" class="label">PHAROS / 策略细节 05</text>
+<text x="56" y="86" class="title">主题行业 · 回撤或均线恢复</text>
+<text x="36" y="125" class="note">growth / techDip / 两条买入通道并联</text>
+<rect x="652" y="40" width="212" height="36" rx="7" fill="rgba(255,255,255,.05)" stroke="#D9A441"/>
+<text x="758" y="64" text-anchor="middle" font-size="17" fill="#D9A441">当前运行 · 未改规则</text>
+<g data-panel="① 输入 · 基金净值与可用估值">
+<rect x="36" y="166" width="828" height="124" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="202" class="heading">① 输入 · 基金净值与可用估值</text>
+<text x="58" y="238" class="body">基金自身净值 → 回撤、低点与双均线</text>
+<text x="58" y="267" class="body">PE 可用时用于总闸；无 PE 时不凭空生成 PE 拦截</text>
+</g>
+<path class="line" d="M450 290V320"/>
+<g data-panel="② 两条通道 · 各自成立，不要求同时满足">
+<rect x="36" y="322" width="828" height="182" rx="12" fill="rgba(255,255,255,.05)" stroke="#D9A441" stroke-width="1.3"/>
+<text x="58" y="358" class="heading">② 两条通道 · 各自成立，不要求同时满足</text>
+<text x="58" y="394" class="body">A 回撤通道：距近60日高点回撤达标，且已止跌</text>
+<text x="58" y="423" class="body">止跌：近窗口最低净值高于前一窗口最低净值</text>
+<text x="58" y="452" class="body">B 均线通道：MA20 ＞ MA60</text>
+<text x="58" y="481" class="body">B 看当前均线状态，不要求当天刚发生金叉事件</text>
+</g>
+<path class="line" d="M450 504V534"/>
+<g data-panel="③ PE 总闸 · 两项共同成立才拦截">
+<rect x="36" y="536" width="828" height="124" rx="12" fill="rgba(255,255,255,.05)" stroke="#D9A441" stroke-width="1.3"/>
+<text x="58" y="572" class="heading">③ PE 总闸 · 两项共同成立才拦截</text>
+<text x="58" y="608" class="body">PE 分位达到总闸高线，且近20日涨幅超过急涨线</text>
+<text x="58" y="637" class="body">命中 → 强制不动；PE 缺失 → 此总闸不命中</text>
+</g>
+<path class="line" d="M450 660V690"/>
+<g data-panel="④ 决策矩阵 · 任一通道即可">
+<rect x="36" y="692" width="828" height="124" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="728" class="heading">④ 决策矩阵 · 任一通道即可</text>
+<text x="58" y="764" class="body">未被总闸拦截，且 A 或 B 成立 → add</text>
+<text x="58" y="793" class="body">两通道均未成立，或被总闸拦截 → hold</text>
+</g>
+<path class="line" d="M450 816V846"/>
+<g data-panel="⑤ 输出 · 触发证据与现有综合分">
+<rect x="36" y="848" width="828" height="152" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="884" class="heading">⑤ 输出 · 触发证据与现有综合分</text>
+<text x="58" y="920" class="body">保留回撤、止跌、均线状态与交叉事件的区别</text>
+<text x="58" y="949" class="body">交叉强度、止跌强度等连续因子另用于 V／M 综合分</text>
+<text x="58" y="978" class="body">申购与用户限额约束执行；资金政策标注 eligible</text>
+</g>
+<line x1="36" y1="1180" x2="864" y2="1180" stroke="rgba(255,255,255,.12)"/>
+<text x="36" y="1211" class="note">数据不足按现有条件处理；不把所有缺项新增成共用总闸。</text>
+<text x="36" y="1241" class="note">依据：tech / decisionPipeline / scoring / tradeConstraints</text>
+</svg>

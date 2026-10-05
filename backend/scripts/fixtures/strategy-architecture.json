@@ -1,0 +1,6676 @@
+{
+  "source": "5f0ce8f",
+  "clock": "2026-09-24",
+  "config": {
+    "_schemaVersion": 2,
+    "apiKey": "dev",
+    "currency": "¥",
+    "timezone": "Asia/Shanghai",
+    "purchaseDefaults": {
+      "feeWaived": false
+    },
+    "treasury10y": 0.0169,
+    "usTreasury10y": 0.047,
+    "_usTreasury10y_note": "美债10年（小数），仅服务海外宽基(caliber=us) 的 ERP 副锚兜底。正常由 analysis 自动抓东方财富同接口 EMG00001310 列覆盖；抓取失败才用此常量。★A股宽基禁用美债、海外禁用中债，二者不可互为兜底。",
+    "categoryPolicy": {
+      "core": "buy",
+      "cycle": "buy",
+      "growth": "buy"
+    },
+    "dailyLimits": {
+      "_note": "每日限购金额（元），键=基金代码。0=暂停申购不可买；null=无上限（不限制）；不写该代码=不限购。QDII 常因外汇额度限购，需按各基金最新公告填写。示例：\"000000\": null（不限购）、\"000001\": 0（暂停申购）。留空即可，跑起来后按你自己的基金填。"
+    },
+    "timing": {
+      "_note": "买入时机复盘模块参数（内部设计文档《买入时机复盘模块-设计v2》§7，未随开源发布）。采集=访问驱动战役状态机（无定时器）；命中基准=T+30 正收益（朴素裁判）；historyStart 前买入为历史定投、仅副视图展示不重算。",
+      "holdDays": 30,
+      "previewDays": [
+        5,
+        10
+      ],
+      "gapDays": 3,
+      "weakN": 5,
+      "strongN": 10,
+      "strongHitRate": 0.65,
+      "historyStart": "2026-09-01"
+    },
+    "signals": {
+      "cooldownDays": 7,
+      "trimProfitPct": 12,
+      "allocDeviationPt": 5,
+      "calibratedAt": "2026-08-09",
+      "peFallback": {
+        "_note": "人工校准的 PE 分位锚点，**仅作最后兜底**（免登录估值列表为主源、乐咕次之，两者都失败才用它）。键=基金代码，值=PE 分位(0~100)。为什么需要：某些指数抓不到 PE 时，该基金会判成「数据缺失·按不动处理」；填上这里就能让它正常参与判定。需随市场季度更新。留空即表示不做兜底。"
+      },
+      "_note": "fundThresholds 为「各基金独立校准的 60 日回撤触发线」（键=基金代码，值=负的百分数）。★切勿改用统一数值：实测「阈值/波动比」在各基金之间落在 0.27~0.59，没有统一系数可用，只能由 backend/scripts/recalibrate.js 用该基金近 2 年真实净值反解出「约 3~4 次/年」的触发频率。留空即可，跑 recalibrate.js 会按你的实际持仓填。",
+      "fundThresholds": {},
+      "dividendYield": {
+        "_note": "红利决策引擎：绝对股息率带(absYield)。标普红利低波50(SPCLLHCP)无免费PE历史→PE分位主线已砍(2026-09-01 定案，永不启用)；纯走中证红利000922动态股息率(蛋卷)参考带，当前基金股息率相对000922的高低判定便宜/贵。cheapMult/expensiveMult 为相对000922的便宜/贵倍率。ERP(中债10年)仅作reasons展示，非决策依据。",
+        "mode": "absYield",
+        "cheapMult": 1.1,
+        "expensiveMult": 0.9,
+        "source": "中证红利000922动态股息率(蛋卷)作参考带"
+      },
+      "ma250": {
+        "_note": "MA250=250日净值均线，趋势确认维度（不作清仓信号）。",
+        "windowDays": 250
+      },
+      "peGate": {
+        "_note": "PE初筛总闸：pe_percentile≥peGatePct 且近20日涨幅>surge20dPct 时强制「不动」，覆盖矩阵结果（宽基/科技走PE分位时生效）。红利(absYield)不传PE分位，总闸对其不生效。",
+        "peGatePct": 85,
+        "surge20dPct": 5
+      },
+      "tech": {
+        "_note": "参数用途见正式算法说明；历史研究不随公开版本分发。",
+        "dipPct": 15,
+        "dipWindow": 60,
+        "stopWindow": 20,
+        "ma": {
+          "short": 20,
+          "long": 60
+        }
+      },
+      "gold": {
+        "_note": "参数用途见正式算法说明；历史研究不随公开版本分发。",
+        "cheapPct": 35,
+        "expensivePct": 75,
+        "surge20dPct": 7,
+        "maWindows": [
+          60,
+          120,
+          250
+        ],
+        "stopWindow": 20,
+        "stopConfirm": "neutral"
+      },
+      "valuationTilt": {
+        "_note": "估值倾斜阈值（computeAllocation 用）：价格分位≤cheapPct 加权导向、≥expensivePct 减拨/暂缓，近20日涨>surge20dPct 防追高。与 gold 35/75、peGate 85/5 职责不同：倾斜决定每月拨多少，信号(gold/tech/dividendYield)决定买不买。",
+        "cheapPct": 30,
+        "expensivePct": 70,
+        "surge20dPct": 5,
+        "strongBuy": 1.3,
+        "reduce": 0.5
+      },
+      "allocation": {
+        "_note": "综合分信号（0~100，2026-09-08 起是引擎唯一活输出，不再分配金额）。★以下公式为 2026-09-14 前的旧位置分口径（旧位置分 = p²×100，保留 1 位小数，平方加速），现行 V/M 口径见本段末尾 2026-09-14 条：tech：p = 0.7×clamp(−回撤/fullPct) + 0.3×clamp((100−估值分位)/100)，严格先「金叉 +0.1」再「未止跌 ×confirmDiscount」（写反差一倍；未止跌时分数被压到 ≤9）。2026-09-09 方案A「相对尺」：broad/cycle/dividend 三线由离散档改为连续归一化 relScale(x, cheap, expensive) = clamp((expensive−x)/(expensive−cheap))，到便宜线=1、到贵线=0，span 可为负（股息率/ERP 越大越便宜）；broad = 0.7×PE分位尺(25/80) + 0.3×ERP尺(6.9/5.3)（★matrix.erp 是小数，入尺前 ×100；主锚 pePercentile 缺失时不降级副锚，直接 null）；cycle = 价格分位尺(35/75)；dividend = 股息率尺(cheapYield/expensiveYield)，跌破年线 +0.1。gate=block → 0 分。neutralP=无数据兜底（0.5→25 分）。注意：双锚线在「贵端垫底」时 main=0/sub=1 → 9 分（不是 0 分），属设计内。capPct / anchorMode / dividend.lo / dividend.span / cycle.full 为死参数，代码已不读取。 2026-09-14 起位置分拆为 估值分V / 动量分M 两派：V = (估值核 + wDip×dipBonus)²×100（均值回归派，含连续化的「跌破均线」超跌确认，仍加分）；M = (wavg(crossS, stopS, trendS))²×100（动量派，★所有因子已由二值改连续）；综合分 = wV×V + wM×M。中性锚统一 = 25 分（0.5²×100），缺失侧按 25 兜底并在 scoreMap.degraded 标记。gate=block 或 暂停申购 → 硬约束一票否决，综合分直接 0，不参与加权。★M 的尺度参数禁止硬编码，全部走 config（初始值，待回测标定）；★旧的 ±0.1 / ×0.3 二值补丁已废弃（旧逻辑冻结在 legacyPositionScore，仅供回测脚本复现历史证据）。",
+        "capPct": 0.1,
+        "anchorMode": "avg",
+        "neutralP": 0.5,
+        "tech": {
+          "fullPct": 30,
+          "confirmDiscount": 0.3,
+          "dipWindow": 60,
+          "stopWindow": 20
+        },
+        "dividend": {
+          "lo": 0.8,
+          "span": 0.4
+        },
+        "cycle": {
+          "full": 100
+        },
+        "broad": {
+          "wMain": 0.7
+        },
+        "broadGlobal": {
+          "wMain": 0.7
+        },
+        "composite": {
+          "_note": "参数用途见正式算法说明；历史研究不随公开版本分发。",
+          "hardBlock": {
+            "gate": true,
+            "suspended": true
+          },
+          "wDip": 0.1,
+          "weights": {
+            "dividend": {
+              "wV": 0.9,
+              "wM": 0.1
+            },
+            "broad": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "broadUS": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "cycle": {
+              "wV": 0.6,
+              "wM": 0.4
+            },
+            "tech": {
+              "wV": 0.5,
+              "wM": 0.5
+            }
+          },
+          "momentumWeights": {
+            "tech": {
+              "cross": 0.6,
+              "stopRise": 0.4,
+              "trend": 0
+            },
+            "broad": {
+              "cross": 0,
+              "stopRise": 0.5,
+              "trend": 0.5
+            },
+            "broadUS": {
+              "cross": 0,
+              "stopRise": 0.5,
+              "trend": 0.5
+            },
+            "cycle": {
+              "cross": 0,
+              "stopRise": 0.5,
+              "trend": 0.5
+            },
+            "dividend": {
+              "cross": 0,
+              "stopRise": 0,
+              "trend": 1
+            }
+          },
+          "momentum": {
+            "_note": "M 连续因子的尺度参数，单位统一为百分点(pp)。★初始值，必须由 backtest_composite_weights.js 读各因子 p10/p90 标定后覆盖；饱和率（M_raw ≤0.05 或 ≥0.95）须 <60%，否则等于换了个新二值。",
+            "crossFullPct": 5,
+            "crossZeroPct": -5,
+            "stopRiseFullPct": 3,
+            "trendDevFullPct": 10,
+            "divDevFullPct": 8,
+            "dipFullPct": 10,
+            "divDipFullPct": 3
+          }
+        }
+      },
+      "broad": {
+        "_note": "参数用途见正式算法说明；历史研究不随公开版本分发。",
+        "peWindowYears": 5,
+        "cheapPct": 25,
+        "expensivePct": 80,
+        "erpHigh": 6.9,
+        "erpLow": 5.3,
+        "stopWindow": 20,
+        "maWindows": [
+          60,
+          120,
+          250
+        ]
+      },
+      "broad300": {
+        "_note": "仅跟踪 SH000300 的 A 股基金；202015 分红再投资净值回测选型。训练期 2016-10 至 2022-12 的两项下行约束未全过，属历史最优但证据较弱；2023-07 起验证期仅有 2 个独立事件。ERP 只展示。",
+        "maPeriod": 120,
+        "biasThreshold": -3.0084,
+        "rsiPeriod": 14,
+        "calibratedFund": "202015",
+        "calibratedThrough": "2022-12-31",
+        "evidence": "weak"
+      },
+      "broadGlobal": {
+        "_note": "参数用途见正式算法说明；历史研究不随公开版本分发。",
+        "cheapPct": 25,
+        "expensivePct": 80,
+        "peWindowWeeks": 156,
+        "peDipPct": 12,
+        "peDipWindowWeeks": 52,
+        "peDipRequireStop": false,
+        "erpHigh": 2.1,
+        "erpLow": -1.5,
+        "stopWindow": 20,
+        "maWindows": [
+          60,
+          120,
+          250
+        ]
+      }
+    },
+    "llm": {
+      "baseUrl": "",
+      "model": "hy3",
+      "apiKey": ""
+    },
+    "news": {
+      "jin10": {
+        "key": ""
+      },
+      "search": {
+        "key": ""
+      }
+    },
+    "_exampleNote": "DEMO CONFIG — apiKey is a PLACEHOLDER (\"dev\") so a fresh clone can save data out of the box. ★ Every write endpoint (/api/save, /api/purchase, /api/theme-map, /api/backfill-pending) requires X-API-Key to equal config.apiKey, and an EMPTY apiKey makes the server reject all writes with 401 — the page would open and read fine but nothing could be saved. Set the FUND_API_KEY env var (higher priority than this file) if you'd rather not keep the key on disk, or replace \"dev\" with your own random string before exposing the instance to a LAN. The dashboard's Settings page must carry the SAME key, because the browser sends it as the X-API-Key header (reads need no key). 详见 README「从 GitHub 拉到代码之后」。"
+  },
+  "cases": [
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 0,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 0,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 1,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "PE 分位 25%（便宜区）但 ERP 3.75% 偏低（利率偏高/债券更香），谨慎买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "cheap",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.0375,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 1,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "PE 分位 25%（便宜区）但 ERP 3.75% 偏低（利率偏高/债券更香），谨慎买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "cheap",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.0375,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 2,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "neutral",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": 0.033824,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 2,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "PE 分位 30%（便宜区）但 ERP 3.38% 偏低（利率偏高/债券更香），谨慎买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "cheap",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": 0.033824,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 3,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 70% 中性，未跌破半年线（全上(强升)），无加仓信号"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "neutral",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.030556,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 3,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 70%（贵区）且 ERP 3.06% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.030556,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 4,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 80%（贵区）且 ERP 2.76% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 80,
+          "erp": 0.027632,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 4,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 80%（贵区）且 ERP 2.76% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 80,
+          "erp": 0.027632,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 5,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 8%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 8,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.025,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 5,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 8%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 8,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.025,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 6,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 95%（贵区）且 ERP 2.26% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": 95,
+          "erp": 0.022619,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 6,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 95%（贵区）且 ERP 2.26% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": 95,
+          "erp": 0.022619,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 7,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 50% 中性，未跌破半年线（全上(强升)），无加仓信号"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "neutral",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 50,
+          "erp": 0.020455,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "core",
+      "scenario": 7,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 50% 中性，未跌破半年线（全上(强升)），无加仓信号"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "neutral",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 50,
+          "erp": 0.020455,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 0,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "回撤 ?% 未到位，且未出现金叉，无加仓信号"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 0,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "回撤 ?% 未到位，且未出现金叉，无加仓信号"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 1,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "回撤 -3.7% 未到位，且未出现金叉，无加仓信号"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 25,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 1,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "回撤 -3.7% 未到位，且未出现金叉，无加仓信号"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 25,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 2,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -5.87,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": 1.13,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 30,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 2,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -5.87,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": 1.13,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 30,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 3,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": 3.7,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 70,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 3,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": 3.7,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 70,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 4,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -5.87,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": 1.13,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 80,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 80,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 4,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -5.87,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": 1.13,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 80,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 80,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 5,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 8%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": 3.7,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 85,
+          "recent20dChange": 8,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 5,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 8%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": 3.7,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 85,
+          "recent20dChange": 8,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 6,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -5.87,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": 1.13,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 95,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": 95,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 6,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -5.87,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": 1.13,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 95,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": 95,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 7,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": 3.7,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 50,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 50,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "tech",
+      "scenario": 7,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -3.73,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": 3.7,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 50,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 50,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 0,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 0,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 1,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 1,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 2,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "cheap",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": 8.03,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 2,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "cheap",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": 8.03,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 3,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "250日价格分位 87% 处于贵区（≥75%），防高位接盘"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "expensive",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": 87.15,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 3,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "250日价格分位 87% 处于贵区（≥75%），防高位接盘"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "expensive",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": 87.15,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 4,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "cheap",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": 8.03,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 4,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "cheap",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": 8.03,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 5,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "250日价格分位 87% 处于贵区（≥75%），防高位接盘"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "expensive",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": 87.15,
+          "recent20dChange": 8,
+          "surge": true,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 5,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "250日价格分位 87% 处于贵区（≥75%），防高位接盘"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "expensive",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": 87.15,
+          "recent20dChange": 8,
+          "surge": true,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 6,
+      "useDefaults": false,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "cheap",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": 8.03,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 6,
+      "useDefaults": true,
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "cheap",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": 8.03,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 7,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "250日价格分位 87% 处于贵区（≥75%），防高位接盘"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "expensive",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": 87.15,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "gold",
+      "scenario": 7,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "250日价格分位 87% 处于贵区（≥75%），防高位接盘"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "expensive",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": 87.15,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 0,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 27.95 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": -0.011222,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 27.95,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 0,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 27.95 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 27.95,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 1,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 16.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.0155,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 16,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 1,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 16.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 16,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 2,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": -7.5,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": 0.011824,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 17,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 2,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": -7.5,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 17,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 3,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 18.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": 8.05,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.008556,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 18,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 3,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 18.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": 8.05,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 18,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 4,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 19.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": -7.5,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 80,
+          "erp": 0.005632,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 19,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 4,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 19.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": -7.5,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 80,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 19,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 5,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 100% 且近20日涨 8%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": 8.05,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 8,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.003,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 20,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 5,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 100% 且近20日涨 8%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": 8.05,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 8,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 20,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 6,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 21.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": -7.5,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": 95,
+          "erp": 0.000619,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 21,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 6,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 21.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": -7.5,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": 5,
+          "surge": false,
+          "pePercentile": 95,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 21,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 7,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 22.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": 8.05,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 50,
+          "erp": -0.001545,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 22,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "global",
+      "scenario": 7,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 22.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": 8.05,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": true,
+          "stopRisePct": 3.07,
+          "maSpreadPct": null,
+          "ma120DevPct": 2.87,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "pricePercentile": null,
+          "recent20dChange": 0,
+          "surge": false,
+          "pePercentile": 50,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 22,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 0,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": null,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "na",
+          "erp": null,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "pe_missing_or_not_yet_available"
+        },
+        "reasons": [
+          "数据不足：pe_missing_or_not_yet_available"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 0,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": null,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "na",
+          "erp": null,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 1,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 25,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "cheap",
+          "erp": 0.0375,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 5,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "insufficient_indicator_history"
+        },
+        "reasons": [
+          "数据不足：insufficient_indicator_history"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 1,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 25,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "cheap",
+          "erp": 0.0375,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 2,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "pePercentile": 30,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "neutral",
+          "erp": 0.03382,
+          "erpReferenceOnly": true,
+          "biasPct": -4.44,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": 38.37,
+          "previousWeeklyRsi": 43.32,
+          "completedWeeks": 46,
+          "ma60": 2.052,
+          "ma120": 2.093,
+          "ma250": 2.1622,
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "dataError": null
+        },
+        "reasons": [
+          "等待机会"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 2,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 30,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "neutral",
+          "erp": 0.03382,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 3,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "pePercentile": 70,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "neutral",
+          "erp": 0.03056,
+          "erpReferenceOnly": true,
+          "biasPct": 2.87,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": 62.35,
+          "previousWeeklyRsi": 67.68,
+          "completedWeeks": 46,
+          "ma60": 1.9782,
+          "ma120": 1.9442,
+          "ma250": 1.8509,
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "dataError": null
+        },
+        "reasons": [
+          "等待机会"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 3,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 70,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "neutral",
+          "erp": 0.03056,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 4,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "pePercentile": 80,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "neutral",
+          "erp": 0.02763,
+          "erpReferenceOnly": true,
+          "biasPct": -4.44,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": 38.37,
+          "previousWeeklyRsi": 43.32,
+          "completedWeeks": 46,
+          "ma60": 2.052,
+          "ma120": 2.093,
+          "ma250": 2.1622,
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "dataError": null
+        },
+        "reasons": [
+          "等待机会"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 4,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 80,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "neutral",
+          "erp": 0.02763,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 5,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "pePercentile": 85,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "neutral",
+          "erp": 0.025,
+          "erpReferenceOnly": true,
+          "biasPct": 2.87,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": 62.35,
+          "previousWeeklyRsi": 67.68,
+          "completedWeeks": 46,
+          "ma60": 1.9782,
+          "ma120": 1.9442,
+          "ma250": 1.8509,
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "dataError": null
+        },
+        "reasons": [
+          "等待机会"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 5,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 85,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "neutral",
+          "erp": 0.025,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 6,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "pePercentile": 95,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "neutral",
+          "erp": 0.02262,
+          "erpReferenceOnly": true,
+          "biasPct": -4.44,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": 38.37,
+          "previousWeeklyRsi": 43.32,
+          "completedWeeks": 46,
+          "ma60": 2.052,
+          "ma120": 2.093,
+          "ma250": 2.1622,
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "dataError": null
+        },
+        "reasons": [
+          "等待机会"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 6,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 95,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "neutral",
+          "erp": 0.02262,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 7,
+      "useDefaults": false,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "pePercentile": 50,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "neutral",
+          "erp": 0.02045,
+          "erpReferenceOnly": true,
+          "biasPct": 2.87,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": 62.35,
+          "previousWeeklyRsi": 67.68,
+          "completedWeeks": 46,
+          "ma60": 1.9782,
+          "ma120": 1.9442,
+          "ma250": 1.8509,
+          "trendWeak": false,
+          "trendGrade": "全上(强升)",
+          "dataError": null
+        },
+        "reasons": [
+          "等待机会"
+        ]
+      }
+    },
+    {
+      "type": "builder",
+      "kind": "hs300",
+      "scenario": 7,
+      "useDefaults": true,
+      "expected": {
+        "action": "hold",
+        "matrix": {
+          "marketState": "insufficient",
+          "marketStateLabel": "数据不足",
+          "pePercentile": 50,
+          "peAsOf": "2026-09-22",
+          "evidence": null,
+          "peZone": "neutral",
+          "erp": 0.02045,
+          "erpReferenceOnly": true,
+          "biasPct": null,
+          "biasMa": null,
+          "biasThreshold": null,
+          "rsiPeriod": null,
+          "weeklyRsi": null,
+          "previousWeeklyRsi": null,
+          "completedWeeks": 0,
+          "ma60": null,
+          "ma120": null,
+          "ma250": null,
+          "trendWeak": null,
+          "trendGrade": null,
+          "dataError": "uncalibrated_parameters"
+        },
+        "reasons": [
+          "数据不足：uncalibrated_parameters"
+        ]
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "core",
+      "variant": "open",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142687
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-core": {
+            "code": "DEMO-core",
+            "name": "DEMO core",
+            "marketScore": 37.5,
+            "valueScore": 46.3,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": true,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142687
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "neutral",
+            "erpZone": "low",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.033824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 37.46155028760331,
+          "valueScore": 46.34391285950413,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 37.46155028760331,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "core",
+      "variant": "suspended",
+      "status": {
+        "state": "suspended",
+        "updatedAt": 1790914142688
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-core": {
+            "code": "DEMO-core",
+            "name": "DEMO core",
+            "marketScore": 0,
+            "valueScore": 46.3,
+            "momentumScore": 1.9,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "suspended",
+              "updatedAt": 1790914142688
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "neutral",
+            "erpZone": "low",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.033824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 46.34391285950413,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "suspended",
+          "fresh": true,
+          "suspended": true,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "core",
+      "variant": "stale",
+      "status": {
+        "state": "open",
+        "updatedAt": 0
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-core": {
+            "code": "DEMO-core",
+            "name": "DEMO core",
+            "marketScore": 37.5,
+            "valueScore": 46.3,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 0
+            },
+            "statusFresh": false,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "neutral",
+            "erpZone": "low",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.033824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 37.46155028760331,
+          "valueScore": 46.34391285950413,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 37.46155028760331,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": false,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "core",
+      "variant": "unknown",
+      "status": {
+        "state": "unknown",
+        "updatedAt": 1790914142689
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-core": {
+            "code": "DEMO-core",
+            "name": "DEMO core",
+            "marketScore": 37.5,
+            "valueScore": 46.3,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "unknown",
+              "updatedAt": 1790914142689
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "neutral",
+            "erpZone": "low",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.033824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 37.46155028760331,
+          "valueScore": 46.34391285950413,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 37.46155028760331,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "unknown",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "core",
+      "variant": "limit",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142689
+      },
+      "policy": {},
+      "limits": {
+        "DEMO-core": 0
+      },
+      "expected": {
+        "scoreMap": {
+          "DEMO-core": {
+            "code": "DEMO-core",
+            "name": "DEMO core",
+            "marketScore": 0,
+            "valueScore": 46.3,
+            "momentumScore": 1.9,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142689
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "neutral",
+            "erpZone": "low",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.033824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 46.34391285950413,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "core",
+      "variant": "policy",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142689
+      },
+      "policy": {
+        "core": "frozen"
+      },
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-core": {
+            "code": "DEMO-core",
+            "name": "DEMO core",
+            "marketScore": 37.5,
+            "valueScore": 46.3,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142689
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "neutral",
+            "erpZone": "low",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.033824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 37.46155028760331,
+          "valueScore": 46.34391285950413,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 37.46155028760331,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "core",
+      "variant": "review",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142690
+      },
+      "profileState": "needs_review",
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-core": {
+            "code": "DEMO-core",
+            "name": "DEMO core",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "分类待确认",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "eligible": false,
+            "suspended": false,
+            "unsupported": true,
+            "unsupportedReason": "needs_review"
+          }
+        }
+      },
+      "internal": {
+        "dec": null,
+        "marketScore": null,
+        "unsupported": {
+          "pending": false,
+          "reason": "needs_review"
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "tech",
+      "variant": "open",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142690
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-tech": {
+            "code": "DEMO-tech",
+            "name": "DEMO tech",
+            "marketScore": 12.8,
+            "valueScore": 12,
+            "momentumScore": 13.5,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.5,
+              "wM": 0.5
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": true,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142690
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "add",
+            "executable": true
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "golden",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": -5.87,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": 1.13,
+            "ma120DevPct": null,
+            "goldenState": true,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": false,
+            "trendGrade": null,
+            "pricePercentile": 30,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 12.783135388888887,
+          "valueScore": 12.038586777777777,
+          "momentumScore": 13.527683999999999,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 12.783135388888887,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "tech",
+      "variant": "suspended",
+      "status": {
+        "state": "suspended",
+        "updatedAt": 1790914142691
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-tech": {
+            "code": "DEMO-tech",
+            "name": "DEMO tech",
+            "marketScore": 0,
+            "valueScore": 12,
+            "momentumScore": 13.5,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.5,
+              "wM": 0.5
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "suspended",
+              "updatedAt": 1790914142691
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "golden",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": -5.87,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": 1.13,
+            "ma120DevPct": null,
+            "goldenState": true,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": false,
+            "trendGrade": null,
+            "pricePercentile": 30,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 12.038586777777777,
+          "momentumScore": 13.527683999999999,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "suspended",
+          "fresh": true,
+          "suspended": true,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "tech",
+      "variant": "stale",
+      "status": {
+        "state": "open",
+        "updatedAt": 0
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-tech": {
+            "code": "DEMO-tech",
+            "name": "DEMO tech",
+            "marketScore": 12.8,
+            "valueScore": 12,
+            "momentumScore": 13.5,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.5,
+              "wM": 0.5
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 0
+            },
+            "statusFresh": false,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "golden",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": -5.87,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": 1.13,
+            "ma120DevPct": null,
+            "goldenState": true,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": false,
+            "trendGrade": null,
+            "pricePercentile": 30,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 12.783135388888887,
+          "valueScore": 12.038586777777777,
+          "momentumScore": 13.527683999999999,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 12.783135388888887,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": false,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "tech",
+      "variant": "unknown",
+      "status": {
+        "state": "unknown",
+        "updatedAt": 1790914142691
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-tech": {
+            "code": "DEMO-tech",
+            "name": "DEMO tech",
+            "marketScore": 12.8,
+            "valueScore": 12,
+            "momentumScore": 13.5,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.5,
+              "wM": 0.5
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "unknown",
+              "updatedAt": 1790914142691
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "golden",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": -5.87,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": 1.13,
+            "ma120DevPct": null,
+            "goldenState": true,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": false,
+            "trendGrade": null,
+            "pricePercentile": 30,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 12.783135388888887,
+          "valueScore": 12.038586777777777,
+          "momentumScore": 13.527683999999999,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 12.783135388888887,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "unknown",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "tech",
+      "variant": "limit",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142692
+      },
+      "policy": {},
+      "limits": {
+        "DEMO-tech": 0
+      },
+      "expected": {
+        "scoreMap": {
+          "DEMO-tech": {
+            "code": "DEMO-tech",
+            "name": "DEMO tech",
+            "marketScore": 0,
+            "valueScore": 12,
+            "momentumScore": 13.5,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.5,
+              "wM": 0.5
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142692
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "golden",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": -5.87,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": 1.13,
+            "ma120DevPct": null,
+            "goldenState": true,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": false,
+            "trendGrade": null,
+            "pricePercentile": 30,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 12.038586777777777,
+          "momentumScore": 13.527683999999999,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "tech",
+      "variant": "policy",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142692
+      },
+      "policy": {
+        "growth": "frozen"
+      },
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-tech": {
+            "code": "DEMO-tech",
+            "name": "DEMO tech",
+            "marketScore": 12.8,
+            "valueScore": 12,
+            "momentumScore": 13.5,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.5,
+              "wM": 0.5
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142692
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "add",
+            "executable": true
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "golden",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": -5.87,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": 1.13,
+            "ma120DevPct": null,
+            "goldenState": true,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": false,
+            "trendGrade": null,
+            "pricePercentile": 30,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 12.783135388888887,
+          "valueScore": 12.038586777777777,
+          "momentumScore": 13.527683999999999,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 12.783135388888887,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "tech",
+      "variant": "review",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142692
+      },
+      "profileState": "needs_review",
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-tech": {
+            "code": "DEMO-tech",
+            "name": "DEMO tech",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "分类待确认",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "eligible": false,
+            "suspended": false,
+            "unsupported": true,
+            "unsupportedReason": "needs_review"
+          }
+        }
+      },
+      "internal": {
+        "dec": null,
+        "marketScore": null,
+        "unsupported": {
+          "pending": false,
+          "reason": "needs_review"
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "gold",
+      "variant": "open",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142693
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-gold": {
+            "code": "DEMO-gold",
+            "name": "DEMO gold",
+            "marketScore": 60.8,
+            "valueScore": 100,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.6,
+              "wM": 0.4
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": true,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142693
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "add",
+            "executable": true
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "cheap",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": 8.03,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": null,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 60.77284,
+          "valueScore": 100,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 60.77284,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "gold",
+      "variant": "suspended",
+      "status": {
+        "state": "suspended",
+        "updatedAt": 1790914142693
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-gold": {
+            "code": "DEMO-gold",
+            "name": "DEMO gold",
+            "marketScore": 0,
+            "valueScore": 100,
+            "momentumScore": 1.9,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.6,
+              "wM": 0.4
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "suspended",
+              "updatedAt": 1790914142693
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "cheap",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": 8.03,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": null,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 100,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "suspended",
+          "fresh": true,
+          "suspended": true,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "gold",
+      "variant": "stale",
+      "status": {
+        "state": "open",
+        "updatedAt": 0
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-gold": {
+            "code": "DEMO-gold",
+            "name": "DEMO gold",
+            "marketScore": 60.8,
+            "valueScore": 100,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.6,
+              "wM": 0.4
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 0
+            },
+            "statusFresh": false,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "cheap",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": 8.03,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": null,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 60.77284,
+          "valueScore": 100,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 60.77284,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": false,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "gold",
+      "variant": "unknown",
+      "status": {
+        "state": "unknown",
+        "updatedAt": 1790914142694
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-gold": {
+            "code": "DEMO-gold",
+            "name": "DEMO gold",
+            "marketScore": 60.8,
+            "valueScore": 100,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.6,
+              "wM": 0.4
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "unknown",
+              "updatedAt": 1790914142694
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "cheap",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": 8.03,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": null,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 60.77284,
+          "valueScore": 100,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 60.77284,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "unknown",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "gold",
+      "variant": "limit",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142694
+      },
+      "policy": {},
+      "limits": {
+        "DEMO-gold": 0
+      },
+      "expected": {
+        "scoreMap": {
+          "DEMO-gold": {
+            "code": "DEMO-gold",
+            "name": "DEMO gold",
+            "marketScore": 0,
+            "valueScore": 100,
+            "momentumScore": 1.9,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.6,
+              "wM": 0.4
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142694
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "cheap",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": 8.03,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": null,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 100,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "gold",
+      "variant": "policy",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142695
+      },
+      "policy": {
+        "cycle": "frozen"
+      },
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-gold": {
+            "code": "DEMO-gold",
+            "name": "DEMO gold",
+            "marketScore": 60.8,
+            "valueScore": 100,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.6,
+              "wM": 0.4
+            },
+            "degraded": [],
+            "positionLabel": "L2已确认加仓",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142695
+            },
+            "statusFresh": true,
+            "marketVerdict": "add",
+            "verdict": "add",
+            "executable": true
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "add",
+          "reasons": [
+            "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "cheap",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": 8.03,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": null,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 60.77284,
+          "valueScore": 100,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 60.77284,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "gold",
+      "variant": "review",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142695
+      },
+      "profileState": "needs_review",
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-gold": {
+            "code": "DEMO-gold",
+            "name": "DEMO gold",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "分类待确认",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "eligible": false,
+            "suspended": false,
+            "unsupported": true,
+            "unsupportedReason": "needs_review"
+          }
+        }
+      },
+      "internal": {
+        "dec": null,
+        "marketScore": null,
+        "unsupported": {
+          "pending": false,
+          "reason": "needs_review"
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "global",
+      "variant": "open",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142695
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-global": {
+            "code": "DEMO-global",
+            "name": "DEMO global",
+            "marketScore": 6.1,
+            "valueScore": 7.2,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": true,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142695
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": -7.5,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "expensive",
+            "erpZone": "neutral",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.011824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "pe": 17,
+            "peRollingPct": 100,
+            "peDipLevel": 0,
+            "peDipPct": 12,
+            "peDipWindowWeeks": 52,
+            "peWindowWeeks": 156,
+            "cheapByPct": false,
+            "cheapByDip": false,
+            "cheap": false
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 6.12948168888889,
+          "valueScore": 7.178827111111112,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 6.12948168888889,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "global",
+      "variant": "suspended",
+      "status": {
+        "state": "suspended",
+        "updatedAt": 1790914142696
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-global": {
+            "code": "DEMO-global",
+            "name": "DEMO global",
+            "marketScore": 0,
+            "valueScore": 7.2,
+            "momentumScore": 1.9,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "suspended",
+              "updatedAt": 1790914142696
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": -7.5,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "expensive",
+            "erpZone": "neutral",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.011824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "pe": 17,
+            "peRollingPct": 100,
+            "peDipLevel": 0,
+            "peDipPct": 12,
+            "peDipWindowWeeks": 52,
+            "peWindowWeeks": 156,
+            "cheapByPct": false,
+            "cheapByDip": false,
+            "cheap": false
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 7.178827111111112,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "suspended",
+          "fresh": true,
+          "suspended": true,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "global",
+      "variant": "stale",
+      "status": {
+        "state": "open",
+        "updatedAt": 0
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-global": {
+            "code": "DEMO-global",
+            "name": "DEMO global",
+            "marketScore": 6.1,
+            "valueScore": 7.2,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 0
+            },
+            "statusFresh": false,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": -7.5,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "expensive",
+            "erpZone": "neutral",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.011824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "pe": 17,
+            "peRollingPct": 100,
+            "peDipLevel": 0,
+            "peDipPct": 12,
+            "peDipWindowWeeks": 52,
+            "peWindowWeeks": 156,
+            "cheapByPct": false,
+            "cheapByDip": false,
+            "cheap": false
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 6.12948168888889,
+          "valueScore": 7.178827111111112,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 6.12948168888889,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": false,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "global",
+      "variant": "unknown",
+      "status": {
+        "state": "unknown",
+        "updatedAt": 1790914142696
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-global": {
+            "code": "DEMO-global",
+            "name": "DEMO global",
+            "marketScore": 6.1,
+            "valueScore": 7.2,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "unknown",
+              "updatedAt": 1790914142696
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": -7.5,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "expensive",
+            "erpZone": "neutral",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.011824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "pe": 17,
+            "peRollingPct": 100,
+            "peDipLevel": 0,
+            "peDipPct": 12,
+            "peDipWindowWeeks": 52,
+            "peWindowWeeks": 156,
+            "cheapByPct": false,
+            "cheapByDip": false,
+            "cheap": false
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 6.12948168888889,
+          "valueScore": 7.178827111111112,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 6.12948168888889,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "unknown",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "global",
+      "variant": "limit",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142697
+      },
+      "policy": {},
+      "limits": {
+        "DEMO-global": 0
+      },
+      "expected": {
+        "scoreMap": {
+          "DEMO-global": {
+            "code": "DEMO-global",
+            "name": "DEMO global",
+            "marketScore": 0,
+            "valueScore": 7.2,
+            "momentumScore": 1.9,
+            "compositeLabel": "暂停申购",
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142697
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": -7.5,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "expensive",
+            "erpZone": "neutral",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.011824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "pe": 17,
+            "peRollingPct": 100,
+            "peDipLevel": 0,
+            "peDipPct": 12,
+            "peDipWindowWeeks": 52,
+            "peWindowWeeks": 156,
+            "cheapByPct": false,
+            "cheapByDip": false,
+            "cheap": false
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 0,
+          "valueScore": 7.178827111111112,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": "suspended",
+          "degraded": []
+        },
+        "marketScore": 0,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "global",
+      "variant": "policy",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142697
+      },
+      "policy": {
+        "core": "frozen"
+      },
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-global": {
+            "code": "DEMO-global",
+            "name": "DEMO global",
+            "marketScore": 6.1,
+            "valueScore": 7.2,
+            "momentumScore": 1.9,
+            "compositeLabel": null,
+            "weights": {
+              "wV": 0.8,
+              "wM": 0.2
+            },
+            "degraded": [],
+            "positionLabel": "L2未确认加仓(不动)",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142697
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": -7.5,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "expensive",
+            "erpZone": "neutral",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": 0,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.011824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "pe": 17,
+            "peRollingPct": 100,
+            "peDipLevel": 0,
+            "peDipPct": 12,
+            "peDipWindowWeeks": 52,
+            "peWindowWeeks": 156,
+            "cheapByPct": false,
+            "cheapByDip": false,
+            "cheap": false
+          },
+          "positionScore": null
+        },
+        "composite": {
+          "composite": 6.12948168888889,
+          "valueScore": 7.178827111111112,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "marketScore": 6.12948168888889,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "global",
+      "variant": "review",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142698
+      },
+      "profileState": "needs_review",
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-global": {
+            "code": "DEMO-global",
+            "name": "DEMO global",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "分类待确认",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "eligible": false,
+            "suspended": false,
+            "unsupported": true,
+            "unsupportedReason": "needs_review"
+          }
+        }
+      },
+      "internal": {
+        "dec": null,
+        "marketScore": null,
+        "unsupported": {
+          "pending": false,
+          "reason": "needs_review"
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "hs300",
+      "variant": "open",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142698
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-hs300": {
+            "code": "DEMO-hs300",
+            "name": "DEMO hs300",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "等待机会",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "eligible": true,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142698
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "matrix": {
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "pePercentile": 30,
+            "peAsOf": "2026-09-22",
+            "evidence": "weak",
+            "peZone": "neutral",
+            "erp": 0.03382,
+            "erpReferenceOnly": true,
+            "biasPct": -4.44,
+            "biasMa": 120,
+            "biasThreshold": -3.0084,
+            "rsiPeriod": 14,
+            "weeklyRsi": 38.37,
+            "previousWeeklyRsi": 43.32,
+            "completedWeeks": 46,
+            "ma60": 2.052,
+            "ma120": 2.093,
+            "ma250": 2.1622,
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "dataError": null
+          },
+          "reasons": [
+            "等待机会"
+          ]
+        },
+        "composite": null,
+        "marketScore": null,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "hs300",
+      "variant": "suspended",
+      "status": {
+        "state": "suspended",
+        "updatedAt": 1790914142698
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-hs300": {
+            "code": "DEMO-hs300",
+            "name": "DEMO hs300",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "等待机会",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "suspended",
+              "updatedAt": 1790914142698
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "matrix": {
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "pePercentile": 30,
+            "peAsOf": "2026-09-22",
+            "evidence": "weak",
+            "peZone": "neutral",
+            "erp": 0.03382,
+            "erpReferenceOnly": true,
+            "biasPct": -4.44,
+            "biasMa": 120,
+            "biasThreshold": -3.0084,
+            "rsiPeriod": 14,
+            "weeklyRsi": 38.37,
+            "previousWeeklyRsi": 43.32,
+            "completedWeeks": 46,
+            "ma60": 2.052,
+            "ma120": 2.093,
+            "ma250": 2.1622,
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "dataError": null
+          },
+          "reasons": [
+            "等待机会"
+          ]
+        },
+        "composite": null,
+        "marketScore": null,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "suspended",
+          "fresh": true,
+          "suspended": true,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "hs300",
+      "variant": "stale",
+      "status": {
+        "state": "open",
+        "updatedAt": 0
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-hs300": {
+            "code": "DEMO-hs300",
+            "name": "DEMO hs300",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "等待机会",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 0
+            },
+            "statusFresh": false,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "matrix": {
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "pePercentile": 30,
+            "peAsOf": "2026-09-22",
+            "evidence": "weak",
+            "peZone": "neutral",
+            "erp": 0.03382,
+            "erpReferenceOnly": true,
+            "biasPct": -4.44,
+            "biasMa": 120,
+            "biasThreshold": -3.0084,
+            "rsiPeriod": 14,
+            "weeklyRsi": 38.37,
+            "previousWeeklyRsi": 43.32,
+            "completedWeeks": 46,
+            "ma60": 2.052,
+            "ma120": 2.093,
+            "ma250": 2.1622,
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "dataError": null
+          },
+          "reasons": [
+            "等待机会"
+          ]
+        },
+        "composite": null,
+        "marketScore": null,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": false,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "hs300",
+      "variant": "unknown",
+      "status": {
+        "state": "unknown",
+        "updatedAt": 1790914142700
+      },
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-hs300": {
+            "code": "DEMO-hs300",
+            "name": "DEMO hs300",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "等待机会",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "unknown",
+              "updatedAt": 1790914142700
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "matrix": {
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "pePercentile": 30,
+            "peAsOf": "2026-09-22",
+            "evidence": "weak",
+            "peZone": "neutral",
+            "erp": 0.03382,
+            "erpReferenceOnly": true,
+            "biasPct": -4.44,
+            "biasMa": 120,
+            "biasThreshold": -3.0084,
+            "rsiPeriod": 14,
+            "weeklyRsi": 38.37,
+            "previousWeeklyRsi": 43.32,
+            "completedWeeks": 46,
+            "ma60": 2.052,
+            "ma120": 2.093,
+            "ma250": 2.1622,
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "dataError": null
+          },
+          "reasons": [
+            "等待机会"
+          ]
+        },
+        "composite": null,
+        "marketScore": null,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "unknown",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": true
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "hs300",
+      "variant": "limit",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142700
+      },
+      "policy": {},
+      "limits": {
+        "DEMO-hs300": 0
+      },
+      "expected": {
+        "scoreMap": {
+          "DEMO-hs300": {
+            "code": "DEMO-hs300",
+            "name": "DEMO hs300",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "等待机会",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "eligible": false,
+            "suspended": true,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142700
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "matrix": {
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "pePercentile": 30,
+            "peAsOf": "2026-09-22",
+            "evidence": "weak",
+            "peZone": "neutral",
+            "erp": 0.03382,
+            "erpReferenceOnly": true,
+            "biasPct": -4.44,
+            "biasMa": 120,
+            "biasThreshold": -3.0084,
+            "rsiPeriod": 14,
+            "weeklyRsi": 38.37,
+            "previousWeeklyRsi": 43.32,
+            "completedWeeks": 46,
+            "ma60": 2.052,
+            "ma120": 2.093,
+            "ma250": 2.1622,
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "dataError": null
+          },
+          "reasons": [
+            "等待机会"
+          ]
+        },
+        "composite": null,
+        "marketScore": null,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "hs300",
+      "variant": "policy",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142701
+      },
+      "policy": {
+        "core": "frozen"
+      },
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-hs300": {
+            "code": "DEMO-hs300",
+            "name": "DEMO hs300",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "等待机会",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "eligible": false,
+            "suspended": false,
+            "purchaseStatus": {
+              "state": "open",
+              "updatedAt": 1790914142701
+            },
+            "statusFresh": true,
+            "marketVerdict": "hold",
+            "verdict": "hold",
+            "executable": false
+          }
+        }
+      },
+      "internal": {
+        "dec": {
+          "action": "hold",
+          "matrix": {
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "pePercentile": 30,
+            "peAsOf": "2026-09-22",
+            "evidence": "weak",
+            "peZone": "neutral",
+            "erp": 0.03382,
+            "erpReferenceOnly": true,
+            "biasPct": -4.44,
+            "biasMa": 120,
+            "biasThreshold": -3.0084,
+            "rsiPeriod": 14,
+            "weeklyRsi": 38.37,
+            "previousWeeklyRsi": 43.32,
+            "completedWeeks": 46,
+            "ma60": 2.052,
+            "ma120": 2.093,
+            "ma250": 2.1622,
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "dataError": null
+          },
+          "reasons": [
+            "等待机会"
+          ]
+        },
+        "composite": null,
+        "marketScore": null,
+        "unsupported": null,
+        "purchaseStatus": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        }
+      }
+    },
+    {
+      "type": "allocation",
+      "kind": "hs300",
+      "variant": "review",
+      "status": {
+        "state": "open",
+        "updatedAt": 1790914142701
+      },
+      "profileState": "needs_review",
+      "policy": {},
+      "limits": {},
+      "expected": {
+        "scoreMap": {
+          "DEMO-hs300": {
+            "code": "DEMO-hs300",
+            "name": "DEMO hs300",
+            "marketScore": null,
+            "valueScore": null,
+            "momentumScore": null,
+            "compositeLabel": "分类待确认",
+            "weights": null,
+            "degraded": [],
+            "positionLabel": null,
+            "eligible": false,
+            "suspended": false,
+            "unsupported": true,
+            "unsupportedReason": "needs_review"
+          }
+        }
+      },
+      "internal": {
+        "dec": null,
+        "marketScore": null,
+        "unsupported": {
+          "pending": false,
+          "reason": "needs_review"
+        }
+      }
+    }
+  ]
+}

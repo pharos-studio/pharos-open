@@ -1,0 +1,10 @@
+'use strict';
+const S=require('./goldSignal');
+function adjust(history,actions,code){if(!Array.isArray(history)||history.length<2)return {error:'insufficient_nav_history'};if(actions?.identityVerified!==true||actions.code!==code||!Array.isArray(actions.dividends)||!Array.isArray(actions.splits)||actions.error)return {error:'corporate_action_identity_unverified'};
+  const rows=history.slice().sort((a,b)=>a.date.localeCompare(b.date)),dates=new Set();for(const r of rows){if(!S.validDate(r.date)||!S.finite(r.nav)||r.nav<=0||dates.has(r.date)||!['0','1'].includes(String(r.navType))||r.dayChange!=null&&!S.finite(r.dayChange))return {error:'invalid_nav_history'};dates.add(r.date);}
+  const from=rows[0].date,to=rows.at(-1).date,div=new Map(),split=new Map();for(const [list,map,key] of [[actions.dividends,div,'amount'],[actions.splits,split,'factor']])for(const a of list){if(!S.validDate(a.date)||!S.finite(a[key])||a[key]<=0)return {error:'invalid_corporate_action'};if(a.date>=from&&a.date<=to){if(!dates.has(a.date)||map.has(a.date))return {error:'corporate_action_date_conflict'};map.set(a.date,a[key]);}}
+  if(div.has(from)||split.has(from))return {error:'seed_action_unverified'};
+  const output=[{date:from,close:1,navType:rows[0].navType,rawNav:rows[0].nav}];for(let i=1;i<rows.length;i++){const r=rows[i],prev=rows[i-1];if(div.has(r.date)&&split.has(r.date))return {error:'combined_action_unverified'};const growth=(r.nav*(split.get(r.date)||1)+(div.get(r.date)||0))/prev.nav;
+    if(!S.finite(growth)||growth<=0)return {error:'invalid_adjusted_return'};if((div.has(r.date)||split.has(r.date))&&!S.finite(r.dayChange))return {error:'action_return_unverified'};if(S.finite(r.dayChange)&&Math.abs((growth-1)*100-r.dayChange)>.2)return {error:'reported_return_mismatch',date:r.date};const close=output.at(-1).close*growth;if(!S.finite(close)||close<=0)return {error:'invalid_adjusted_level'};output.push({date:r.date,close,navType:r.navType,rawNav:r.nav});}
+  return {rows:output,adjustment:'dividend-reinvested; full economic chain then verified daily projection'};}
+module.exports={adjust};

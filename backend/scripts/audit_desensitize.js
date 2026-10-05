@@ -66,6 +66,7 @@ const KW_STALE = [
 
 // ── 公开仓绝不该「被 git 跟踪」的路径（前缀匹配）──
 const FORBIDDEN_PATHS = [
+  'backend/backtest/',
   'data/state/',
   'data/series/',
   'data/cache/',
@@ -85,10 +86,10 @@ const FORBIDDEN_PATHS = [
 // ★ 刻意用**白名单**而不是点名禁止某个文件：既不把私有文档的文件名写进公开仓，
 //   又能保证「以后新增一份 docs/*.md 忘了归类」时默认被拒绝（宁可吵，不可静默漏）。
 const DOCS_ALLOWED = new Set([
-  'docs/算法设计复盘手册.md',
   'docs/决策分配算法模型.md',
   'docs/前端设计系统.md',
   'docs/后端架构清单.md',
+  'docs/RSI与BIAS学习笔记.md',
   'docs/prd-landing-v2.md',   // 介绍页 v2 迭代规划（协作者开发依据，公开）
 ]);
 

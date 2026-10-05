@@ -15,13 +15,13 @@
     { "key": "cycle", "name": "商品·对冲" }
   ],
   "calibers": [
-    { "key": "cn", "name": "A股口径", "note": "乐咕PE分位(近5年滚动) × 中债10年ERP" },
+    { "key": "cn", "name": "A股口径", "note": "沪深300：PE分位 + 基金复权净值 BIAS/周 RSI；其他 A 股宽基沿用原算法" },
     { "key": "us", "name": "海外口径", "note": "滚动3年PE分位 ∨ PE回撤15% × 美债10年ERP" }
   ],
   "presets": [
     { "id": "broad-cn", "name": "A股宽基", "category": "broad", "caliber": "cn", "supported": true,
       "applies": "跟踪 A 股宽基指数的基金：沪深300 / 中证500 / 中证1000 / A500 / 创业板 / 科创50",
-      "note": "估值锚 = 该指数自己的 PE 分位 × 中债 ERP，所以**必须填对跟踪指数**，否则判定会降级" },
+      "note": "沪深300专线用基金自身复权净值 BIAS 与周 RSI；其他 A 股宽基沿用 PE/ERP。必须填对跟踪指数。" },
     { "id": "broad-us", "name": "海外宽基", "category": "broad", "caliber": "us", "supported": true,
       "applies": "跟踪海外宽基指数的基金：标普500 / 纳斯达克100 / 日经 / 恒生 / DAX",
       "note": "锚 = 滚动156周PE分位 ∨ PE回撤，× 美债 ERP" },

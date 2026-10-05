@@ -67,7 +67,7 @@ ok('新战役 id 用新日期', timing.loadSamples()[2].campaign.id === 'DEMO01#
 
 console.log('== 多基金互不干扰 ==');
 NOW = '2026-09-21';
-r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold'), '008163': mk('008163', 'add', { category: 'dividend', matrix: { _type: 'dividend', yieldZone: 'cheap', maZone: 'below', gate: 'pass' } }) }, cfg);
+r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold'), '008163': mk('008163', 'add', { category: 'growth', matrix: { _type: 'tech', dipReady: true, goldenState: false, gate: 'pass' } }) }, cfg);
 const s3 = timing.loadSamples();
 ok('008163 独立开战役', s3.some(x => x.code === '008163' && x.type === 'advice-open'));
 
@@ -103,15 +103,15 @@ ok('rows.buy 战役内偏差 = 09-25 − 09-20 = 5', st.rows.buy.some(b => b.cod
 ok('rows.close 含 open path join 标签', st.rows.close.length === 1 && st.rows.close[0].openPathLabel.indexOf('深跌') >= 0);
 ok('sampling note 带访问驱动声明', st.sampling.mode.indexOf('访问驱动') >= 0);
 
-console.log('== 漏访场景（独立基金 018391，放在最后防干扰计数）==');
+console.log('== 通用 legacy 漏访场景（非黄金合成 DEMO-CYCLE-GAP，放在最后防干扰计数）==');
 const cyc = (code, action) => mk(code, action, { category: 'cycle', matrix: { _type: 'cycle', pctZone: 'neutral', trendWeak: true, stopFall: true, surge: false, gate: 'pass' } });
 NOW = '2026-09-01';
-timing.onDecide({ '018391': cyc('018391', 'hold') }, cfg); // 基线（已 baselineDate → 正常流程）
+timing.onDecide({ 'DEMO-CYCLE-GAP': cyc('DEMO-CYCLE-GAP', 'hold') }, cfg); // 基线（已 baselineDate → 正常流程）
 NOW = '2026-09-02';
-timing.onDecide({ '018391': cyc('018391', 'add') }, cfg); // open 09-02
+timing.onDecide({ 'DEMO-CYCLE-GAP': cyc('DEMO-CYCLE-GAP', 'add') }, cfg); // open 09-02
 NOW = '2026-09-09';
-r = timing.onDecide({ '018391': cyc('018391', 'hold') }, cfg); // 漏访 6 天 → gap=7>3 close
-const sc = timing.loadSamples().filter(x => x.code === '018391');
+r = timing.onDecide({ 'DEMO-CYCLE-GAP': cyc('DEMO-CYCLE-GAP', 'hold') }, cfg); // 漏访 6 天 → gap=7>3 close
+const sc = timing.loadSamples().filter(x => x.code === 'DEMO-CYCLE-GAP');
 ok('漏访 close 记 1 条且 approx=true', sc.length === 2 && sc[1].type === 'advice-close' && sc[1].approx === true);
 ok('closeDate = lastAdd 09-02 + 3 = 09-05', sc[1].eventDate === '2026-09-05');
 ok('cycle path 子集带 pctZone', sc[0].path.pctZone === 'neutral' && sc[0].path.trendWeak === true);

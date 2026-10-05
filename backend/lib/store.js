@@ -35,6 +35,8 @@ const LAYOUT = {
   'fund_archive_cache.json': 'cache',
   // series/  自建时序序列：增量累积，删了要重新攒
   'yield_history.json': 'series',
+  'dividend_index_series.json': 'series', // 已退役影子实验的历史文件映射；仅保留路径，不再用于信号
+  'dividend_otc_backtest.json': 'series', // 已退役实验输入的历史文件映射；不随开源仓发布
   // example/ 脱敏模板：给「从零建一个新组合」的人起步用
   'holdings.example.json': 'example',
   'config.example.json': 'example',

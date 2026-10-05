@@ -63,6 +63,10 @@ async function renderDaily(body, live, state, mobile) {
   try { advice = await store.reloadAdvice('am'); } catch (e) { advice = {}; }
   const weekAgo = advice.weekAgo || {};
   const allFunds = advice.funds || [];
+  if(allFunds.some(f=>['nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(f.strategyVersion))){
+    panel.style.minWidth='0';panel.style.maxWidth='100%';panel.style.boxSizing='border-box';
+    body.style.minWidth='0';body.style.maxWidth='100%';
+  }
   const fundsByCode = new Map(allFunds.map(x => [x.code, x]));
 
   // 复盘「每日决策链路」按决策信号口径展示，与决策页一致：
@@ -94,23 +98,29 @@ async function renderDaily(body, live, state, mobile) {
     const suspended = !!(fc && fc.suspended) || !!(fc && fc.dailyLimit === 0);
     const score = fc ? fc.score : null; // 综合分（与决策页同一记录，物理同源）
     const posCls = (!suspended && verdict === 'add') ? 'badge-add' : 'badge-hold';
-    const vBadgeTxt = suspended ? '暂停申购' : (verdict ? verdictLabel(verdict) : '');
+    const vBadgeTxt = suspended ? '暂停申购' : ['active-equity-buy-v1','gold-dual-v1'].includes(fc?.strategyVersion)?(fc.marketStateLabel||'无法判定'):(verdict ? verdictLabel(verdict) : '');
     const vBadgeCls = suspended ? 'badge-hold' : (verdict === 'add' ? 'badge-add' : 'badge-hold');
 
-    const summary = el('summary', { class: 'dec-sum' }, [
-      el('span', { class: 'dec-name' }, [
+    const nasdaq=['nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(fc?.strategyVersion);
+    const summary = el('summary', { class: 'dec-sum',...(nasdaq?{style:'display:flex;flex-direction:column;align-items:stretch;min-width:0;gap:8px'}:{}) }, [
+      el('span', { class: 'dec-name',...(nasdaq?{style:'min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere'}:{}) }, [
         document.createTextNode(f.name + ' '),
         el('span', { class: 'dec-code', text: f.code }),
         f._planned ? el('span', { class: 'tag-planned', text: '未持仓' }) : null,
       ]),
-      el('span', { class: 'dec-meta' }, [
+      el('span', { class: 'dec-meta',...(nasdaq?{style:'display:flex;flex-wrap:wrap;min-width:0;gap:6px;justify-content:flex-start'}:{}) }, [
+        fc && ['dividend-trend-v1','hs300-dual-v1','nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(fc.strategyVersion) && fc.blockedReason ? el('span',{class:'badge badge-hold',text:
+          ({release_pending:'待启用',purchase_suspended:'暂停申购',purchase_status_unverified:'申购状态待核验',user_limit_zero:'用户限额为零',policy_blocked:'资金政策限制',future_order_recheck:'未来申请日需复核',official_purchase_suspended:'官方暂停申购',official_resumption_unverified:'官方恢复申购待核',official_constraint_unverified:'官方申购约束待核'})[fc.blockedReason]||'当前不可执行'}) : null,
+        fc?.strategyVersion==='gold-dual-v1'&&fc.releaseEnabled!==true&&fc.blockedReason!=='release_pending'?el('span',{class:'badge badge-hold',text:'待启用'}):null,
         chg != null ? el('span', { class: 'dec-chg ' + cls(chg), text: signPct(chg) }) : el('span', { class: 'dec-chg', text: '—' }),
         score != null ? el('span', { class: 'badge ' + posCls, text: `综合分 ${score}` }) : null,
-        (verdict || suspended) ? el('span', { class: 'badge ' + vBadgeCls, text: vBadgeTxt }) : el('span', {}),
+        fc && fc.marketStateLabel ? el('span', { class: 'badge ' + (fc.marketState === 'candidate' ? 'badge-add' : 'badge-hold'), text: fc.marketStateLabel }) : null,
+        fc && fc.unsupportedReason === 'rule_disabled' ? el('span', { class: 'badge badge-hold', text: '规则调整中' }) : null,
+        (verdict || suspended) && (fc?.strategyVersion!=='gold-dual-v1'||suspended&&!['purchase_suspended','official_purchase_suspended'].includes(fc.blockedReason)) ? el('span', { class: 'badge ' + vBadgeCls, text: vBadgeTxt }) : el('span', {}),
       ]),
     ]);
-    const det = el('details', { class: 'dec-card' }, [summary]);
-    const bodyWrap = el('div', { class: 'dec-body' });
+    const det = el('details', { class: 'dec-card',...(nasdaq?{style:'min-width:0;max-width:100%;width:100%;box-sizing:border-box;overflow-wrap:anywhere'}:{}) }, [summary]);
+    const bodyWrap = el('div', { class: 'dec-body',...(nasdaq?{style:'min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word'}:{}) });
 
     // ① 信号理由（决策信号 title 类别 + detail 长文；结论两维派生在 ④，positionLabel"L2…"文案已弃用不渲染）
     if (fc) {
@@ -133,7 +143,7 @@ async function renderDaily(body, live, state, mobile) {
 
     // ③ 估值信号层（结构化分项 + 上周对比）
     if (fc && fc.factors && fc.factors.length) {
-      const table = el('table', { class: 'tbl dec-factors' });
+      const table = el('table', { class: 'tbl dec-factors',...(nasdaq?{style:'table-layout:fixed;width:100%;min-width:0;overflow-wrap:anywhere'}:{}) });
       table.appendChild(el('thead', {}, [el('tr', {}, [
         el('th', { text: '维度' }), el('th', { text: '值' }),
         el('th', { text: '状态' }), el('th', { text: '上周' }),
@@ -150,8 +160,8 @@ async function renderDaily(body, live, state, mobile) {
       });
       table.appendChild(tb);
       bodyWrap.appendChild(el('div', { class: 'dec-sec' }, [
-        el('div', { class: 'dec-sec-h', text: '估值信号' }),
-        tableWrap(table),
+        el('div', { class: 'dec-sec-h', text: fc.strategyVersion==='gold-dual-v1'?'黄金A/B双路径；仅买入判断':fc.strategyVersion==='active-equity-buy-v1'?'主动权益A/B双通道；仅买入判断':fc.strategyVersion==='nasdaq-dual-v1'?'纳指双通道条件；PE仅回撤门槛':fc.strategyVersion==='hs300-dual-v1'?'共同PE入口、双通道条件与参考':fc.strategyVersion==='dividend-trend-v1'?'趋势回踩条件与参考':'估值信号' }),
+        nasdaq?el('div',{style:'min-width:0;max-width:100%;width:100%;overflow-wrap:anywhere'},[table]):tableWrap(table),
       ]));
     }
 

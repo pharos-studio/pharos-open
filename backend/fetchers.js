@@ -119,9 +119,19 @@ async function fetchLeguValuation(indexCode, windowYears = 10) {
     const last10 = rows.filter(r => r.date >= cutStr && r.addTtmPe != null);
     if (last10.length < 2) return null;
     const q = last10.filter(r => r.addTtmPe < cur).length / (last10.length - 1) * 100;
+    // 沪深300专线按「PE 日期 < 净值信号日」保守滞后；保留前一月快照，
+    // 在指数 PE 与基金净值同日更新时避免偷用当天尚未确认发布时间的值。
+    const prev = rows.length >= 2 ? rows[rows.length - 2] : null;
+    const prevCut = prev ? (Number(prev.date.slice(0, 4)) - windowYears) + prev.date.slice(4) : null;
+    const prevWin = prev ? rows.filter(r => r.date >= prevCut && r.date <= prev.date && r.addTtmPe != null) : [];
+    const prevPct = prevWin.length >= 2 && prev.addTtmPe != null
+      ? +(prevWin.filter(r => r.addTtmPe < prev.addTtmPe).length / (prevWin.length - 1) * 100).toFixed(1) : null;
     return {
       pe: cur,
       pePercentile: +q.toFixed(1),          // 0-100 分位（近 10 年）
+      previousPe: prev && prev.addTtmPe != null ? prev.addTtmPe : null,
+      previousPePercentile: prevPct,
+      previousAsOf: prev ? prev.date : null,
       pb: null, pbPercentile: null, dyr: null,
       asOf: rows[rows.length - 1].date,
       source: 'legulegu'
