@@ -47,3 +47,6 @@ docs/算法设计复盘手册.md
 
 # Local coordination records for the NASDAQ / theme / gold batch only.
 /docs/_local/tasks/
+
+# 工具侧工作目录（记忆日志、核验报告、临时探针）：含个人持仓与核验结论，绝不入库。
+.workbuddy/
