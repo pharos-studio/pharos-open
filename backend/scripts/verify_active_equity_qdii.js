@@ -13,7 +13,10 @@ function evidence(code='999801'){
 async function run(){
   const identity=require('../services/activeEquityIdentity');
   for(const code of ['016664','016665','012920']){
-    const resolved=await identity.resolve(code);assert.equal(resolved.error,'daily_sampling_unverified');
+    // 2026-10-08：采样与连续性两道门已签署放行；仍缺基金专属 QDII 日历（qdiiCalendar），
+    // 因此必须**停在日历门**。这不是倒退，是门禁链按顺序前进到了下一道。
+    const resolved=await identity.resolve(code);assert.equal(resolved.error,undefined,code+' 四门应已放行，实际：'+resolved.error);
+    assert.equal((await D.forFund({code})).error,'fund_calendar_unverified',code+' 未停在日历门');
     for(const category of ['growth','broad','cycle','dividend']){
       const fund={code,category,name:'masked',_activeEquityData:await D.forFund({code})};
       assert.equal(R.resolveRegistry(fund).reg.type,'activeEquity');
@@ -83,7 +86,7 @@ async function api(){
   patch(store,'readJSON',key=>key==='holdings.json'?{funds}:key==='categories.json'?require('../../data/example/categories.example.json'):{});
   for(const key of ['writeJSON','writeJSONSafe','writeDecisionHistory','appendSnapshot'])patch(store,key,()=>{throw Error('unexpected test write');});
   patch(fetchers,'fetchNavHistory',async code=>({history:funds.find(f=>f.code===code).history,failed:false}));patch(fetchers,'fetchValuation',async()=>{throw Error('QDII fell back to legacy valuation');});patch(fetchers,'fetchIndexPeHistory',async()=>{throw Error('QDII fell back to PE');});patch(fetchers,'fetchHoldings',async()=>({holdings:[],reportDate:null}));
-  try{const built=await analysis.buildAnalysis();patch(analysis,'buildAnalysis',async()=>built);const out=await advice.buildAdvice('pm');assert.equal(out.funds.length,3);for(const f of out.funds){assert.equal(f.strategyVersion,'active-equity-buy-v1');assert.equal(f.marketVerdict,null);assert.equal(f.verdict,null);assert.equal(f.score,null);assert.equal(f.valueScore,null);assert.equal(f.momentumScore,null);assert.equal(f.executable,false);assert.equal(f.matrix.dataError,'daily_sampling_unverified');assert.equal(built.plan.scoreMap[f.code].marketVerdict,null);}}finally{undo.reverse().forEach(fn=>fn());}
+  try{const built=await analysis.buildAnalysis();patch(analysis,'buildAnalysis',async()=>built);const out=await advice.buildAdvice('pm');assert.equal(out.funds.length,3);for(const f of out.funds){assert.equal(f.strategyVersion,'active-equity-buy-v1');assert.equal(f.marketVerdict,null);assert.equal(f.verdict,null);assert.equal(f.score,null);assert.equal(f.valueScore,null);assert.equal(f.momentumScore,null);assert.equal(f.executable,false);assert.equal(f.matrix.dataError,'fund_calendar_unverified');assert.equal(built.plan.scoreMap[f.code].marketVerdict,null);}}finally{undo.reverse().forEach(fn=>fn());}
   console.log('QDII正式分析/建议：三个旧growth份额走主动权益、空判断同源、无评分/旧估值/写入通过');
 }
 if(require.main===module)run().then(recap).then(api).catch(e=>{console.error(e);process.exitCode=1;});

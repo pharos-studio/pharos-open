@@ -109,16 +109,21 @@ function main() {
     assert.strictEqual(gateError, null, code + ' 已核验却被闸门拦下');
   }
   // 未核验条目必须给出本模块认识的原因码（否则降级端点会 422）
-  const blocked = identity.LEDGER.funds.filter(e => identity.eligibility(e) !== null);
+  // 已核验基金不得走降级：一套口径
+  //  ⚠️ 「被拦住」必须按**端到端**判，不能只看 eligibility()：2026-10-08 签署三只 QDII 的
+  //  采样/连续性后，台账 9 条在四道门这一层已全部放行，剩下的拦截发生在**日历层**
+  //  （qdiiCalendar 未落 ⇒ fund_calendar_unverified）。只看 eligibility 会误判成"没有拦住任何条目"。
+  const CAL = require('../lib/activeEquityCalendar');
+  const T = Date.parse('2026-10-08T04:00:00Z');
+  const endToEndBlocked = e => identity.eligibility(e) || (CAL.orderContext(T, e) || {}).error || null;
+  const blocked = identity.LEDGER.funds.filter(e => endToEndBlocked(e));
+  assert(blocked.length > 0, '应存在端到端被拦住的条目，否则降级路径无从验证');
   for (const e of blocked) {
-    const r = identity.eligibility(e);
-    assert(degradedView.KNOWN_BLOCK_REASONS.has(r), '闸门原因码必须被降级视图认识：' + e.code + ' → ' + r);
+    const r = endToEndBlocked(e);
+    assert(degradedView.KNOWN_BLOCK_REASONS.has(r), '拦截原因必须被降级视图认识：' + e.code + ' → ' + r);
   }
-  // 被闸门拦下的条目必须都能降级 —— 否则真实数据走到降级端点会拿到 422。
-  // 注意：拦下它们的通常是采样/连续性/规则门，不是身份门（台账 9 条的 identityVerified 都为 true）。
-  assert(blocked.length > 0, '台账里应存在被闸门拦下的条目，否则降级路径无从验证');
   const reasonTally = {};
-  blocked.forEach(e => { const r = identity.eligibility(e); reasonTally[r] = (reasonTally[r] || 0) + 1; });
+  blocked.forEach(e => { const r = endToEndBlocked(e); reasonTally[r] = (reasonTally[r] || 0) + 1; });
 
   console.log('degraded view: 事实口径、禁字段、fail-closed 与一套口径校验通过');
   console.log('  降级已知原因码 ' + degradedView.KNOWN_BLOCK_REASONS.size + ' 种；已核验 ' + verified.length +

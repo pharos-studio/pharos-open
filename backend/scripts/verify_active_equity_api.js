@@ -12,10 +12,11 @@ async function realGates(){const I=require('../services/activeEquityIdentity'),L
   const VERIFIED=new Set(['008903','003095','260108','270005','001714','016874']);
   for(const e of L.funds){const verified=VERIFIED.has(e.code),resolved=await I.resolve(e.code);
     if(verified){assert.equal(resolved.error,undefined,e.code+' 已核验却仍被闸门拦下：'+resolved.error);const input=await D.forFund({code:e.code});assert.equal(input.error,undefined,e.code+' 输入仍报错：'+input.error);assert(input.result,e.code+' 缺少策略结果');}
+    else if(resolved.error===undefined){assert.equal((await D.forFund({code:e.code})).error,'fund_calendar_unverified',e.code+' 四门已过却未停在日历门');}
     else assert.equal(resolved.error,'daily_sampling_unverified');
     for(const category of ['growth','broad','cycle','dividend']){const fund={code:e.code,category,name:'masked',_activeEquityData:await D.forFund({code:e.code})};assert.equal(R.resolveRegistry(fund).reg.type,'activeEquity');const decision=B(fund);
       if(verified){assert.equal(decision.unsupported,false,e.code+' 不应再标记 unsupported');assert(['add','hold'].includes(decision.action),e.code+' 应进入真实策略，实际 action='+decision.action);}
-      else{assert.equal(decision.action,null);assert.equal(decision.executable,false);assert(decision.reasons[0].includes('采样'));}}}}
+      else{assert.equal(decision.action,null);assert.equal(decision.executable,false);const why=(decision.reasons&&decision.reasons[0])||'';assert(/采样|日历|开放规则/.test(why),e.code+' 拦截原因不对：'+why);}}}}
 async function trimSnapshot({active=true,session='am',existing=false}={}){
   const config=require('../lib/config'),store=require('../lib/store'),util=require('../lib/util'),analysis=require('../engines/analysis'),timing=require('../engines/timing'),advice=require('../engines/advice'),pipeline=require('../engines/decisionPipeline'),undo=[],writes=[],patch=(o,k,v)=>{const old=o[k];undo.push(()=>o[k]=old);o[k]=v;},cfg=structuredClone(require('../../data/example/config.example.json'));
   cfg.categoryPolicy[util.engineCategoryToBucket('growth')]='frozen';
