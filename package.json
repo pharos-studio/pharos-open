@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node backend/server.js",
     "setup": "node backend/scripts/setup.js",
-    "test": "npm run setup && npm run test:offline && npm run audit",
+    "test": "npm run setup && npm run test:offline && npm run audit && npm run audit:msg",
     "test:offline": "node backend/scripts/verify_caliber_routing.js && node backend/scripts/verify_broad300.js && node backend/scripts/verify_hs300_data.js && node backend/scripts/verify_hs300_timing.js && node backend/scripts/verify_hs300_backfill.js && node backend/scripts/verify_nav_parallel.js && node backend/scripts/verify_trading_calendar.js && node backend/scripts/timing-smoke-test.js && node backend/scripts/verify_composite_score.js && node backend/scripts/verify_edit_recalc.js && node backend/scripts/verify_principal_caliber.js && node backend/scripts/verify_schema_migrate.js && node backend/scripts/verify_landing_pages.js && node backend/scripts/verify_purchase_v2.js && node backend/scripts/verify_fund_profile.js && node backend/scripts/verify_backtest_boundary.js && node backend/scripts/verify_strategy_architecture.js && node backend/scripts/verify_dividend_disabled.js && node backend/scripts/verify_strategy_api.js && node backend/scripts/verify_nasdaq_signal.js && node backend/scripts/verify_nasdaq_data.js && node backend/scripts/verify_nasdaq_api.js && node backend/scripts/verify_nasdaq_timing.js && node backend/scripts/verify_nasdaq_backfill.js && node backend/scripts/verify_active_equity_signal.js && node backend/scripts/verify_active_equity_data.js && node backend/scripts/verify_active_equity_api.js && node backend/scripts/verify_active_equity_timing.js && node backend/scripts/verify_active_equity_backfill.js && node backend/scripts/verify_active_equity_qdii.js && node backend/scripts/verify_decision_cards.js && node backend/scripts/verify_gold_signal.js && node backend/scripts/verify_gold_data.js && node backend/scripts/verify_gold_api.js && node backend/scripts/verify_gold_timing.js && node backend/scripts/verify_gold_backfill.js",
     "test:active-equity": "node backend/scripts/verify_active_equity_signal.js && node backend/scripts/verify_active_equity_data.js && node backend/scripts/verify_active_equity_api.js && node backend/scripts/verify_active_equity_timing.js && node backend/scripts/verify_active_equity_backfill.js && node backend/scripts/verify_active_equity_qdii.js && node backend/scripts/verify_decision_cards.js",
     "test:gold": "node backend/scripts/verify_gold_signal.js && node backend/scripts/verify_gold_data.js && node backend/scripts/verify_gold_api.js && node backend/scripts/verify_gold_timing.js && node backend/scripts/verify_gold_backfill.js",
@@ -18,6 +18,7 @@
     "check:offline": "node backend/scripts/check_offline.js",
     "fixture:update-v2": "node backend/scripts/update_private_fixture_v2.js",
     "audit": "node backend/scripts/audit_desensitize.js .",
+    "audit:msg": "node backend/scripts/scan_commit_msg.js",
     "audit:nav": "node backend/scripts/audit_nav_caliber.js"
   },
   "devDependencies": {}

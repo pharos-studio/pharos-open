@@ -3,8 +3,11 @@ const assert=require('node:assert/strict'),F=require('../fixtures/activeEquityIn
 const {data}=require('./verify_active_equity_data');
 function evidence(code='999801'){
   const e={...F.evidence(code),domestic:false,qdii:true,investmentScope:'global-active-equity'};
-  const valuationDates=F.rows().map(r=>r.date),availableAt=Object.fromEntries(valuationDates.map(d=>[d,C.shift(d,2)+'T18:00:00+08:00']));
-  e.qdiiCalendar={code,verified:true,version:'synthetic-qdii-v1',source:'https://example.invalid/synthetic-valuation-calendar',publicationSource:'https://example.invalid/synthetic-publication-times',from:e.initializationFrom,to:'2026-09-30',subscriptionDates:['2026-09-24','2026-09-25','2026-09-28','2026-09-29','2026-09-30'],valuationDates,availableAt};
+  // ★ 估值日历必须覆盖到 to，而不是止于已有净值的那一天：
+  //   公布时点由 policy 在「之后的估值日」上递推，尾部若没有后续估值日就推不出来。
+  //   未来交易日是可预知的，数据没到只是 waitingForPublication —— 台账本来就该声明到 to。
+  const valuationDates=F.rows().map(r=>r.date).concat(Array.from({length:8},(_,i)=>C.shift('2026-09-23',i)));
+  e.qdiiCalendar={code,verified:true,version:'synthetic-qdii-v1',source:'https://example.invalid/synthetic-valuation-calendar',publicationSource:'https://example.invalid/synthetic-disclosure-clause',from:e.initializationFrom,to:'2026-09-30',subscriptionDates:['2026-09-24','2026-09-25','2026-09-28','2026-09-29','2026-09-30'],valuationDates,publicationPolicy:{lagValuationDays:2,beijingHour:18}};
   return e;
 }
 async function run(){
@@ -39,14 +42,20 @@ async function run(){
   for(const [key,value,error] of [['identityVerified',false,'profile_unverified'],['samplingVerified',false,'daily_sampling_unverified'],['continuityVerified',false,'initialization_unverified'],['rulesVerified',false,'fund_calendar_unverified']]){
     const bad={...e,[key]:value},input=D.prepareInput(raw,bad,C.orderContext(F.NOW,bad));assert.equal(input.error,error);assert.equal(B({code:e.code,_activeEquityData:input}).action,null);
   }
-  const absent=structuredClone(e);delete absent.qdiiCalendar.availableAt['2026-09-18'];assert.equal(D.prepareInput(raw,absent,C.orderContext(F.NOW,absent)).error,'publication_time_unverified');
+  const absent=structuredClone(e);delete absent.qdiiCalendar.publicationPolicy;assert.equal(C.orderContext(F.NOW,absent).error,'fund_calendar_unverified');
+  const lateLag=structuredClone(e);lateLag.qdiiCalendar.publicationPolicy={lagValuationDays:10,beijingHour:18};assert.equal(C.qdiiDeadline(lateLag.qdiiCalendar.valuationDates.at(-1),lateLag.qdiiCalendar),null);
   const misbound=structuredClone(e);misbound.qdiiCalendar.code='999999';assert.equal(C.orderContext(F.NOW,misbound).error,'fund_calendar_unverified');
-  const coverage=structuredClone(e);coverage.qdiiCalendar.to='2026-09-23';coverage.qdiiCalendar.subscriptionDates=['2026-09-23'];assert.equal(C.orderContext(F.NOW,coverage).error,'calendar_coverage_short');
-  const timezone=structuredClone(e);timezone.qdiiCalendar.availableAt['2026-09-18']='2026-09-20T18:00:00';assert.equal(C.validContract(timezone),false);
+  const coverage=structuredClone(e);coverage.qdiiCalendar.to='2026-09-23';coverage.qdiiCalendar.subscriptionDates=['2026-09-23'];coverage.qdiiCalendar.valuationDates=coverage.qdiiCalendar.valuationDates.filter(d=>d<='2026-09-23');assert.equal(C.orderContext(F.NOW,coverage).error,'calendar_coverage_short');
+  for(const [lag,hour] of [[0,18],[11,18],[2,24],[2,-1],[1.5,18],['2',18]]){const bad=structuredClone(e);bad.qdiiCalendar.publicationPolicy={lagValuationDays:lag,beijingHour:hour};assert.equal(C.validContract(bad),false,`policy lag=${lag} hour=${hour} 应被拒`);}
   const gap=structuredClone(raw);gap.history=gap.history.filter(r=>r.date!=='2026-09-18');gap.total=gap.history.length;gap.checksum=D.hash(gap.history);assert.match(D.prepareInput(gap,e,ctx).error,/expected_nav_gap/);
   const future=structuredClone(raw);future.history[0].nav=999;future.history[0].rawFields.DWJZ='999';future.history[0].dayChange=1;future.history[0].rawFields.JZZZL='1';future.checksum=D.hash(future.history);assert.deepEqual(D.prepareInput(future,e,ctx).result,good.result);
-  const stale=structuredClone(e);stale.qdiiCalendar.valuationDates=stale.qdiiCalendar.valuationDates.filter(d=>d<='2026-09-01');stale.qdiiCalendar.availableAt=Object.fromEntries(Object.entries(stale.qdiiCalendar.availableAt).filter(([d])=>d<='2026-09-01'));
-  assert.equal(C.selectKnown(stale.qdiiCalendar.valuationDates.map(date=>({date,close:1})),stale,C.orderContext(F.NOW,stale)).error,'stale_nav_over_14d');
+  // 数据停在 09-01，但日历声明覆盖到 09-30 ⇒ 09-02 起的估值日"应有净值却没有"。
+  // ★ 口径变化：改用 policy 后 stale_nav_over_14d 在 QDII 下不再可达 ——
+  //   日历覆盖不足报 calendar_coverage_short，窗口内缺失报 expected_nav_gap，
+  //   两者都比「过期」更精确地定位问题。fail-closed 未放松，只是诊断码变了。
+  const stale=structuredClone(e);
+  const staleRows=stale.qdiiCalendar.valuationDates.filter(d=>d<='2026-09-01').map(date=>({date,close:1}));
+  assert.match(C.selectKnown(staleRows,stale,C.orderContext(F.NOW,stale)).error,/expected_nav_gap/);
   let requests=0;const svc=D.createService({now:()=>F.NOW,identity:{resolve:async()=>({evidence:{...e,rulesVerified:false}})},fetchText:async()=>{requests++;throw Error('unexpected network');}});assert.equal((await svc.forFund({code:e.code})).error,'fund_calendar_unverified');assert.equal(requests,0);
   // Separate share cache, requests and action identity. No A data reused for C.
   const codes=['999801','999802'],writes=[];const shares=D.createService({now:()=>F.NOW,read:()=>null,write:(key)=>writes.push(key),fetchActions:async code=>data(code).actions,fetchText:async url=>{const u=new URL(url),snapshot=data(u.searchParams.get('fundCode')),n=Number(u.searchParams.get('pageIndex'));return JSON.stringify({TotalCount:snapshot.total,Data:{LSJZList:snapshot.history.slice((n-1)*20,n*20).map(r=>r.rawFields)}});}});

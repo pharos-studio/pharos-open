@@ -23,6 +23,10 @@ async function snapshot() {
   patch(util, 'shanghaiNow', () => ({ ymd: '2026-09-24', hour: 9, minute: 0 }));
   patch(store, 'readJSON', key => key === 'holdings.json' ? { funds } : key === 'categories.json'
     ? require('../../data/example/categories.example.json') : {});
+  // Decision history is an input too: without this stub the advice payload (weekAgo) is derived from the
+  // real data/state/decision_history.json, so the frozen fixture below can never stay green — and a test
+  // must not depend on real user history. Frozen expectation corresponds to "no recent decisions".
+  patch(store, 'readDecisionHistory', () => []);
   for (const key of ['writeJSONSafe', 'writeJSON', 'writeDecisionHistory', 'appendSnapshot'])
     patch(store, key, () => { throw Error('unexpected test write: ' + key); });
   patch(fetchers, 'fetchNavHistory', async code => ({ history: funds.find(f => f.code === code).history, failed: false }));

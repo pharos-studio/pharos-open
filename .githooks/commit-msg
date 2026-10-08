@@ -1,0 +1,34 @@
+#!/bin/sh
+# ── commit-msg 防线 ──
+# 为什么存在：内容审计（audit_desensitize.js）读的是**文件内容**，而提交信息只在 git object 里，
+# 于是「9 只真实持仓、37 笔已确认记录」这种只写在 message 里的话，内容审计永远抓不到。
+# 本钩子在**写入之前**拦住，比事后审计便宜得多。
+#
+# 安装（每台机器一次）：
+#   git config core.hooksPath .githooks
+#
+# 绕过（不推荐）：git commit --no-verify
+# 手动全量检查：npm run audit:msg
+
+ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+
+# 合并/自动生成的信息不检查
+first=$(head -n 1 "$1" 2>/dev/null | tr -d '\r')
+case "$first" in
+  Merge*|"") exit 0 ;;
+esac
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "⚠  commit-msg：本机找不到 node，跳过提交信息检查（npm run audit:msg 仍可手动跑）"
+  exit 0
+fi
+
+if ! node "$ROOT/backend/scripts/scan_commit_msg.js" --message-file "$1" --strict; then
+  echo ""
+  echo "✗ 提交被拦下：上面命中的表述会泄露真实持仓的形态（只数 / 笔数 / 工具目录名）。"
+  echo "  把「N 只真实持仓」改成中性说法（如「全部持仓」「样本组合」）后重试。"
+  echo "  确需绕过：git commit --no-verify（不推荐）"
+  exit 1
+fi
+
+exit 0

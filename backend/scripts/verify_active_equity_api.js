@@ -9,7 +9,7 @@ async function snapshot(options={}){const config=require('../lib/config'),store=
 async function run(){const out=await snapshot();assert.equal(out.advice.funds.length,6);for(const f of out.advice.funds){const sm=out.analysis.plan.scoreMap[f.code];assert.equal(f.strategyVersion,'active-equity-buy-v1');assert.equal(f.marketVerdict,sm.marketVerdict);assert.equal(f.verdict,sm.verdict);assert.equal(f.executable,sm.executable);assert.equal(f.score,null);assert.equal(f.valueScore,null);assert.equal(f.momentumScore,null);assert(!JSON.stringify(f).includes('"availableAt"'));}const f=out.advice.funds;assert.equal(f[0].marketVerdict,'add');assert.equal(f[0].executable,true);assert.equal(f[1].marketVerdict,'hold');assert.equal(f[2].marketVerdict,null);assert.equal(f[2].verdict,null);assert.equal(f[3].marketState,'profile_unverified');assert.equal(f[4].marketVerdict,'add');assert.equal(f[4].executable,false);assert.equal(f[4].blockedReason,'purchase_suspended');const late=await snapshot({finalInstant:Date.parse('2026-09-24T08:00:00Z')});assert.equal(late.advice.funds[0].executable,false);assert.equal(late.advice.funds[0].blockedReason,'future_order_recheck');const invalid=await snapshot({purchaseStamp:F.NOW+1});assert.equal(invalid.advice.funds[0].executable,false);const identity=require('../lib/activeEquityIdentity'),tech=require('../engines/strategies/tech');assert.equal(identity.isActiveEquityRoute({code:'999700',name:'合成混合',trackIndex:'SH000300'}),true);assert.equal(tech({code:'999700',name:'合成混合',trackIndex:'SH000300'}).action,null);assert.equal(identity.isActiveEquityRoute({code:'999701',name:'半导体指数',fundType:'指数型',category:'growth'}),false);console.log('主动权益 API：同次结果、买入三态、独立交易限制、异常fallback与代理冲突通过');}
 async function realGates(){const I=require('../services/activeEquityIdentity'),L=require('../data/activeEquityIdentity.json'),B=require('../engines/strategies/activeEquity'),D=require('../services/activeEquityData'),R=require('../engines/registry');
   // 已核验落笔的条目：闸门必须放行，并进入真实策略；其余仍须被挡住且不得给出结论。
-  const VERIFIED=new Set(['008903','003095','260108','270005','001714']);
+  const VERIFIED=new Set(['008903','003095','260108','270005','001714','016874']);
   for(const e of L.funds){const verified=VERIFIED.has(e.code),resolved=await I.resolve(e.code);
     if(verified){assert.equal(resolved.error,undefined,e.code+' 已核验却仍被闸门拦下：'+resolved.error);const input=await D.forFund({code:e.code});assert.equal(input.error,undefined,e.code+' 输入仍报错：'+input.error);assert(input.result,e.code+' 缺少策略结果');}
     else assert.equal(resolved.error,'daily_sampling_unverified');
@@ -31,4 +31,29 @@ async function buyOnlyScope(){for(const session of ['am','pm'])for(const existin
   for(const session of ['am','pm']){const ordinary=await trimSnapshot({active:false,session});const trim=ordinary.advice.alerts.find(a=>a.type==='trim');assert(trim,'ordinary C trim behavior changed');if(session==='am'){assert.match(trim.action,/可减仓/);assert.equal(ordinary.signals[ordinary.id].active,true);assert.equal(ordinary.writes.filter(w=>w.key==='signals.json').length,1);}else{assert.equal(trim.statementOnly,true);assert.equal(trim.action,undefined);assert.deepEqual(ordinary.signals,{});assert.equal(ordinary.writes.length,0);}}
   const init=await snapshot({initializationPending:true}),first=init.advice.funds[0];assert.equal(first.unsupportedReason,'initialization_unverified');assert.equal(first.marketStateLabel,'档案待确认');assert.equal(first.marketVerdict,null);assert.equal(first.verdict,null);assert.equal(first.executable,false);console.log('主动权益买入范围：主动C冻结AM/PM无卖出、冷却键不改；普通C原行为及初始化gate通过');
 }
-if(require.main===module)run().then(realGates).then(buyOnlyScope).catch(e=>{console.error(e);process.exitCode=1;});module.exports={snapshot,syntheticPayload:snapshot,run,realGates,trimSnapshot,buyOnlyScope};
+async function openCalendarGates(){const C=require('../lib/activeEquityCalendar'),L=require('../data/activeEquityIdentity.json');
+  // 016874 的开放日窄于 A 股交易日：合同 p10/p26 允许在非港股通交易日不开放。例外清单必须来自
+  // 交易所年度安排（事前可知），且必须覆盖全部实测停业日；否则退回 fund_calendar_unverified。
+  const e=L.funds.find(f=>f.code==='016874');assert(e,'台账缺少 016874');assert.equal(e.openCalendar,'cn-minus-hkconnect');
+  assert.notEqual(C.openExceptionEvidence(e),null,'例外证据不完整');assert.equal(C.validContract(e),true);
+  for(const d of e.openExceptions)assert(C.dates.includes(d),'例外日不是 CN 交易日：'+d);
+  for(const d of e.openClosureObservations)assert(e.openExceptions.includes(d),'实测停业日未被官方清单覆盖：'+d);
+  const at=(s,ev)=>C.orderContext(Date.parse(s+'T10:00:00+08:00'),ev||e);
+  assert.equal(at('2025-07-01').orderDate,'2025-07-02','例外日应顺延到下一个确定开放日');
+  assert.equal(at('2025-07-01').futureOrder,true);
+  assert.equal(at('2025-07-02').orderDate,'2025-07-02');
+  assert.equal(at('2023-01-19').orderDate,'2023-01-30');
+  assert.equal(at('2024-12-31').orderDate,'2025-01-02');
+  assert.equal(at('2026-07-01').orderDate,'2026-07-02');
+  assert.equal(at('2013-06-03').error,'calendar_coverage_short','早于例外覆盖起点必须拒绝');
+  const drop=k=>{const o={...e};delete o[k];return o;};
+  assert.equal(C.validContract(drop('openExceptionsSources')),false);
+  assert.equal(C.validContract({...e,openExceptionsSources:[{url:'https://x/',sha256:'nope'}]}),false);
+  assert.equal(C.validContract({...e,openExceptions:[...e.openExceptions,'2025-07-05'].sort()}),false);
+  assert.equal(C.validContract({...e,openExceptions:[...e.openExceptions].reverse()}),false);
+  assert.equal(C.validContract({...e,openExceptionsFrom:'2023-06-01'}),false);
+  assert.equal(C.validContract({...e,openCalendar:'cn'}),true);
+  assert.equal(at('2025-07-01',{...e,openCalendar:'cn'}).orderDate,'2025-07-01','旧口径行为不得改变');
+  console.log('主动权益开放日例外：官方清单健全、实测停业日全被覆盖、例外日顺延、证据缺失退回、旧口径不变 通过');
+}
+if(require.main===module)run().then(realGates).then(openCalendarGates).then(buyOnlyScope).catch(e=>{console.error(e);process.exitCode=1;});module.exports={snapshot,syntheticPayload:snapshot,run,realGates,openCalendarGates,trimSnapshot,buyOnlyScope};
