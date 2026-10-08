@@ -1,0 +1,2781 @@
+{
+  "source": "5f0ce8f",
+  "cases": [
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "回撤 -15.0% 已到位（≤-undefined%）且止跌，同时均线金叉（MA20 上穿 MA60）趋势修复，双通道共振"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "techDip"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": true,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "价格分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "pricePercentile"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": true,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位数据缺失，按不动处理"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "PE 分位 25%（便宜区）但 ERP 2.00% 偏低（利率偏高/债券更香），谨慎买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "cheap",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "PE 分位 25%（便宜区）但 ERP 2.00% 偏低（利率偏高/债券更香），谨慎买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "cheap",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [
+          "PE 分位 25%（便宜区）但 ERP 2.00% 偏低（利率偏高/债券更香），谨慎买入"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "cheap",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 70%（贵区）且 ERP 2.00% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 70%（贵区）且 ERP 2.00% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 70%（贵区）且 ERP 2.00% 偏低（债券更划算），真贵·不买"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "above",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "peErp"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "na",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "low",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": null,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": null,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 25,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 25,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 70,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "add",
+        "reasons": [],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 70,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": true,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": false,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    },
+    {
+      "signal": {
+        "pePercentile": 85,
+        "trendWeak": null,
+        "drawdown": -15,
+        "stopFall": true,
+        "goldenState": true,
+        "erp": 0.02,
+        "pricePercentile": null,
+        "cheap": true,
+        "recent20dChange": 6,
+        "yield": 0.05,
+        "anchor3y": 0.04,
+        "nav": 1.5,
+        "ma250": 2
+      },
+      "params": {
+        "cheapBy": "broadGlobal"
+      },
+      "expected": {
+        "action": "hold",
+        "reasons": [
+          "PE 分位 85% 且近20日涨 6%，总闸拦截"
+        ],
+        "matrix": {
+          "yieldZone": "cheap",
+          "maZone": "below",
+          "devPct": -25,
+          "ratio": 1.25,
+          "dipReady": false,
+          "drawdown": -15,
+          "stopFall": true,
+          "stopRisePct": null,
+          "maSpreadPct": null,
+          "ma120DevPct": null,
+          "goldenState": false,
+          "cross": null,
+          "gate": "block",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": null,
+          "recent20dChange": 6,
+          "surge": false,
+          "pePercentile": 85,
+          "erp": 0.02,
+          "yield": 0.05,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": null,
+          "peRollingPct": null,
+          "peDipLevel": null,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": true
+        },
+        "positionScore": null
+      }
+    }
+  ]
+}

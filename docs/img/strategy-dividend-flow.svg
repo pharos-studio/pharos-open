@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1490" width="900" height="1490" role="img" aria-labelledby="title desc">
+<title id="title">国内红利 · 趋势回踩正式规则</title>
+<desc id="desc">国内红利指数类趋势回踩：核验档案与可知复权数据，长期趋势、局部回踩和周RSI条件全部成立才形成市场可加仓；交易约束独立决定可执行性，股息率与净值分位仅参考。数据不足不等于等待机会。</desc>
+<defs><radialGradient id="halo"><stop stop-color="#7C8CF8" stop-opacity=".16"/><stop offset="1" stop-color="#7C8CF8" stop-opacity="0"/></radialGradient><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9AA3C0" stroke-width="1.6"/></marker></defs>
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}.title,.heading{font-family:"Songti SC",STSong,"Noto Serif CJK SC",SimSun,Georgia,serif;fill:#EDEFF7;font-weight:600}.title{font-size:30px}.heading{font-size:23px}.body{font-size:20px;fill:#EDEFF7}.note{font-size:18px;fill:#9AA3C0}.label{font-size:17px;fill:#D9A441;letter-spacing:1px}.line{fill:none;stroke:#9AA3C0;stroke-width:2;marker-end:url(#arrow)}</style>
+<rect width="900" height="1490" rx="12" fill="#0A1020"/><ellipse cx="200" cy="0" rx="800" ry="500" fill="url(#halo)"/>
+<rect x="36" y="36" width="5" height="44" rx="2" fill="#D9A441"/>
+<text x="56" y="48" class="label">PHAROS / 策略细节 01</text>
+<text x="56" y="86" class="title">国内红利 · 趋势回踩</text>
+<text x="36" y="125" class="note">正式规则 v1 / 全部条件「且」 / 状态与交易约束独立 / 不启用深回撤</text>
+<rect x="690" y="40" width="174" height="36" rx="7" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441"/><text x="777" y="64" text-anchor="middle" class="label">正式指数类规则</text>
+<g><rect x="36" y="166" width="828" height="124" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441" stroke-opacity=".65"/><text x="58" y="202" class="heading">① 核验适用范围</text><text x="58" y="238" class="body">国内红利指数、指数联接、指数增强；官方档案与指数身份须完整</text><text x="58" y="267" class="body">主动或海外 → 暂不支持；身份不足 → 档案待确认</text></g>
+<path class="line" d="M450 290V328"/>
+<g><rect x="36" y="334" width="828" height="152" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441" stroke-opacity=".65"/><text x="58" y="370" class="heading">② 准备可知数据</text><text x="58" y="406" class="body">基金自身分红再投资复权净值：至少260日、16个合格周</text><text x="58" y="435" class="body">缺公告时刻：净值日后第二个开放日可用；周收盘须完整</text><text x="58" y="464" class="body">复权错误、日历未核验或净值过期 → 数据不足，不降级</text></g>
+<path class="line" d="M450 486V524"/>
+<g><rect x="36" y="530" width="828" height="124" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441" stroke-opacity=".65"/><text x="58" y="566" class="heading">③ 长期趋势 · 两项均须成立</text><text x="58" y="602" class="body">复权净值 &gt; MA250</text><text x="58" y="631" class="body">MA60 &gt; MA250</text></g>
+<path class="line" d="M450 654V692"/>
+<g><rect x="36" y="698" width="828" height="152" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441" stroke-opacity=".65"/><text x="58" y="734" class="heading">④ 局部回踩 · 三项均须成立</text><text x="58" y="770" class="body">距近60日高点回落 2%～6%</text><text x="58" y="799" class="body">较近10日最低复权净值恢复 ≥1.5%</text><text x="58" y="828" class="body">BIAS250 ≤8%</text></g>
+<path class="line" d="M450 850V888"/>
+<g><rect x="36" y="894" width="828" height="124" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441" stroke-opacity=".65"/><text x="58" y="930" class="heading">⑤ 已完成周 RSI14 · 共同确认</text><text x="58" y="966" class="body">RSI14 位于45～65</text><text x="58" y="995" class="body">严格高于前一个已完成且可知周；持平不通过</text></g>
+<path class="line" d="M450 1018V1056"/>
+<g><rect x="36" y="1062" width="828" height="152" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441" stroke-opacity=".65"/><text x="58" y="1098" class="heading">⑥ 市场判断 → 交易约束</text><text x="58" y="1134" class="body">全部条件成立 → 可加仓；条件未全部成立 → 等待机会</text><text x="58" y="1163" class="body">必要数据不合格 → 无法判定，市场判断为空</text><text x="58" y="1192" class="body">暂停／过期申购状态、用户限额、政策限制 → 不可执行</text></g>
+<g><rect x="36" y="1258" width="828" height="124" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#9AA3C0" stroke-opacity=".65" stroke-dasharray="6 5"/><text x="58" y="1294" class="heading">独立参考 · 不进入条件判断</text><text x="58" y="1330" class="body">对应指数股息率、近250日复权净值分位仅供参考</text><text x="58" y="1359" class="body">股息率偏低、缺失或过期均不改变信号；不生成综合分</text></g>
+<text x="36" y="1422" class="note">趋势回踩可能处于长期相对高位；条件成立不保证盈利，也不指定金额。</text>
+<text x="36" y="1452" class="note">计算：dividendTrend / dividend；数据：完整复权净值；判断不使用展示舍入值。</text>
+</svg>

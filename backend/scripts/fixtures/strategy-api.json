@@ -1,0 +1,1412 @@
+{
+  "analysis": {
+    "asOf": "2026-09-24T09:00:00",
+    "tradingHours": false,
+    "funds": [
+      {
+        "code": "DEMO-core",
+        "name": "DEMO core",
+        "category": "broad",
+        "fundType": null,
+        "indexCode": null,
+        "indexName": null,
+        "caliber": "cn",
+        "estimateLabel": null,
+        "estimateProvider": null,
+        "estimateRelation": null,
+        "estimateQuoteState": "not_applicable",
+        "profileState": "ready",
+        "profileUpdatedAt": null,
+        "trackIndex": "SH000905",
+        "adjustedHistory": null,
+        "adjustedNavError": null,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "latestNav": 2,
+        "latestDate": "2026-09-23",
+        "totalShares": 50,
+        "principal": 100,
+        "netInvested": 100,
+        "fee": 0,
+        "currentValue": 100,
+        "profit": 0,
+        "profitPct": 0,
+        "feeRate": 0,
+        "feeDetail": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "navFallback": false,
+        "navFallbackDate": null,
+        "estimate": null,
+        "estimateChange": null,
+        "history": {
+          "length": 320,
+          "sha256": "c9dc9731b9312f3d18a4fdd9c7377c119897ccf9baf912c81c2b0a045d8be05e"
+        },
+        "pendingAmount": 0,
+        "valuation": {
+          "pe": 17,
+          "pePercentile": 30,
+          "treasury10y": 0.025,
+          "recent20dChange": -5.826608554366364,
+          "asOf": "2026-09-22",
+          "previousAsOf": "2026-09-21",
+          "previousPePercentile": 20,
+          "previousPe": 15,
+          "peHistory": {
+            "length": 200,
+            "sha256": "53f11e6a5398f9e034a4e7a8e878e028b5526e29c4425095d9bd2f907a313e87"
+          }
+        },
+        "purchases": [
+          {
+            "date": "2026-01-02",
+            "amount": 100,
+            "nav": 2,
+            "shares": 50,
+            "quotedFeeRate": 0,
+            "sharesSource": "broker",
+            "shareCalcVersion": 2
+          }
+        ],
+        "_unsupported": null,
+        "_dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "neutral",
+            "erpZone": "low",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": -5.83,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.033824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "_type": "broad",
+            "_caliber": "cn"
+          },
+          "positionScore": null
+        },
+        "_purchaseStatusMeta": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        },
+        "_composite": {
+          "composite": 37.46155028760331,
+          "valueScore": 46.34391285950413,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "_marketScore": 37.46155028760331
+      },
+      {
+        "code": "DEMO-tech",
+        "name": "DEMO tech",
+        "category": "growth",
+        "fundType": null,
+        "indexCode": null,
+        "indexName": null,
+        "caliber": "cn",
+        "estimateLabel": null,
+        "estimateProvider": null,
+        "estimateRelation": null,
+        "estimateQuoteState": "not_applicable",
+        "profileState": "ready",
+        "profileUpdatedAt": null,
+        "trackIndex": "SH000905",
+        "adjustedHistory": null,
+        "adjustedNavError": null,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "latestNav": 2,
+        "latestDate": "2026-09-23",
+        "totalShares": 50,
+        "principal": 100,
+        "netInvested": 100,
+        "fee": 0,
+        "currentValue": 100,
+        "profit": 0,
+        "profitPct": 0,
+        "feeRate": 0,
+        "feeDetail": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "navFallback": false,
+        "navFallbackDate": null,
+        "estimate": null,
+        "estimateChange": null,
+        "history": {
+          "length": 320,
+          "sha256": "c9dc9731b9312f3d18a4fdd9c7377c119897ccf9baf912c81c2b0a045d8be05e"
+        },
+        "pendingAmount": 0,
+        "valuation": {
+          "pe": 17,
+          "pePercentile": 30,
+          "treasury10y": 0.025,
+          "recent20dChange": -5.826608554366364,
+          "asOf": "2026-09-22",
+          "previousAsOf": "2026-09-21",
+          "previousPePercentile": 20,
+          "previousPe": 15,
+          "peHistory": {
+            "length": 200,
+            "sha256": "53f11e6a5398f9e034a4e7a8e878e028b5526e29c4425095d9bd2f907a313e87"
+          }
+        },
+        "purchases": [
+          {
+            "date": "2026-01-02",
+            "amount": 100,
+            "nav": 2,
+            "shares": 50,
+            "quotedFeeRate": 0,
+            "sharesSource": "broker",
+            "shareCalcVersion": 2
+          }
+        ],
+        "_unsupported": null,
+        "_dec": {
+          "action": "add",
+          "reasons": [
+            "均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "golden",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": -5.87,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": 1.13,
+            "ma120DevPct": null,
+            "goldenState": true,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": false,
+            "trendGrade": null,
+            "pricePercentile": 30,
+            "recent20dChange": -5.83,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "_type": "tech",
+            "_caliber": null
+          },
+          "positionScore": null
+        },
+        "_purchaseStatusMeta": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        },
+        "_composite": {
+          "composite": 12.783135388888887,
+          "valueScore": 12.038586777777777,
+          "momentumScore": 13.527683999999999,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "_marketScore": 12.783135388888887
+      },
+      {
+        "code": "DEMO-gold",
+        "name": "DEMO gold",
+        "category": "cycle",
+        "fundType": null,
+        "indexCode": null,
+        "indexName": null,
+        "caliber": "cn",
+        "estimateLabel": null,
+        "estimateProvider": null,
+        "estimateRelation": null,
+        "estimateQuoteState": "not_applicable",
+        "profileState": "ready",
+        "profileUpdatedAt": null,
+        "trackIndex": "SH000905",
+        "adjustedHistory": null,
+        "adjustedNavError": null,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": false,
+          "degraded": false,
+          "reason": null
+        },
+        "latestNav": 2,
+        "latestDate": "2026-09-23",
+        "totalShares": 50,
+        "principal": 100,
+        "netInvested": 100,
+        "fee": 0,
+        "currentValue": 100,
+        "profit": 0,
+        "profitPct": 0,
+        "feeRate": 0,
+        "feeDetail": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "navFallback": false,
+        "navFallbackDate": null,
+        "estimate": null,
+        "estimateChange": null,
+        "history": {
+          "length": 320,
+          "sha256": "c9dc9731b9312f3d18a4fdd9c7377c119897ccf9baf912c81c2b0a045d8be05e"
+        },
+        "pendingAmount": 0,
+        "valuation": {
+          "pricePercentile": 6.269592476489027,
+          "recent20dChange": -5.826608554366364,
+          "weak": true,
+          "source": "price"
+        },
+        "purchases": [
+          {
+            "date": "2026-01-02",
+            "amount": 100,
+            "nav": 2,
+            "shares": 50,
+            "quotedFeeRate": 0,
+            "sharesSource": "broker",
+            "shareCalcVersion": 2
+          }
+        ],
+        "_unsupported": null,
+        "_dec": {
+          "action": "add",
+          "reasons": [
+            "250日价格分位 8% 处于便宜区（≤35%），均值回归买点"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": null,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "cheap",
+            "peZone": "na",
+            "erpZone": "na",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": 8.03,
+            "recent20dChange": -5.83,
+            "surge": false,
+            "pePercentile": null,
+            "erp": null,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "_type": "cycle",
+            "_caliber": null
+          },
+          "positionScore": null
+        },
+        "_purchaseStatusMeta": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        },
+        "_composite": {
+          "composite": 60.77284,
+          "valueScore": 100,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "_marketScore": 60.77284
+      },
+      {
+        "code": "DEMO-global",
+        "name": "DEMO global",
+        "category": "broad",
+        "fundType": null,
+        "indexCode": null,
+        "indexName": null,
+        "caliber": "us",
+        "estimateLabel": null,
+        "estimateProvider": null,
+        "estimateRelation": null,
+        "estimateQuoteState": "not_applicable",
+        "profileState": "ready",
+        "profileUpdatedAt": null,
+        "trackIndex": "SH000905",
+        "adjustedHistory": null,
+        "adjustedNavError": null,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "latestNav": 2,
+        "latestDate": "2026-09-23",
+        "totalShares": 50,
+        "principal": 100,
+        "netInvested": 100,
+        "fee": 0,
+        "currentValue": 100,
+        "profit": 0,
+        "profitPct": 0,
+        "feeRate": 0,
+        "feeDetail": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "navFallback": false,
+        "navFallbackDate": null,
+        "estimate": null,
+        "estimateChange": null,
+        "history": {
+          "length": 320,
+          "sha256": "c9dc9731b9312f3d18a4fdd9c7377c119897ccf9baf912c81c2b0a045d8be05e"
+        },
+        "pendingAmount": 0,
+        "valuation": {
+          "pe": 17,
+          "pePercentile": 30,
+          "treasury10y": 0.025,
+          "recent20dChange": -5.826608554366364,
+          "asOf": "2026-09-22",
+          "previousAsOf": "2026-09-21",
+          "previousPePercentile": 20,
+          "previousPe": 15,
+          "peHistory": {
+            "length": 200,
+            "sha256": "53f11e6a5398f9e034a4e7a8e878e028b5526e29c4425095d9bd2f907a313e87"
+          },
+          "usTreasury10y": 0.04
+        },
+        "purchases": [
+          {
+            "date": "2026-01-02",
+            "amount": 100,
+            "nav": 2,
+            "shares": 50,
+            "quotedFeeRate": 0,
+            "sharesSource": "broker",
+            "shareCalcVersion": 2
+          }
+        ],
+        "_unsupported": null,
+        "_dec": {
+          "action": "hold",
+          "reasons": [
+            "PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发"
+          ],
+          "matrix": {
+            "yieldZone": "na",
+            "maZone": "below",
+            "devPct": -7.5,
+            "ratio": null,
+            "dipReady": false,
+            "drawdown": null,
+            "stopFall": false,
+            "stopRisePct": -1.86,
+            "maSpreadPct": null,
+            "ma120DevPct": -4.44,
+            "goldenState": false,
+            "cross": null,
+            "gate": "pass",
+            "pctZone": "na",
+            "peZone": "expensive",
+            "erpZone": "neutral",
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "pricePercentile": null,
+            "recent20dChange": -5.83,
+            "surge": false,
+            "pePercentile": 30,
+            "erp": 0.018824,
+            "yield": null,
+            "cheapYield": null,
+            "expensiveYield": null,
+            "refYield": null,
+            "pe": 17,
+            "peRollingPct": 100,
+            "peDipLevel": 0,
+            "peDipPct": 12,
+            "peDipWindowWeeks": 52,
+            "peWindowWeeks": 156,
+            "cheapByPct": false,
+            "cheapByDip": false,
+            "cheap": false,
+            "_type": "broad",
+            "_caliber": "us"
+          },
+          "positionScore": null
+        },
+        "_purchaseStatusMeta": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        },
+        "_composite": {
+          "composite": 8.902415022222225,
+          "valueScore": 10.644993777777781,
+          "momentumScore": 1.9320999999999995,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "blocked": null,
+          "degraded": []
+        },
+        "_marketScore": 8.902415022222225
+      },
+      {
+        "code": "DEMO-hs300",
+        "name": "DEMO hs300",
+        "category": "broad",
+        "fundType": null,
+        "indexCode": null,
+        "indexName": null,
+        "caliber": "cn",
+        "estimateLabel": null,
+        "estimateProvider": null,
+        "estimateRelation": null,
+        "estimateQuoteState": "not_applicable",
+        "profileState": "ready",
+        "profileUpdatedAt": null,
+        "trackIndex": "SH000300",
+        "adjustedHistory": {
+          "length": 320,
+          "sha256": "86f95fe61542f4a963e2a54f750c7c0cab60273eab5d47922343880e9a8743c9"
+        },
+        "adjustedNavError": null,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "latestNav": 2,
+        "latestDate": "2026-09-23",
+        "totalShares": 50,
+        "principal": 100,
+        "netInvested": 100,
+        "fee": 0,
+        "currentValue": 100,
+        "profit": 0,
+        "profitPct": 0,
+        "feeRate": 0,
+        "feeDetail": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "navFallback": false,
+        "navFallbackDate": null,
+        "estimate": null,
+        "estimateChange": null,
+        "history": {
+          "length": 320,
+          "sha256": "c9dc9731b9312f3d18a4fdd9c7377c119897ccf9baf912c81c2b0a045d8be05e"
+        },
+        "pendingAmount": 0,
+        "valuation": {
+          "pe": 17,
+          "pePercentile": 30,
+          "treasury10y": 0.025,
+          "recent20dChange": -5.826608554366364,
+          "asOf": "2026-09-22",
+          "previousAsOf": "2026-09-21",
+          "previousPePercentile": 20,
+          "previousPe": 15,
+          "peHistory": {
+            "length": 200,
+            "sha256": "53f11e6a5398f9e034a4e7a8e878e028b5526e29c4425095d9bd2f907a313e87"
+          }
+        },
+        "purchases": [
+          {
+            "date": "2026-01-02",
+            "amount": 100,
+            "nav": 2,
+            "shares": 50,
+            "quotedFeeRate": 0,
+            "sharesSource": "broker",
+            "shareCalcVersion": 2
+          }
+        ],
+        "_unsupported": null,
+        "_dec": {
+          "action": "hold",
+          "matrix": {
+            "marketState": "waiting",
+            "marketStateLabel": "等待机会",
+            "pePercentile": 30,
+            "peAsOf": "2026-09-22",
+            "evidence": "weak",
+            "peZone": "neutral",
+            "erp": 0.03382,
+            "erpReferenceOnly": true,
+            "biasPct": -4.44,
+            "biasMa": 120,
+            "biasThreshold": -3.0084,
+            "rsiPeriod": 14,
+            "weeklyRsi": 38.37,
+            "previousWeeklyRsi": 43.32,
+            "completedWeeks": 46,
+            "ma60": 0.8214,
+            "ma120": 0.8379,
+            "ma250": 0.8655,
+            "trendWeak": true,
+            "trendGrade": "全下(强降)",
+            "dataError": null,
+            "_type": "broad300",
+            "_caliber": "cn"
+          },
+          "reasons": [
+            "等待机会"
+          ]
+        },
+        "_purchaseStatusMeta": {
+          "state": "open",
+          "fresh": true,
+          "suspended": false,
+          "unavailable": false
+        },
+        "_composite": null,
+        "_marketScore": null
+      }
+    ],
+    "totals": {
+      "totalPrincipal": 500,
+      "totalNetInvested": 500,
+      "totalFee": 0,
+      "totalValue": 500,
+      "totalProfit": 0,
+      "totalProfitPct": 0,
+      "estimateTotal": null,
+      "navMissingCount": 0,
+      "navFallbackCount": 0
+    },
+    "penetration": {
+      "reportDate": null,
+      "disclosedCoveragePct": 0,
+      "unmapped": [],
+      "pending": [],
+      "byFund": [
+        {
+          "code": "DEMO-tech",
+          "name": "DEMO tech",
+          "weightPct": 20,
+          "date": null,
+          "proxyCode": null,
+          "acGroupKey": "growth|DEMOtech",
+          "siblings": [],
+          "topTags": [],
+          "themes": [],
+          "disclosedPct": 0,
+          "stockCount": 0
+        }
+      ],
+      "sunburst": null
+    },
+    "allocation": [
+      {
+        "key": "broad",
+        "name": "宽基",
+        "value": 300,
+        "pct": 60
+      },
+      {
+        "key": "dividend",
+        "name": "红利·低波",
+        "value": 0,
+        "pct": 0
+      },
+      {
+        "key": "growth",
+        "name": "主题·行业（高波动）",
+        "value": 100,
+        "pct": 20
+      },
+      {
+        "key": "cycle",
+        "name": "商品·对冲",
+        "value": 100,
+        "pct": 20
+      },
+      {
+        "key": "bond",
+        "name": "债券",
+        "value": 0,
+        "pct": 0
+      },
+      {
+        "key": "cash",
+        "name": "现金",
+        "value": 0,
+        "pct": 0
+      }
+    ],
+    "plan": {
+      "scoreMap": {
+        "DEMO-core": {
+          "code": "DEMO-core",
+          "name": "DEMO core",
+          "marketScore": 37.5,
+          "valueScore": 46.3,
+          "momentumScore": 1.9,
+          "compositeLabel": null,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "degraded": [],
+          "positionLabel": "L2未确认加仓(不动)",
+          "eligible": true,
+          "suspended": false,
+          "purchaseStatus": {
+            "state": "open",
+            "updatedAt": 1790208000000
+          },
+          "statusFresh": true,
+          "marketVerdict": "hold",
+          "verdict": "hold",
+          "executable": false
+        },
+        "DEMO-tech": {
+          "code": "DEMO-tech",
+          "name": "DEMO tech",
+          "marketScore": 12.8,
+          "valueScore": 12,
+          "momentumScore": 13.5,
+          "compositeLabel": null,
+          "weights": {
+            "wV": 0.5,
+            "wM": 0.5
+          },
+          "degraded": [],
+          "positionLabel": "L2已确认加仓",
+          "eligible": true,
+          "suspended": false,
+          "purchaseStatus": {
+            "state": "open",
+            "updatedAt": 1790208000000
+          },
+          "statusFresh": true,
+          "marketVerdict": "add",
+          "verdict": "add",
+          "executable": true
+        },
+        "DEMO-gold": {
+          "code": "DEMO-gold",
+          "name": "DEMO gold",
+          "marketScore": 60.8,
+          "valueScore": 100,
+          "momentumScore": 1.9,
+          "compositeLabel": null,
+          "weights": {
+            "wV": 0.6,
+            "wM": 0.4
+          },
+          "degraded": [],
+          "positionLabel": "L2已确认加仓",
+          "eligible": true,
+          "suspended": false,
+          "purchaseStatus": {
+            "state": "open",
+            "updatedAt": 1790208000000
+          },
+          "statusFresh": true,
+          "marketVerdict": "add",
+          "verdict": "add",
+          "executable": true
+        },
+        "DEMO-global": {
+          "code": "DEMO-global",
+          "name": "DEMO global",
+          "marketScore": 8.9,
+          "valueScore": 10.6,
+          "momentumScore": 1.9,
+          "compositeLabel": null,
+          "weights": {
+            "wV": 0.8,
+            "wM": 0.2
+          },
+          "degraded": [],
+          "positionLabel": "L2未确认加仓(不动)",
+          "eligible": true,
+          "suspended": false,
+          "purchaseStatus": {
+            "state": "open",
+            "updatedAt": 1790208000000
+          },
+          "statusFresh": true,
+          "marketVerdict": "hold",
+          "verdict": "hold",
+          "executable": false
+        },
+        "DEMO-hs300": {
+          "code": "DEMO-hs300",
+          "name": "DEMO hs300",
+          "marketScore": null,
+          "valueScore": null,
+          "momentumScore": null,
+          "compositeLabel": "等待机会",
+          "weights": null,
+          "degraded": [],
+          "positionLabel": null,
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "eligible": true,
+          "suspended": false,
+          "purchaseStatus": {
+            "state": "open",
+            "updatedAt": 1790208000000
+          },
+          "statusFresh": true,
+          "marketVerdict": "hold",
+          "verdict": "hold",
+          "executable": false
+        }
+      }
+    }
+  },
+  "advice": {
+    "asOf": "2026-09-24T09:00:00",
+    "date": "2026-09-24",
+    "session": "pm",
+    "l1": {
+      "totalPrincipal": 500,
+      "totalNetInvested": 500,
+      "totalFee": 0,
+      "totalValue": 500,
+      "totalProfit": 0,
+      "totalProfitPct": 0,
+      "dayChangeValue": null,
+      "dayChangePct": null,
+      "allocation": [
+        {
+          "key": "broad",
+          "name": "宽基",
+          "pct": 60,
+          "value": 300,
+          "policy": "buy"
+        },
+        {
+          "key": "dividend",
+          "name": "红利·低波",
+          "pct": 0,
+          "value": 0,
+          "policy": "buy"
+        },
+        {
+          "key": "growth",
+          "name": "主题·行业（高波动）",
+          "pct": 20,
+          "value": 100,
+          "policy": "buy"
+        },
+        {
+          "key": "cycle",
+          "name": "商品·对冲",
+          "pct": 20,
+          "value": 100,
+          "policy": "buy"
+        },
+        {
+          "key": "bond",
+          "name": "债券",
+          "pct": 0,
+          "value": 0,
+          "policy": "buy"
+        },
+        {
+          "key": "cash",
+          "name": "现金",
+          "pct": 0,
+          "value": 0,
+          "policy": "buy"
+        }
+      ],
+      "notes": []
+    },
+    "funds": [
+      {
+        "code": "DEMO-core",
+        "name": "DEMO core",
+        "category": "broad",
+        "caliber": "cn",
+        "categoryName": "宽基",
+        "unsupported": false,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "marketState": null,
+        "marketStateLabel": null,
+        "marketVerdict": "hold",
+        "verdict": "hold",
+        "title": "宽基(双锚) 决策：DEMO core → 不动",
+        "detail": "PE分位 中性｜ERP(股债利差) 偏低(债券划算)｜趋势 跌破半年线（全下(强降)）｜PE闸 放行。PE 分位 30% 中性且跌破半年线，但近20日未止跌，等止跌确认再加仓",
+        "factors": [
+          {
+            "dim": "PE分位",
+            "value": "中性",
+            "status": "neutral"
+          },
+          {
+            "dim": "ERP",
+            "value": "偏低(债券划算)",
+            "status": "expensive"
+          },
+          {
+            "dim": "趋势",
+            "value": "跌破半年线",
+            "status": "cheap"
+          },
+          {
+            "dim": "PE闸",
+            "value": "放行",
+            "status": "cheap"
+          }
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "neutral",
+          "erpZone": "low",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": -5.83,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": 0.033824,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "_type": "broad",
+          "_caliber": "cn"
+        },
+        "score": 37.5,
+        "scoreLabel": "中性",
+        "valueScore": 46.3,
+        "momentumScore": 1.9,
+        "compositeLabel": null,
+        "weights": {
+          "wV": 0.8,
+          "wM": 0.2
+        },
+        "degraded": [],
+        "conclusion": "综合分 37.5（中性），维持不动：按你自己原来的节奏",
+        "suspended": false,
+        "dailyLimit": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "statusFresh": true,
+        "executable": false,
+        "currentValue": 100,
+        "latestNav": 2,
+        "dayChange": null,
+        "latestDate": "2026-09-23",
+        "profitPct": 0,
+        "eligible": true
+      },
+      {
+        "code": "DEMO-tech",
+        "name": "DEMO tech",
+        "category": "growth",
+        "caliber": null,
+        "categoryName": "主题·行业（高波动）",
+        "unsupported": false,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "marketState": null,
+        "marketStateLabel": null,
+        "marketVerdict": "add",
+        "verdict": "add",
+        "title": "主题·行业（高波动） 决策：DEMO tech → 加仓",
+        "detail": "回撤 -5.9%（阈值≤-15%）｜止跌 否｜双均线 金叉(MA20>MA60)｜PE闸 放行（无上限）。均线金叉（MA20 上穿 MA60）趋势修复，上升路线买入",
+        "factors": [
+          {
+            "dim": "回撤",
+            "value": "-5.9%",
+            "status": "neutral"
+          },
+          {
+            "dim": "止跌",
+            "value": "否",
+            "status": "neutral"
+          },
+          {
+            "dim": "双均线",
+            "value": "金叉(MA20>MA60)",
+            "status": "neutral"
+          },
+          {
+            "dim": "PE闸",
+            "value": "放行",
+            "status": "cheap"
+          }
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "golden",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": -5.87,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": 1.13,
+          "ma120DevPct": null,
+          "goldenState": true,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": false,
+          "trendGrade": null,
+          "pricePercentile": 30,
+          "recent20dChange": -5.83,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "_type": "tech",
+          "_caliber": null
+        },
+        "score": 12.8,
+        "scoreLabel": "偏贵",
+        "valueScore": 12,
+        "momentumScore": 13.5,
+        "compositeLabel": null,
+        "weights": {
+          "wV": 0.5,
+          "wM": 0.5
+        },
+        "degraded": [],
+        "conclusion": "综合分 12.8，偏贵区，本次靠趋势/纪律确认，加仓请谨慎（金额自行决定）",
+        "suspended": false,
+        "dailyLimit": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "statusFresh": true,
+        "executable": true,
+        "currentValue": 100,
+        "latestNav": 2,
+        "dayChange": null,
+        "latestDate": "2026-09-23",
+        "profitPct": 0,
+        "eligible": true
+      },
+      {
+        "code": "DEMO-gold",
+        "name": "DEMO gold",
+        "category": "cycle",
+        "caliber": null,
+        "categoryName": "商品·对冲",
+        "unsupported": false,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": false,
+          "degraded": false,
+          "reason": null
+        },
+        "marketState": null,
+        "marketStateLabel": null,
+        "marketVerdict": "add",
+        "verdict": "add",
+        "title": "商品·对冲 决策：DEMO gold → 加仓",
+        "detail": "250日分位 便宜｜趋势 跌破半年线（全下(强降)）｜止跌 未止跌｜急涨闸 急涨放行。250日价格分位 8% 处于便宜区（≤35%），均值回归买点",
+        "factors": [
+          {
+            "dim": "250日分位",
+            "value": "便宜",
+            "status": "cheap"
+          },
+          {
+            "dim": "趋势",
+            "value": "跌破半年线",
+            "status": "cheap"
+          },
+          {
+            "dim": "止跌",
+            "value": "未止跌",
+            "status": "neutral"
+          },
+          {
+            "dim": "急涨闸",
+            "value": "急涨放行",
+            "status": "cheap"
+          }
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": null,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "cheap",
+          "peZone": "na",
+          "erpZone": "na",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": 8.03,
+          "recent20dChange": -5.83,
+          "surge": false,
+          "pePercentile": null,
+          "erp": null,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "_type": "cycle",
+          "_caliber": null
+        },
+        "score": 60.8,
+        "scoreLabel": "中便宜",
+        "valueScore": 100,
+        "momentumScore": 1.9,
+        "compositeLabel": null,
+        "weights": {
+          "wV": 0.6,
+          "wM": 0.4
+        },
+        "degraded": [],
+        "conclusion": "综合分 60.8，中便宜区，可加仓（金额与节奏由你自己定，系统不强制）",
+        "suspended": false,
+        "dailyLimit": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "statusFresh": true,
+        "executable": true,
+        "currentValue": 100,
+        "latestNav": 2,
+        "dayChange": null,
+        "latestDate": "2026-09-23",
+        "profitPct": 0,
+        "eligible": true
+      },
+      {
+        "code": "DEMO-global",
+        "name": "DEMO global",
+        "category": "broad",
+        "caliber": "us",
+        "categoryName": "宽基·海外",
+        "unsupported": false,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "marketState": null,
+        "marketStateLabel": null,
+        "marketVerdict": "hold",
+        "verdict": "hold",
+        "title": "宽基·海外 决策：DEMO global → 不动",
+        "detail": "PE滚动156周分位 100%（贵）｜PE回撤(近52周) 0%（阈值≤-12%）｜ERP(对美债) 中性｜趋势 跌破半年线（全下(强降)）｜PE闸 放行。PE 17.00 滚动 156 周分位 100.0%（>25%）且距近 52 周高点回撤 0.0%（>-12%），两条通道均未触发",
+        "factors": [
+          {
+            "dim": "PE滚动156周分位",
+            "value": "100%（贵）",
+            "status": "expensive"
+          },
+          {
+            "dim": "PE回撤",
+            "value": "0%",
+            "status": "neutral"
+          },
+          {
+            "dim": "ERP",
+            "value": "中性",
+            "status": "neutral"
+          },
+          {
+            "dim": "趋势",
+            "value": "跌破半年线",
+            "status": "cheap"
+          },
+          {
+            "dim": "PE闸",
+            "value": "放行",
+            "status": "cheap"
+          }
+        ],
+        "matrix": {
+          "yieldZone": "na",
+          "maZone": "below",
+          "devPct": -7.5,
+          "ratio": null,
+          "dipReady": false,
+          "drawdown": null,
+          "stopFall": false,
+          "stopRisePct": -1.86,
+          "maSpreadPct": null,
+          "ma120DevPct": -4.44,
+          "goldenState": false,
+          "cross": null,
+          "gate": "pass",
+          "pctZone": "na",
+          "peZone": "expensive",
+          "erpZone": "neutral",
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "pricePercentile": null,
+          "recent20dChange": -5.83,
+          "surge": false,
+          "pePercentile": 30,
+          "erp": 0.018824,
+          "yield": null,
+          "cheapYield": null,
+          "expensiveYield": null,
+          "refYield": null,
+          "pe": 17,
+          "peRollingPct": 100,
+          "peDipLevel": 0,
+          "peDipPct": 12,
+          "peDipWindowWeeks": 52,
+          "peWindowWeeks": 156,
+          "cheapByPct": false,
+          "cheapByDip": false,
+          "cheap": false,
+          "_type": "broad",
+          "_caliber": "us"
+        },
+        "score": 8.9,
+        "scoreLabel": "偏贵",
+        "valueScore": 10.6,
+        "momentumScore": 1.9,
+        "compositeLabel": null,
+        "weights": {
+          "wV": 0.8,
+          "wM": 0.2
+        },
+        "degraded": [],
+        "conclusion": "综合分 8.9（偏贵），维持不动：按你自己原来的节奏",
+        "suspended": false,
+        "dailyLimit": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "statusFresh": true,
+        "executable": false,
+        "currentValue": 100,
+        "latestNav": 2,
+        "dayChange": null,
+        "latestDate": "2026-09-23",
+        "profitPct": 0,
+        "eligible": true
+      },
+      {
+        "code": "DEMO-hs300",
+        "name": "DEMO hs300",
+        "category": "broad",
+        "caliber": "cn",
+        "categoryName": "沪深300",
+        "unsupported": false,
+        "valuationAnchor": {
+          "hasTrackIndex": true,
+          "usable": true,
+          "degraded": false,
+          "reason": null
+        },
+        "marketState": "waiting",
+        "marketStateLabel": "等待机会",
+        "marketVerdict": "hold",
+        "verdict": "hold",
+        "title": "沪深300 决策：等待机会",
+        "detail": "沪深300近5年 PE 分位 30%（便宜线 ≤25%）｜基金复权净值 BIAS120 -4.44%（门槛 ≤-3.0084%）｜已完成周 RSI14 38.37（前周 43.32）｜趋势 全下(强降)（MA60/120/250，仅展示）｜ERP 3.38%（仅参考）。等待机会。参数由 202015 基金回测选定，证据较弱。",
+        "factors": [
+          {
+            "dim": "PE近5年分位",
+            "value": "30%",
+            "status": "neutral"
+          },
+          {
+            "dim": "BIAS120",
+            "value": "-4.44%",
+            "status": "cheap"
+          },
+          {
+            "dim": "周 RSI14",
+            "value": "38.37 / 前周 43.32",
+            "status": "neutral"
+          },
+          {
+            "dim": "MA60/120/250 趋势",
+            "value": "全下(强降)",
+            "status": "neutral"
+          },
+          {
+            "dim": "ERP（仅参考）",
+            "value": "3.38%",
+            "status": "neutral"
+          }
+        ],
+        "matrix": {
+          "marketState": "waiting",
+          "marketStateLabel": "等待机会",
+          "pePercentile": 30,
+          "peAsOf": "2026-09-22",
+          "evidence": "weak",
+          "peZone": "neutral",
+          "erp": 0.03382,
+          "erpReferenceOnly": true,
+          "biasPct": -4.44,
+          "biasMa": 120,
+          "biasThreshold": -3.0084,
+          "rsiPeriod": 14,
+          "weeklyRsi": 38.37,
+          "previousWeeklyRsi": 43.32,
+          "completedWeeks": 46,
+          "ma60": 0.8214,
+          "ma120": 0.8379,
+          "ma250": 0.8655,
+          "trendWeak": true,
+          "trendGrade": "全下(强降)",
+          "dataError": null,
+          "_type": "broad300",
+          "_caliber": "cn"
+        },
+        "score": null,
+        "scoreLabel": null,
+        "valueScore": null,
+        "momentumScore": null,
+        "compositeLabel": "等待机会",
+        "weights": null,
+        "degraded": [],
+        "conclusion": "等待机会；继续观察。参数来自 202015 单基金回测，证据较弱；金额和节奏由你决定。",
+        "suspended": false,
+        "dailyLimit": null,
+        "purchaseStatus": {
+          "state": "open",
+          "updatedAt": 1790208000000
+        },
+        "statusFresh": true,
+        "executable": false,
+        "currentValue": 100,
+        "latestNav": 2,
+        "dayChange": null,
+        "latestDate": "2026-09-23",
+        "profitPct": 0,
+        "eligible": true
+      }
+    ],
+    "alerts": [],
+    "thresholds": {},
+    "categoryPolicy": {
+      "core": "buy",
+      "cycle": "buy",
+      "growth": "buy"
+    },
+    "cooldownDays": 7,
+    "calibratedAt": "2026-08-09",
+    "weekAgo": {}
+  }
+}

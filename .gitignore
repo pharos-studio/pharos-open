@@ -27,3 +27,23 @@ data/**/*.bak*
 # ---- 本地产物 / 跨平台系统垃圾 ----
 .DS_Store
 Thumbs.db
+
+# Local research is preserved on disk but is not part of the public distribution.
+backend/backtest/
+backend/scripts/verify_dividend_reason.js
+backend/scripts/verify_dividend_fund_nav.js
+backend/scripts/verify_dividend_expansion.js
+backend/scripts/verify_dividend_trend.js
+backend/scripts/fixtures/dividend-observed-baseline.json
+backend/scripts/fixtures/dividend-expansion-baseline.json
+backend/scripts/fixtures/dividend-trend-baseline.json
+docs/沪深300基金偏离率回测.md
+docs/红利低波双路径回测报告.md
+docs/红利低波双路径扩展回测报告.md
+docs/红利趋势回踩参数与指标对照报告.md
+docs/红利低波影子验证说明.md
+docs/算法设计复盘手册.md
+/黄金三区间对照与改造建议.md
+
+# Local coordination records for the NASDAQ / theme / gold batch only.
+/docs/_local/tasks/

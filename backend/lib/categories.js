@@ -39,7 +39,7 @@ const BUILTIN_ENGINES = [
 
 // 口径维度：category 之下的「用哪把尺子量」。不参与环形图分块。
 const BUILTIN_CALIBERS = [
-  { key: 'cn', name: 'A股口径', note: '乐咕PE分位(近5年滚动) × 中债10年ERP' },
+  { key: 'cn', name: 'A股口径', note: '沪深300：PE分位 + 基金复权净值 BIAS/周 RSI；其他 A 股宽基沿用原算法' },
   { key: 'us', name: '海外口径', note: '滚动3年PE分位 ∨ PE回撤15% × 美债10年ERP' },
 ];
 
@@ -49,7 +49,7 @@ const BUILTIN_PRESETS = [
   {
     id: 'broad-cn', name: 'A股宽基', category: 'broad', caliber: 'cn', supported: true,
     applies: '跟踪 A 股宽基指数的基金：沪深300 / 中证500 / 中证1000 / A500 / 创业板 / 科创50',
-    note: '估值锚 = 该指数自己的 PE 分位 × 中债 ERP，所以**必须填对跟踪指数**，否则判定会降级',
+    note: '沪深300专线用基金自身复权净值 BIAS 与周 RSI；其他 A 股宽基沿用 PE/ERP。必须填对跟踪指数。',
   },
   {
     id: 'broad-us', name: '海外宽基', category: 'broad', caliber: 'us', supported: true,

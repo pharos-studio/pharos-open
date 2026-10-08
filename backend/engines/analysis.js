@@ -13,6 +13,15 @@ const buyPlan = require('../lib/buyPlan');
 const allocation = require('./alloc/allocation');
 const trackIndex = require('../lib/trackIndex'); // 指数白名单与"这条线能不能用锚"（唯一真相源）
 const indexQuote = require('../lib/indexQuote');
+const dividendData = require('../services/dividendData');
+const hs300Data = require('../services/hs300Data');
+const { isHs300Route } = require('../lib/hs300Identity');
+const nasdaqData=require('../services/nasdaqData');
+const {isNasdaqRoute}=require('../lib/nasdaqIdentity');
+const activeEquityData=require('../services/activeEquityData');
+const {isActiveEquityRoute}=require('../lib/activeEquityIdentity');
+const goldData=require('../services/goldData');
+const {isGoldRoute}=require('../lib/goldIdentity');
 const { baseCategoryOf } = require('./registry'); // 自建分类(custom:xxx) → 绑定的内置算法
 
 // ---------- 分析计算（纯计算，供 /api/refresh 与 /api/advice 复用）----------
@@ -35,6 +44,10 @@ async function buildAnalysis(opts) {
   //   改为 Promise.all 并行；实际并发由 lib/http 的全局闸门兜住（默认 6），不会被数据源限流。
   //   安全性已逐行核验：循环体内无 continue、无提前 return、无跨迭代依赖、不写任何文件。
   const results = await Promise.all(holdings.funds.map(async (f) => {
+    const hs300 = isHs300Route(f);
+    const nasdaq=isNasdaqRoute(f);
+    const activeEquity=isActiveEquityRoute(f);
+    const gold=isGoldRoute(f);
     // 宽基/红利/黄金：需长窗口（250 日）算 MA120/250、价格分位；其余（科技/成长）120 日
     const needLong = f.category === 'broad' || f.category === 'dividend' || f.category === 'cycle';
     const histDays = needLong ? 250 : 120;
@@ -97,7 +110,7 @@ async function buildAnalysis(opts) {
     const _baseCat = baseCategoryOf(f.category);
     const useIndexAnchor = trackIndex.usesIndexAnchor(_baseCat);
     let valuation = null;
-    if (f.trackIndex && useIndexAnchor) {
+    if (f.trackIndex && useIndexAnchor && f.category !== 'dividend' && !hs300 && !nasdaq && !activeEquity && !gold) {
       // 宽基乐咕滚动分位窗口 = config.signals.broad.peWindowYears（缺省 5，与提配置前一致）
       const peWinYears = (cfg.signals && cfg.signals.broad && cfg.signals.broad.peWindowYears) || 5;
       const ev = await fetchers.fetchValuation(f.trackIndex, peWinYears);
@@ -115,7 +128,7 @@ async function buildAnalysis(opts) {
       source: 'price'
     };
     // 给前端一个「这只基金的估值锚是否降级」的显式标记，替代过去"偷偷显示 ? 且恒 hold"的静默行为。
-    const anchorDegraded = trackIndex.needsTrackIndex(_baseCat)
+    const anchorDegraded = !hs300 && !nasdaq && !activeEquity && !gold && f.category !== 'dividend' && trackIndex.needsTrackIndex(_baseCat)
       && !(f.trackIndex && useIndexAnchor && !usedPriceFallback);
 
     // 宽基：按「口径」补充无风险利率锚（ERP 第二锚用）——★中债只给 A 股、美债只给海外，二者不可互为兜底。
@@ -138,20 +151,34 @@ async function buildAnalysis(opts) {
     // 宽基·海外：挂指数 PE 历史序列（滚动分位 与 PE回撤 的唯一数据源）。
     // ★必须自算：蛋卷的当期 pe_percentile 是固定约10年口径，遇纳指 PE「台阶上移」会长期失效（见 plans §8.6）。
     // 抓不到 → 不挂（策略侧通道①②失效、综合分 25 兜底），不报错。
-    if (f.category === 'broad' && util.caliberOf(f) === 'us' && f.trackIndex) {
+    if (f.category === 'broad' && util.caliberOf(f) === 'us' && f.trackIndex && !nasdaq) {
       try {
         const rows = await fetchers.fetchIndexPeHistory(f.trackIndex);
         if (rows && rows.length && valuation) valuation.peHistory = rows;
       } catch (e) { /* 不致命 */ }
     }
 
-    // 红利：挂「中证红利000922 动态股息率」作参考带（标普SPCLLHCP无免费源，用000922代理；PE分位线已砍，纯股息率带）
+    let dividendInput = null, dividendYieldReference = null;
     if (f.category === 'dividend') {
+      dividendInput = await dividendData.forFund(f);
       try {
         const dj = await fetchers.fetchDanjuanEvaList();
-        const ref = dj && dj['SH000922'];
-        if (ref && ref.dyr != null && valuation) valuation.referenceYield = ref.dyr;
+        const code = f.indexCode && (/^\d{6}$/.test(f.indexCode) ? 'SH' + f.indexCode : f.indexCode);
+        const ref = code && dj && dj[code];
+        dividendYieldReference = {indexCode:f.indexCode||null,indexName:f.indexName||null,
+          value:ref&&Number.isFinite(ref.dyr)?ref.dyr:null,source:ref?'danjuan':null,
+          asOf:ref?.asOf||null,fetchedAt:Date.now(),referenceOnly:true};
       } catch (e) { /* 不致命 */ }
+    }
+
+    // 仅精确跟踪沪深300的 A 股宽基走基金自身复权净值；持仓估值仍用原单位净值。
+    const hs300Input=hs300?await hs300Data.forFund(f):null;
+    const nasdaqInput=nasdaq?await nasdaqData.forFund(f):null;
+    const activeEquityInput=activeEquity?await activeEquityData.forFund(f):null;
+    const goldInput=gold?await goldData.forFund(f):null;
+    if(hs300Input?.pe) {
+      valuation={...valuation,pe:hs300Input.pe.pe??null,pePercentile:hs300Input.pe.percentile??null,
+        asOf:hs300Input.pe.date||null,source:hs300Input.peSource,weak:false};
     }
 
     let estimate = null, estimateChange = null, estimateQuoteState = 'not_applicable';
@@ -166,6 +193,11 @@ async function buildAnalysis(opts) {
       } catch (e) { estimateQuoteState = 'unavailable'; }
     }
     return {
+      dividendInput,
+      hs300Input,
+      nasdaqInput,
+      activeEquityInput,
+      goldInput,
       principal,
       netInvested,
       fee,
@@ -179,6 +211,8 @@ async function buildAnalysis(opts) {
         estimateRelation: f.estimateRelation || null, estimateQuoteState,
         profileState: f.profileState || 'ready', profileUpdatedAt: f.profileUpdatedAt || null,
         trackIndex: f.trackIndex || null,
+        adjustedHistory:null,adjustedNavError:null, // Compatibility only; complete strategy inputs remain non-enumerable.
+        ...(f.category === 'dividend' ? {dividendYieldReference} : {}),
         // ★ 估值锚状态（2026-09-19 新增）：让前端能**显式**告诉用户「这只基金缺估值锚、判定已降级」，
         //   替代过去"界面显示 ? 且恒定建议持仓不动"的静默误导。
         valuationAnchor: {
@@ -215,6 +249,12 @@ async function buildAnalysis(opts) {
     if (r.currentValue != null) totalValue += r.currentValue;
   }
   const funds = results.map(r => r.fund);
+  results.forEach(r => { if (r.fund.category === 'dividend')
+    Object.defineProperty(r.fund,'_dividendData',{value:r.dividendInput,enumerable:false,configurable:true}); });
+  results.forEach(r => {if(r.hs300Input)Object.defineProperty(r.fund,'_hs300Data',{value:r.hs300Input,enumerable:false,configurable:true});});
+  results.forEach(r=>{if(r.nasdaqInput)Object.defineProperty(r.fund,'_nasdaqData',{value:r.nasdaqInput,enumerable:false,configurable:true});});
+  results.forEach(r=>{if(r.activeEquityInput)Object.defineProperty(r.fund,'_activeEquityData',{value:r.activeEquityInput,enumerable:false,configurable:true});});
+  results.forEach(r=>{if(r.goldInput)Object.defineProperty(r.fund,'_goldData',{value:r.goldInput,enumerable:false,configurable:true});});
 
   // 穿透分析（科技赛道透视：基金画像卡 + 旭日图，见 buildPenetration）
   const penetration = await buildPenetration(holdings.funds, funds, totalValue);
@@ -223,7 +263,7 @@ async function buildAnalysis(opts) {
   try {
     const _peFb = (cfg.signals && cfg.signals.peFallback) || {};
     funds.forEach(f => {
-      if (f.valuation && f.valuation.pePercentile == null && _peFb[f.code] != null) {
+      if (!isHs300Route(f) && !isNasdaqRoute(f) && !isActiveEquityRoute(f) && !isGoldRoute(f) && f.valuation && f.valuation.pePercentile == null && _peFb[f.code] != null) {
         f.valuation.pePercentile = _peFb[f.code];
       }
     });
@@ -263,8 +303,16 @@ async function buildAnalysis(opts) {
     const valuationMap = {};
     funds.forEach(f => { valuationMap[f.code] = f.valuation; });
     // 预算机制已整体移除（用户拍板）：金额建议由用户自定，引擎只产出综合分/标签信号
+    // Final orchestration time includes slow non-NAS fund/penetration requests, not just NAS fetch completion.
+    const nasdaqComputedAt=Date.now();
+    results.forEach(r=>{if(r.nasdaqInput)Object.defineProperty(r.fund,'_nasdaqData',{
+      value:nasdaqData.revalidateInput(r.nasdaqInput,nasdaqComputedAt),enumerable:false,configurable:true});});
+    results.forEach(r=>{if(r.activeEquityInput)Object.defineProperty(r.fund,'_activeEquityData',{
+      value:activeEquityData.revalidateInput(r.activeEquityInput,nasdaqComputedAt),enumerable:false,configurable:true});});
+    results.forEach(r=>{if(r.goldInput)Object.defineProperty(r.fund,'_goldData',{
+      value:goldData.revalidateInput(r.goldInput,nasdaqComputedAt),enumerable:false,configurable:true});});
     plan = allocation.computeAllocation(allocationRows, pol, funds, totalValue, 0, valuationMap, dl);
-    for (const f of funds) if (f.profileState === 'needs_review' && plan.scoreMap[f.code]) {
+    for (const f of funds) if (f.category !== 'dividend' && !isNasdaqRoute(f) && !isActiveEquityRoute(f) && !isGoldRoute(f) && f.profileState === 'needs_review' && plan.scoreMap[f.code]) {
       plan.scoreMap[f.code] = { ...plan.scoreMap[f.code], verdict: 'hold', executable: false, eligible: false,
         compositeLabel: '分类待确认' };
     }

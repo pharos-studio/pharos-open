@@ -10,18 +10,36 @@
  *     caliber 只决定「用哪把尺子量便宜」，不参与任何分组展示。
  *   地域由 holdings.json 的 market 字段承载（A/QDII），额度由 config.dailyLimits 承载，与本表无关。
  *
- * 「宽基」不是泛指大盘宽基，而是**一套算法**：A股口径 = 乐咕PE分位 × 中债ERP；海外口径 = 蛋卷PE滚动分位 ∨ PE回撤。
- * 同一大类、两套口径，故用 'category:caliber' 复合键登记。
+ * 宽基大类按口径分流；确认跟踪 SH000300 的 A 股基金再进入基金复权净值专线。
  */
-const decisions = require('./decisions');
+// Runtime routing points directly to strategies, never to compatibility facades.
+const strategies = {
+  buildCoreDecision: require('./strategies/core'),
+  buildBroad300Decision: require('./strategies/broad300').buildBroad300Decision,
+  buildBroadGlobalDecision: require('./strategies/broadGlobal'),
+  buildNasdaqDecision: require('./strategies/nasdaq'),
+  buildDividendDecision: require('./strategies/dividend'),
+  buildTechDecision: require('./strategies/tech'),
+  buildActiveEquityDecision: require('./strategies/activeEquity'),
+  buildGoldDualDecision: require('./strategies/goldDual'),
+  buildGoldDecision: require('./strategies/gold')
+};
 const util = require('../lib/util');
+const { isHs300Route } = require('../lib/hs300Identity');
+const { isNasdaqRoute } = require('../lib/nasdaqIdentity');
+const { isActiveEquityRoute } = require('../lib/activeEquityIdentity');
+const { isGoldRoute } = require('../lib/goldIdentity');
 
 const REGISTRY = {
-  broad:      { builder: decisions.buildCoreDecision,        type: 'broad',    label: '宽基',            caliber: 'cn', scope: 'category' },
-  'broad:us': { builder: decisions.buildBroadGlobalDecision, type: 'broad',    label: '宽基·海外',       caliber: 'us', scope: 'category:caliber' },
-  dividend:   { builder: decisions.buildDividendDecision,    type: 'dividend', label: '红利·低波',       scope: 'category' },
-  growth:     { builder: decisions.buildTechDecision,        type: 'tech',     label: '主题·行业（高波动）', scope: 'category' },
-  cycle:      { builder: decisions.buildGoldDecision,        type: 'cycle',    label: '商品·对冲',       scope: 'category' }
+  goldDual: {builder:strategies.buildGoldDualDecision,type:'goldDual',label:'国内黄金 · 双路径',scope:'verified-own-share'},
+  activeEquity: { builder: strategies.buildActiveEquityDecision, type: 'activeEquity', label: '主动权益 · 买入判断', scope: 'verified-own-share' },
+  broad:      { builder: strategies.buildCoreDecision,        type: 'broad',    label: '宽基',            caliber: 'cn', scope: 'category' },
+  'broad:hs300': { builder: strategies.buildBroad300Decision, type: 'broad300', label: '沪深300', caliber: 'cn', scope: 'trackIndex' },
+  'broad:us': { builder: strategies.buildBroadGlobalDecision, type: 'broad',    label: '宽基·海外',       caliber: 'us', scope: 'category:caliber' },
+  'broad:nasdaq': {builder:strategies.buildNasdaqDecision,type:'nasdaq',label:'纳斯达克100',caliber:'us',scope:'verified:NDX'},
+  dividend:   { builder: strategies.buildDividendDecision, type: 'dividend', label: '红利·低波', scope: 'category' },
+  growth:     { builder: strategies.buildTechDecision,        type: 'tech',     label: '主题·行业（高波动）', scope: 'category' },
+  cycle:      { builder: strategies.buildGoldDecision,        type: 'cycle',    label: '商品·对冲',       scope: 'category' }
 };
 
 // 还没有决策算法的类别（占位"待建设"）。
@@ -46,6 +64,11 @@ function resolveRegistry(fund) {
   const baseCat = baseCategoryOf(fund.category);
   const view = (baseCat === fund.category) ? fund : Object.assign({}, fund, { category: baseCat });
   const cal = util.caliberOf(view);
+  if(isGoldRoute(fund))return {key:'goldDual',reg:REGISTRY.goldDual};
+  if(isActiveEquityRoute(fund))return {key:'activeEquity',reg:REGISTRY.activeEquity};
+  if(isNasdaqRoute(fund))return {key:'broad:nasdaq',reg:REGISTRY['broad:nasdaq']};
+  if (isHs300Route(fund))
+    return { key: 'broad:hs300', reg: REGISTRY['broad:hs300'] };
   if (cal) {
     const compound = REGISTRY[baseCat + ':' + cal];
     if (compound) return { key: baseCat + ':' + cal, reg: compound };

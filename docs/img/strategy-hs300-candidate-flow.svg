@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 2070" width="900" height="2070" role="img" aria-labelledby="title desc">
+  <title id="title">沪深300 · 双通道候选框架</title>
+  <desc id="desc">历史研究草案，保留设计过程，不作为现行规则。正式hs300-dual-v1采用共同25%入口及冻结双通道；请阅读strategy-hs300-flow.svg。这里的A/B、其他门槛及待测标注均属当时研究假设。</desc>
+  <defs>
+    <radialGradient id="halo"><stop stop-color="#7C8CF8" stop-opacity=".16"/><stop offset="1" stop-color="#7C8CF8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="gold-glow"><stop stop-color="#D9A441" stop-opacity=".08"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9AA3C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+  <style>
+    text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}
+    .title,.heading{font-family:"Songti SC",STSong,"Noto Serif CJK SC",SimSun,Georgia,serif;fill:#EDEFF7;font-weight:600}
+    .title{font-size:30px}.heading{font-size:23px}.body{font-size:20px;fill:#EDEFF7}.branch{font-size:19px;fill:#EDEFF7}
+    .note{font-size:18px;fill:#9AA3C0}.label{font-size:17px;fill:#D9A441;letter-spacing:1px}.small{font-size:16px;fill:#9AA3C0}
+    .panel{fill:#FFFFFF;fill-opacity:.05;stroke:#D9A441;stroke-opacity:.65;stroke-width:1.3}
+    .line{fill:none;stroke:#9AA3C0;stroke-width:2;stroke-linejoin:round;marker-end:url(#arrow)}
+    .connector{fill:none;stroke:#9AA3C0;stroke-width:2;stroke-linejoin:round}
+  </style>
+
+  <rect width="900" height="2070" rx="12" fill="#0A1020"/>
+  <ellipse cx="200" cy="0" rx="800" ry="500" fill="url(#halo)"/>
+  <ellipse cx="840" cy="0" rx="450" ry="350" fill="url(#gold-glow)"/>
+  <rect x="36" y="36" width="5" height="44" rx="2" fill="#D9A441"/>
+  <text x="56" y="48" class="label">PHAROS / 沪深300研究候选</text>
+  <rect x="534" y="32" width="330" height="38" rx="7" fill="#FFFFFF" fill-opacity=".05" stroke="#D9A441"/>
+  <text x="699" y="57" text-anchor="middle" class="label">历史研究草案 · 非正式规则</text>
+  <text x="56" y="99" class="title">沪深300 · 双通道候选框架</text>
+  <text x="36" y="141" class="note">以下为当时假设；当前规则请看「沪深300 · 共同PE入口与双通道」。</text>
+
+  <g data-panel="范围与可知数据">
+    <rect x="36" y="180" width="828" height="202" rx="12" class="panel"/>
+    <text x="58" y="218" class="heading">① 范围与可知数据</text>
+    <text x="58" y="258" class="body">后端档案确认的国内场外沪深300基金；不凭名称套用</text>
+    <text x="58" y="288" class="body">对应指数提供 PE；本基金分红再投资复权净值提供价格指标</text>
+    <text x="58" y="318" class="body">只用下单前已可知数据；周数据须同时「已完成、已可知」</text>
+    <text x="58" y="357" class="note">档案不足、复权错误或必要数据缺失 → 无法判定，不进入通道</text>
+  </g>
+  <path class="line" d="M450 382V421"/>
+  <text x="472" y="409" class="small">方案 A 所需数据合格</text>
+
+  <g data-panel="方案A共同估值入口">
+    <rect x="36" y="428" width="828" height="174" rx="12" class="panel"/>
+    <text x="58" y="466" class="heading">② 方案 A · 共同估值入口（待验证假设）</text>
+    <text x="58" y="505" class="body">近五年滚动 PE 分位 ≤ 待验证上限</text>
+    <text x="58" y="537" class="body">后续对照候选：25% ／ 35% ／ 50%；不是 PE 倍数</text>
+    <text x="58" y="576" class="note">未进入范围 → 等待机会；数据缺失／过期 → 无法判定</text>
+  </g>
+  <path class="connector" d="M450 602V654M237 654H663"/>
+  <path class="line" d="M237 654V687"/>
+  <path class="line" d="M663 654V687"/>
+  <text x="472" y="635" class="small">进入估值范围后，并行检查</text>
+
+  <g data-panel="回撤修复通道">
+    <rect x="36" y="694" width="402" height="358" rx="12" class="panel"/>
+    <text x="58" y="734" class="heading">③A 回撤修复通道</text>
+    <text x="58" y="781" class="label">位置判断</text>
+    <text x="58" y="814" class="branch">BIAS 负乖离／回撤位置达标</text>
+    <text x="58" y="861" class="label">恢复确认</text>
+    <text x="58" y="894" class="branch">价格修复与已完成周 RSI 确认</text>
+    <text x="58" y="937" class="note">BIAS 周期、回撤深度、修复幅度</text>
+    <text x="58" y="966" class="note">及 RSI 周期／门槛均待测试</text>
+    <text x="58" y="1018" class="label">通道内全部条件「且」</text>
+  </g>
+  <g data-panel="趋势回踩通道">
+    <rect x="462" y="694" width="402" height="358" rx="12" class="panel"/>
+    <text x="484" y="734" class="heading">③B 趋势回踩通道</text>
+    <text x="484" y="781" class="label">趋势与位置判断</text>
+    <text x="484" y="814" class="branch">长期上升趋势成立，局部回踩达标</text>
+    <text x="484" y="861" class="label">恢复确认</text>
+    <text x="484" y="894" class="branch">价格与已完成周 RSI 恢复确认</text>
+    <text x="484" y="937" class="note">均线、BIAS、回踩及恢复条件待测</text>
+    <text x="484" y="966" class="note">不直接复制红利的周期与阈值</text>
+    <text x="484" y="1018" class="label">通道内全部条件「且」</text>
+  </g>
+  <path class="connector" d="M237 1052V1082H663V1052"/>
+  <circle cx="450" cy="1082" r="4" fill="#D9A441"/>
+  <path class="line" d="M450 1082V1119"/>
+  <text x="472" y="1106" class="small">通道间「或」；同时触发不重复</text>
+
+  <g data-panel="市场候选合并">
+    <rect x="36" y="1126" width="828" height="184" rx="12" class="panel"/>
+    <text x="58" y="1164" class="heading">④ 市场候选合并 · 不生成综合分</text>
+    <text x="58" y="1203" class="body">任一通道全部成立 → 可加仓（研究候选），只形成一个候选</text>
+    <text x="58" y="1234" class="body">数据合格，但估值未进入范围／两个通道都未成立 → 等待机会</text>
+    <text x="58" y="1281" class="note">必要档案或数据不合格 → 无法判定，不兜底为等待；不新增观察档</text>
+  </g>
+  <path class="line" d="M450 1310V1347"/>
+
+  <g data-panel="独立交易约束">
+    <rect x="36" y="1354" width="828" height="154" rx="12" class="panel"/>
+    <text x="58" y="1392" class="heading">⑤ 独立交易约束与最终展示（目标结构）</text>
+    <text x="58" y="1431" class="body">暂停／未知或过期申购状态、用户限额、政策约束另行检查</text>
+    <text x="58" y="1462" class="body">展示市场状态、触发通道、关键证据与可执行性；交易拦截保留市场判断</text>
+    <text x="58" y="1491" class="note">候选 ≠ 可执行申购；本图没有启用任何新规则</text>
+  </g>
+
+  <g data-panel="ERP独立参考">
+    <rect x="36" y="1560" width="268" height="322" rx="12" fill="#FFFFFF" fill-opacity=".05" stroke="#9AA3C0" stroke-opacity=".65" stroke-dasharray="6 5"/>
+    <text x="58" y="1600" class="heading">独立参考</text>
+    <text x="58" y="1646" class="body">ERP · 股债利差</text>
+    <text x="58" y="1683" class="note">仅供展示，不参与判断</text>
+    <text x="58" y="1714" class="note">不进入估值入口</text>
+    <text x="58" y="1745" class="note">不进入两条价格通道</text>
+    <text x="58" y="1776" class="note">不进入交易约束</text>
+    <text x="58" y="1828" class="small">参考缺失不拦截候选</text>
+  </g>
+  <g data-panel="后续对照测试说明">
+    <rect x="328" y="1560" width="536" height="322" rx="12" fill="#7C8CF8" fill-opacity=".06" stroke="#7C8CF8" stroke-opacity=".75" stroke-dasharray="12 5 2 5"/>
+    <text x="350" y="1600" class="heading">后续对照测试 · 不是执行通路</text>
+    <text x="350" y="1646" class="branch">方案 B：回撤修复保留 PE 入口；</text>
+    <text x="350" y="1676" class="branch">趋势回踩不设 PE 入口，不以 PE 数据齐全为前提。</text>
+    <text x="350" y="1719" class="note">固定价格条件，比较方案 A／B；</text>
+    <text x="350" y="1750" class="note">固定其余条件，比较 PE 上限 25%／35%／50%。</text>
+    <text x="350" y="1781" class="note">价格与周 RSI 所需数据仍须合格，不用未来数据。</text>
+    <text x="350" y="1828" font-size="18" fill="#7C8CF8">本轮不回测、不选门槛；不画绕过 PE 的执行箭头。</text>
+  </g>
+
+  <line x1="36" y1="1930" x2="864" y2="1930" stroke="#FFFFFF" stroke-opacity=".12"/>
+  <text x="36" y="1966" class="note">图例：金色实线框＝方案 A 候选判断；灰色虚线＝独立参考；紫色点划线＝待测对照。</text>
+  <text x="36" y="1998" class="note">不将现有负乖离直接命名为「深回撤」；趋势回踩可能买在长期相对高位。</text>
+  <text x="36" y="2030" class="note">先确认结构 → 再制定回测计划 → 审阅结果后决定上线；历史结果不保证盈利。</text>
+</svg>

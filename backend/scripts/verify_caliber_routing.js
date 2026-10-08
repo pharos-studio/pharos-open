@@ -63,11 +63,14 @@ t('null 输入 → null', resolveRegistry(null), null);
 
 console.log('\n--- 关键不变量 ---');
 const cnHit = resolveRegistry({ code: '202015', category: 'broad' });
-const usHit = resolveRegistry({ code: '016452', category: 'broad', caliber: 'us' });
+const usHit = resolveRegistry({ code: 'SYNTHETIC-SPX', name:'Synthetic non-Nasdaq S&P500',trackIndex:'SPX',category: 'broad', caliber: 'us' });
 t('cn / us 用同一个 type（综合分靠 caliber 分流，不靠 type）', cnHit.reg.type === usHit.reg.type, true);
 t('cn / us 是不同的 builder（算法不同）', cnHit.reg.builder !== usHit.reg.builder, true);
 t('cn builder 名 = buildCoreDecision', cnHit.reg.builder.name, 'buildCoreDecision');
 t('us builder 名 = buildBroadGlobalDecision', usHit.reg.builder.name, 'buildBroadGlobalDecision');
+const nasdaqHit=resolveRegistry({code:'016452',category:'broad',caliber:'us'});
+t('真实016452优先纳指专线',nasdaqHit.reg.type,'nasdaq');
+t('纳指专线与通用海外builder独立',nasdaqHit.reg.builder!==usHit.reg.builder,true);
 
 console.log('\n--- 内置项补齐 ensureBuiltins（修「升级后看不到债券/现金」）---');
 const fs = require('fs');
@@ -161,6 +164,7 @@ const TITLE_WANT = {
   growth: REGISTRY.growth.label,
   cycle: REGISTRY.cycle.label,
   'broad:us': REGISTRY['broad:us'].label,
+  'broad:hs300': REGISTRY['broad:hs300'].label,
   broad: REGISTRY.broad.label + '(双锚)',
 };
 Object.keys(TITLE_WANT).forEach((key) => {
@@ -170,6 +174,9 @@ Object.keys(TITLE_WANT).forEach((key) => {
 });
 t('决策卡 title 共 ' + Object.keys(TITLE_WANT).length + ' 张（新增决策卡须同步登记 TITLE_WANT）',
   titlePrefixes.length, Object.keys(TITLE_WANT).length);
+t('新红利正式路由启用', REGISTRY.dividend.enabled !== false, true);
+t('新红利决策卡标题明确', titlePrefixes.includes(REGISTRY.dividend.label), true);
+t('红利股息率仅参考', adviceSrc.includes('仅参考，不参与判断'), true);
 
 const timingSrc = fs.readFileSync(path.join(__dirname, '..', 'engines', 'timing.js'), 'utf8');
 const catM = timingSrc.match(/const CAT_LABEL = \{([\s\S]*?)\};/);

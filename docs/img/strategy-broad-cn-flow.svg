@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1340" width="900" height="1340" role="img" aria-labelledby="title desc">
+<title id="title">普通 A 股宽基 · PE × ERP</title>
+<desc id="desc">当前通用 A 股宽基规则，不包含沪深300专线。PE分区、ERP、趋势与止跌参与原有矩阵，PE急涨总闸优先。缺失数据沿用代码原分支；综合分不是矩阵触发条件。</desc>
+<defs><radialGradient id="g0-halo"><stop stop-color="#7C8CF8" stop-opacity=".16"/><stop offset="1" stop-color="#7C8CF8" stop-opacity="0"/></radialGradient><radialGradient id="g0-gold"><stop stop-color="#D9A441" stop-opacity=".08"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9AA3C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<style>text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}.title,.heading,text[font-weight="500"]{font-family:"Songti SC",STSong,"Noto Serif CJK SC","Source Han Serif SC",SimSun,Georgia,serif}.title,.heading{fill:#EDEFF7}rect{stroke-linejoin:round}</style>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}
+.title{font-size:30px;font-weight:600;fill:#EDEFF7}
+.heading{font-size:23px;font-weight:600;fill:#EDEFF7}
+.body{font-size:20px;fill:#EDEFF7}
+.note{font-size:18px;fill:#9AA3C0}
+.label{font-size:17px;letter-spacing:1px;fill:#D9A441}
+.line{fill:none;stroke:#9AA3C0;stroke-width:2;stroke-linejoin:round;marker-end:url(#arrow)}
+</style>
+<rect width="900" height="1340" rx="12" fill="#0A1020"/>
+<ellipse cx="200" cy="0" rx="800" ry="500" fill="url(#g0-halo)"/><ellipse cx="840" cy="0" rx="450" ry="350" fill="url(#g0-gold)"/>
+<rect x="36" y="36" width="5" height="44" rx="2" fill="#D9A441"/>
+<text x="56" y="48" class="label">PHAROS / 策略细节 02</text>
+<text x="56" y="86" class="title">普通 A 股宽基 · PE × ERP</text>
+<text x="36" y="125" class="note">broad / caliber=cn / 不含已命中 SH000300 专线的基金</text>
+<rect x="652" y="40" width="212" height="36" rx="7" fill="rgba(255,255,255,.05)" stroke="#D9A441"/>
+<text x="758" y="64" text-anchor="middle" font-size="17" fill="#D9A441">当前运行 · 未改规则</text>
+<g data-panel="① 便宜判定 · 同一指数的双锚">
+<rect x="36" y="166" width="828" height="152" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="202" class="heading">① 便宜判定 · 同一指数的双锚</text>
+<text x="58" y="238" class="body">指数 PE 分位 → 便宜／中性／偏贵；缺失记为 na</text>
+<text x="58" y="267" class="body">ERP = 1 / PE − 中债10年收益率 → 高／中性／低</text>
+<text x="58" y="296" class="body">按现有配置划区；不使用美债替代中债</text>
+</g>
+<path class="line" d="M450 318V348"/>
+<g data-panel="② 趋势与止跌 · 为矩阵提供证据">
+<rect x="36" y="350" width="828" height="152" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="386" class="heading">② 趋势与止跌 · 为矩阵提供证据</text>
+<text x="58" y="422" class="body">MA60／MA120／MA250 描述均线位置</text>
+<text x="58" y="451" class="body">净值 ＜ MA120 → 趋势弱；近窗口低点抬高 → 已止跌</text>
+<text x="58" y="480" class="body">均线与止跌并非所有买入分支共同的前提</text>
+</g>
+<path class="line" d="M450 502V532"/>
+<g data-panel="③ PE 总闸 · 优先否决">
+<rect x="36" y="534" width="828" height="124" rx="12" fill="rgba(255,255,255,.05)" stroke="#D9A441" stroke-width="1.3"/>
+<text x="58" y="570" class="heading">③ PE 总闸 · 优先否决</text>
+<text x="58" y="606" class="body">PE 分位达到总闸高线，且近20日涨幅超过急涨线</text>
+<text x="58" y="635" class="body">两项同时成立 → 强制不动；否则进入矩阵</text>
+</g>
+<path class="line" d="M450 658V688"/>
+<g data-panel="④ 决策矩阵 · 保留原分支">
+<rect x="36" y="690" width="828" height="212" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="726" class="heading">④ 决策矩阵 · 保留原分支</text>
+<text x="58" y="762" class="body">PE 便宜 → 加仓；ERP 低仅提示谨慎，不否决</text>
+<text x="58" y="791" class="body">PE 偏贵 → 不动，不因 ERP 高而改成加仓</text>
+<text x="58" y="820" class="body">PE 中性或缺失 → 仅在下列三项同时成立时加仓：</text>
+<text x="58" y="849" class="body">ERP 低 ＋ 净值跌破 MA120 ＋ 已止跌</text>
+<text x="58" y="878" class="body">其余组合 → 不动；数据缺失不新增统一阻断</text>
+</g>
+<path class="line" d="M450 902V932"/>
+<g data-panel="⑤ 输出 · 判断与评分分开">
+<rect x="36" y="934" width="828" height="152" rx="12" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.12)" stroke-width="1.3"/>
+<text x="58" y="970" class="heading">⑤ 输出 · 判断与评分分开</text>
+<text x="58" y="1006" class="body">保留 add／hold、矩阵及理由；综合分由 V／M 另算</text>
+<text x="58" y="1035" class="body">综合分不作为上述矩阵的触发门槛</text>
+<text x="58" y="1064" class="body">申购与用户限额约束执行；资金政策标注 eligible</text>
+</g>
+<line x1="36" y1="1250" x2="864" y2="1250" stroke="rgba(255,255,255,.12)"/>
+<text x="36" y="1281" class="note">均线位置与连续动量因子仍参与评分；本轮没有修改任何参数。</text>
+<text x="36" y="1311" class="note">依据：core / decisionPipeline / scoring / tradeConstraints</text>
+</svg>

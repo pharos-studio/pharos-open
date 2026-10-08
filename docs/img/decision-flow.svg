@@ -1,112 +1,64 @@
-<svg viewBox="0 0 800 592" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
-<title>决策分配算法模型 · 决策链路全景</title>
-<desc>从数据输入到 registry（按类别+口径）注册、五套策略并排、内核四步、综合分合成到输出决策卡的完整链路。2026-09-14 起位置分重构为 V 估值分 + M 动量分 双轨（动量因子由二值改连续，add/hold 判定完全不动）。2026-09-12 起宽基内部分 caliber（A股 cn / 海外 us），海外口径（纳指100）为独立策略线，与 A股口径并排展示。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1280" width="900" height="1280" role="img" aria-labelledby="title desc">
+<title id="title">决策链路 · 状态输出目标结构</title>
+<desc id="desc">输入、正式策略路由、市场判断与证据、交易约束、最终展示。末端为状态与证据，不按综合分分段。这是目标结构，尚未全量实现；当前非红利评分策略保留综合分，旧红利已停用，新双路径未上线。</desc>
 <defs>
-<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</marker>
+<radialGradient id="halo"><stop stop-color="#7C8CF8" stop-opacity=".16"/><stop offset="1" stop-color="#7C8CF8" stop-opacity="0"/></radialGradient>
+<radialGradient id="goldHalo"><stop stop-color="#D9A441" stop-opacity=".08"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#D9A441" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
 </defs>
-<rect x="0" y="0" width="800" height="592" rx="16" fill="#0A1020"/>
-<text x="40" y="30" font-size="15" font-weight="500" fill="#E8E6DF">决策链路全景</text>
-<text x="760" y="30" text-anchor="end" font-size="12" fill="#8A93A6">决策分配算法模型</text>
-<text x="40" y="60" font-size="12" fill="#8A93A6">输入层 · 三大数据源</text>
-<g>
-<rect x="40" y="72" width="220" height="52" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="150" y="92" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">holdings.json</text>
-<text x="150" y="110" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#8A93A6">持仓 + 净值历史</text>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;fill:#EDEFF7}
+.title,.heading{font-family:"Songti SC",STSong,"Noto Serif CJK SC","Source Han Serif SC",SimSun,Georgia,serif;font-weight:600}
+.title{font-size:30px}.heading{font-size:24px}.body{font-size:20px}.note{font-size:18px;fill:#9AA3C0}.label{font-size:17px;letter-spacing:1px;fill:#D9A441}
+.panel{fill:white;fill-opacity:.05;stroke:#D9A441;stroke-opacity:.22;stroke-width:1.3}
+.line{fill:none;stroke:#D9A441;stroke-opacity:.7;stroke-width:2;stroke-linejoin:round;marker-end:url(#arrow)}
+</style>
+<rect width="900" height="1280" rx="12" fill="#0A1020"/>
+<ellipse cx="230" cy="0" rx="800" ry="500" fill="url(#halo)"/><ellipse cx="840" cy="0" rx="450" ry="350" fill="url(#goldHalo)"/>
+<rect x="36" y="36" width="5" height="44" rx="2" fill="#D9A441"/>
+<text x="56" y="48" class="label">PHAROS / 决策总框架</text>
+<text x="56" y="88" class="title">从策略判断，到状态与证据</text>
+<rect x="674" y="40" width="190" height="36" rx="7" class="panel"/>
+<text x="769" y="64" text-anchor="middle" class="label">目标结构 · 未全量实现</text>
+<text x="36" y="128" class="note">当前：非红利评分策略保留综合分；旧红利已停用，新双路径未上线</text>
+<g data-panel="输入">
+<rect x="60" y="168" width="780" height="130" rx="12" class="panel"/>
+<text x="84" y="206" class="heading">01 / 输入 · 先准备可用数据</text>
+<text x="84" y="245" class="body">基金档案、下单前已可获知的净值及估值、配置与时间</text>
+<text x="84" y="275" class="note">数据获取与存储属于服务层；算法只接收准备好的输入</text>
 </g>
-<g>
-<rect x="290" y="72" width="220" height="52" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="400" y="92" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">valuationMap</text>
-<text x="400" y="110" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#8A93A6">估值/信号预抓取</text>
+<path d="M450 298V342" class="line"/>
+<g data-panel="正式策略路由">
+<rect x="60" y="344" width="780" height="144" rx="12" class="panel"/>
+<text x="84" y="383" class="heading">02 / 正式策略路由 · 选择自己的规则</text>
+<text x="84" y="422" class="body">按分类、口径及专线身份，进入对应的独立策略</text>
+<text x="84" y="455" class="note">规则停用、档案待确认、待建设 → 暂不判定，不伪造市场结论</text>
 </g>
-<g>
-<rect x="540" y="72" width="220" height="52" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="650" y="92" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">config.json</text>
-<text x="650" y="110" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#8A93A6">阈值 / 信号参数</text>
+<path d="M450 488V532" class="line"/>
+<path d="M840 416H875V997H842" class="line" stroke-dasharray="6 5"/>
+<g data-panel="市场判断与证据">
+<rect x="60" y="534" width="780" height="150" rx="12" class="panel"/>
+<text x="84" y="573" class="heading">03 / 市场判断 · 看条件，也看证据</text>
+<text x="84" y="612" class="body">各策略独立判断，保留触发路径、关键指标与原因</text>
+<text x="84" y="645" class="note">不强制所有算法共用四步或 kernel；必要数据不足 → 无法判定</text>
+<text x="84" y="671" class="note">参考指标旁列，不自动变成买入前提；状态不按综合分划区间</text>
 </g>
-<line x1="150" y1="124" x2="150" y2="148" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="400" y1="124" x2="400" y2="148" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="650" y1="124" x2="650" y2="148" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<g>
-<rect x="40" y="148" width="720" height="48" rx="8" fill="#1B2A4D" stroke="#D9A441" stroke-width="1"/>
-<text x="400" y="164" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">registry · 按类别 + 口径(caliber) 命中信号线</text>
-<text x="400" y="183" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#B8C0D0">宽基(cn) / 宽基(us) / 红利·低波 / 主题·行业（高波动） / 商品·对冲 —— 5 条策略注册，宽基两口径同属一个类别</text>
+<path d="M450 684V728" class="line"/>
+<g data-panel="交易约束">
+<rect x="60" y="730" width="780" height="145" rx="12" class="panel"/>
+<text x="84" y="769" class="heading">04 / 交易约束 · 市场机会不等于能够申购</text>
+<text x="84" y="808" class="body">检查申购状态与有效期、用户限额及现有政策约束</text>
+<text x="84" y="841" class="note">交易受限仍保留市场判断；最终 verdict 与 executable 分开表达</text>
 </g>
-<line x1="400" y1="196" x2="400" y2="216" stroke="#4A5A80" stroke-width="1.5"/>
-<line x1="108" y1="216" x2="692" y2="216" stroke="#4A5A80" stroke-width="1.5"/>
-<line x1="108" y1="216" x2="108" y2="236" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="254" y1="216" x2="254" y2="236" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="400" y1="216" x2="400" y2="236" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="546" y1="216" x2="546" y2="236" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="692" y1="216" x2="692" y2="236" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<text x="40" y="228" font-size="12" fill="#8A93A6">策略层 · 四类资产 × 五套策略（宽基分 A股/海外口径，并排）</text>
-<g>
-<rect x="40" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#4C9AF0" stroke-width="1"/>
-<text x="108" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">宽基·A股(cn)</text>
-<text x="50" y="273" font-size="11" fill="#B8C0D0">① PE分位×中债ERP</text>
-<text x="50" y="289" font-size="11" fill="#B8C0D0">② 三重均线+止跌</text>
-<text x="50" y="305" font-size="11" fill="#8A93A6">③ PE闸·85%+涨5%</text>
+<path d="M450 875V919" class="line"/>
+<g data-panel="最终展示">
+<rect x="60" y="921" width="780" height="262" rx="12" class="panel"/>
+<text x="84" y="960" class="heading">05 / 最终展示 · 状态 ＋ 关键证据 ＋ 可执行性</text>
+<text x="84" y="1000" class="body">市场状态：等待机会 / 机会观察 / 可加仓</text>
+<text x="84" y="1032" class="note">只显示策略确实定义的状态，不强求每条策略都有“机会观察”</text>
+<text x="84" y="1072" class="body">独立说明：暂不判定 / 数据不足 / 规则拦截 / 交易受限</text>
+<text x="84" y="1104" class="note">能够判断市场时，展示原始指标、触发路径及限制原因</text>
+<text x="84" y="1144" class="body">可加仓是市场判断，不是自动下单或建议购买金额</text>
 </g>
-<g>
-<rect x="186" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#4C9AF0" stroke-width="1"/>
-<text x="254" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">宽基·海外(us)</text>
-<text x="196" y="273" font-size="11" fill="#B8C0D0">① 滚动分位∨PE回撤</text>
-<text x="196" y="289" font-size="11" fill="#B8C0D0">② 三重均线+止跌</text>
-<text x="196" y="305" font-size="11" fill="#8A93A6">③ PE闸·用滚动分位</text>
-</g>
-<g>
-<rect x="332" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="400" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">红利·低波</text>
-<text x="342" y="273" font-size="11" fill="#B8C0D0">① 股息率带(000922)</text>
-<text x="342" y="289" font-size="11" fill="#B8C0D0">② MA250年线偏离</text>
-<text x="342" y="305" font-size="11" fill="#8A93A6">③ 无总闸</text>
-</g>
-<g>
-<rect x="478" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="546" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">主题·行业（高波动）</text>
-<text x="488" y="273" font-size="11" fill="#B8C0D0">① 回撤+止跌</text>
-<text x="488" y="289" font-size="11" fill="#B8C0D0">② 双均线金叉</text>
-<text x="488" y="305" font-size="11" fill="#8A93A6">③ PE闸(无PE跳过)</text>
-</g>
-<g>
-<rect x="624" y="236" width="136" height="74" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="692" y="254" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">商品·对冲</text>
-<text x="634" y="273" font-size="11" fill="#B8C0D0">① 250日价格分位</text>
-<text x="634" y="289" font-size="11" fill="#B8C0D0">② 三重均线+止跌</text>
-<text x="634" y="305" font-size="11" fill="#8A93A6">③ 急涨闸·涨&gt;7%</text>
-</g>
-<rect x="36" y="230" width="290" height="84" rx="10" fill="none" stroke="#4C9AF0" stroke-width="1" stroke-dasharray="4 3" opacity="0.7"/>
-<line x1="108" y1="310" x2="108" y2="328" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="254" y1="310" x2="254" y2="328" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="400" y1="310" x2="400" y2="328" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="546" y1="310" x2="546" y2="328" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="692" y1="310" x2="692" y2="328" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<g>
-<rect x="40" y="328" width="720" height="60" rx="8" fill="#1B2A4D" stroke="#2A3A5C" stroke-width="1"/>
-<text x="400" y="346" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">kernel · buildFundDecision 四步骨架</text>
-<text x="400" y="364" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#B8C0D0">① 便宜判定 → ② 趋势 → ③ 总闸 → ④ 决策矩阵</text>
-<text x="400" y="381" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#8A93A6">统一骨架，策略差异显式声明，输出 dec.matrix</text>
-</g>
-<line x1="400" y1="388" x2="400" y2="420" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<g>
-<rect x="40" y="420" width="720" height="60" rx="8" fill="#2A2410" stroke="#D9A441" stroke-width="1.2"/>
-<text x="400" y="438" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#F0D9A0">alloc · 综合分合成（按口径分流：A股读固定分位 / 海外读滚动分位）</text>
-<text x="400" y="456" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#D9C98A">dec.matrix → V 估值分 / M 动量分 → 综合分 = wV×V + wM×M（0~100，scoreMap）</text>
-<text x="400" y="473" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#A8965E">缺失侧按中性 25 兜底 · gate=block / 暂停申购 → 一票否决归 0 · 金额分配已于 2026-09-08 移除</text>
-</g>
-<line x1="400" y1="480" x2="400" y2="500" stroke="#4A5A80" stroke-width="1.5"/>
-<line x1="215" y1="500" x2="585" y2="500" stroke="#4A5A80" stroke-width="1.5"/>
-<line x1="215" y1="500" x2="215" y2="516" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="585" y1="500" x2="585" y2="516" stroke="#4A5A80" stroke-width="1.5" marker-end="url(#arrow)"/>
-<g>
-<rect x="40" y="516" width="350" height="52" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="215" y="534" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">决策卡(advice)</text>
-<text x="215" y="553" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#8A93A6">复用 _dec / _composite 同源零漂移</text>
-</g>
-<g>
-<rect x="410" y="516" width="350" height="52" rx="8" fill="#131D36" stroke="#2A3A5C" stroke-width="1"/>
-<text x="585" y="534" text-anchor="middle" dominant-baseline="central" font-size="13" font-weight="500" fill="#E8E6DF">前端决策页 / 复盘页</text>
-<text x="585" y="553" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#8A93A6">展示 scoreMap 综合分（估X · 动Y）</text>
-</g>
+<text x="36" y="1230" class="note">实线：正常判断链路　虚线：不可判断时旁路展示　各策略细节见独立图</text>
 </svg>

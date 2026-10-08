@@ -385,12 +385,12 @@
             <table class="mini">
               <thead><tr><th>维度</th><th>值</th><th>状态</th><th>上周</th></tr></thead>
               <tbody>
-                <tr><td>股息率锚</td><td>中性</td><td><span class="dot d-mid"></span></td><td class="muted">↔ 上周 中性</td></tr>
+                <tr><td>趋势回踩</td><td>达标</td><td><span class="dot d-mid"></span></td><td class="muted">↔ 上周 中性</td></tr>
                 <tr><td>股息率</td><td class="tnum">5.10%</td><td><span class="dot d-mid"></span></td><td class="muted">—</td></tr>
                 <tr><td>MA250</td><td>年线下方</td><td><span class="dot d-cheap"></span></td><td class="muted">↔ 上周 年线下方</td></tr>
               </tbody>
             </table>
-            <p class="small" style="margin:12px 0 0">结论：<b style="color:var(--text)">加仓</b> · 股息率 5.10% 中性、距便宜线还差 0.42pp，但净值已跌破 250 日线，趋势确认通道加仓 &nbsp;<span class="muted">↔ 上周 不动</span></p>
+            <p class="small" style="margin:12px 0 0">结论：<b style="color:var(--text)">加仓</b> · 趋势回踩条件已满足；股息率 5.10% 仅供参考，不参与判断（展示样例，非实时建议） &nbsp;<span class="muted">↔ 上周 不动</span></p>
             <ul class="legend">
               <li><b>①</b><span>每只基金拆成「信号理由 / 原始数据 / 估值信号表 / 结论」四段，可展开逐条看<span class="mk">1</span></span></li>
               <li><b>②</b><span>信号表自带<b>「上周」列</b>，结论区标出「变化」—— 能看出判断是在什么时候转向的<span class="mk">2</span></span></li>
@@ -459,8 +459,8 @@
         </tr>
         <tr>
           <td>红利 · 低波</td>
-          <td>绝对股息率带（相对中证红利 000922 动态参考）<span class="dim"> — 仅适用 A 股红利</span></td>
-          <td>蛋卷股息率</td>
+          <td>复权净值趋势回踩 + BIAS250 + 已完成周 RSI14<span class="dim"> — 仅适用国内红利指数类</span></td>
+          <td>完整复权净值；股息率仅参考</td>
         </tr>
         <tr>
           <td>主题 · 行业</td>
@@ -482,12 +482,12 @@
 
     <div class="two reveal">
       <figure>
-        <img src="docs/img/four-engines-flow.svg" alt="四类资产 × 五套算法的口径对照图：便宜判定、趋势、总闸、决策矩阵、综合分">
-        <figcaption>四类资产 × 五套算法：逐格标出每套口径的实际阈值</figcaption>
+        <img src="docs/img/four-engines-flow.svg" alt="历史附图：原五套算法规则，外观已统一；含已停用旧红利规则，未覆盖沪深300专线">
+        <figcaption>历史规则对照，仅统一外观；旧股息率规则已停用，当前红利趋势规则见独立图，当前细节见独立图</figcaption>
       </figure>
       <figure>
-        <img src="docs/img/decision-flow.svg" alt="决策链路全景：数据源 → 命中信号线 → 策略层 → 内核四步 → 综合分 → 决策卡">
-        <figcaption>决策链路全景：从数据源到决策卡，中间每一步都能追</figcaption>
+        <img src="docs/img/decision-flow.svg" alt="决策状态输出目标结构：输入、正式策略路由、市场证据、交易约束、状态展示；尚未全量实现">
+        <figcaption>状态输出目标结构，尚未全量实现；当前非红利评分策略保留综合分，不按分数生成新状态</figcaption>
       </figure>
     </div>
   </div>

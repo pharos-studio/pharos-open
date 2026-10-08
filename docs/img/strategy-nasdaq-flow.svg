@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1710" width="900" height="1710" role="img" aria-labelledby="title desc">
+<title id="title">纳指100 · 回撤修复与趋势回踩</title>
+<desc id="desc">冻结规则nasdaq-dual-v1。工程验收通过后本地启用。人民币场外普通纳指100指数或联接身份与数据合格后，回撤修复或趋势回踩任一成立即为市场可加仓；PE仅回撤门槛，三态或，交易约束独立，无综合分。市场候选不等于可执行。</desc>
+<defs>
+<radialGradient id="halo"><stop stop-color="#7C8CF8" stop-opacity=".16"/><stop offset="1" stop-color="#7C8CF8" stop-opacity="0"/></radialGradient>
+<radialGradient id="gold"><stop stop-color="#D9A441" stop-opacity=".09"/><stop offset="1" stop-color="#D9A441" stop-opacity="0"/></radialGradient>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#9AA3C0" stroke-width="1.6"/></marker>
+</defs>
+<style>
+text{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}
+.title,.heading{font-family:"Songti SC",STSong,"Noto Serif CJK SC",SimSun,Georgia,serif;fill:#EDEFF7;font-weight:600}
+.title{font-size:30px}.heading{font-size:23px}.body{font-size:20px;fill:#EDEFF7}.branch{font-size:19px;fill:#EDEFF7}
+.note{font-size:18px;fill:#9AA3C0}.label{font-size:17px;fill:#D9A441;letter-spacing:1px}
+.panel{fill:#FFFFFF;fill-opacity:.05;stroke:#D9A441;stroke-opacity:.65;stroke-width:1.3}
+.line{fill:none;stroke:#9AA3C0;stroke-width:2;stroke-linejoin:round;marker-end:url(#arrow)}
+.connector{fill:none;stroke:#9AA3C0;stroke-width:2}
+</style>
+<rect width="900" height="1710" rx="12" fill="#0A1020"/>
+<ellipse cx="200" cy="0" rx="800" ry="500" fill="url(#halo)"/><ellipse cx="840" cy="0" rx="450" ry="350" fill="url(#gold)"/>
+<rect x="36" y="36" width="5" height="44" rx="2" fill="#D9A441"/>
+<text x="56" y="48" class="label">PHAROS / 策略细节 03</text>
+<rect x="630" y="32" width="234" height="38" rx="7" class="panel"/>
+<text x="747" y="57" text-anchor="middle" class="label">冻结 nasdaq-dual-v1</text>
+<text x="56" y="99" class="title">纳指100 · 回撤修复与趋势回踩</text>
+<text x="36" y="141" class="note">基金自身复权净值；原始精度判断，不输出综合分或V/M。</text>
+<rect x="36" y="178" width="828" height="220" rx="12" class="panel"/>
+<text x="58" y="216" class="heading">① 官方范围与可知数据</text>
+<text x="58" y="253" class="body">人民币场外普通纳指100指数／联接；美元、增强、ETF不入</text>
+<text x="58" y="286" class="body">官方身份、历史连续性与逐基金估值／开放规则分别核验</text>
+<text x="58" y="319" class="body">完整复权净值≥260日、合格周≥16；初始化不因早历史改变</text>
+<text x="58" y="352" class="body">本次完整快照实际抓取后可知；不冒称历史当时已知</text>
+<text x="58" y="382" class="note">身份待核验／范围外／数据不合格 → 独立说明，不兜底旧规则</text>
+<path class="line" d="M450 398V436"/>
+<rect x="36" y="438" width="828" height="170" rx="12" class="panel"/>
+<text x="58" y="476" class="heading">② 当前知悉、日历与数据质量</text>
+<text x="58" y="515" class="body">估值日、开放日、公告工作日逐基金；未核市场集合 → 未知</text>
+<text x="58" y="548" class="body">应有NAV缺失停止判断；最新周仍公告等待可用上一完整周</text>
+<text x="58" y="581" class="note">PE失败只影响回撤路径；趋势无PE门槛；不兜底旧规则</text>
+<path class="connector" d="M450 608V645M240 645H660"/>
+<path class="line" d="M240 645V680"/><path class="line" d="M660 645V680"/>
+<rect x="36" y="684" width="408" height="324" rx="12" class="panel"/>
+<text x="58" y="724" class="heading">③ A · 回撤修复</text>
+<text x="58" y="764" class="branch">PE三自然年分位 ≤25%</text>
+<text x="58" y="802" class="branch">BIAS120 ≤−5%；较近10日</text>
+<text x="58" y="834" class="branch">最低BIAS120修复 ≥1pp</text>
+<text x="58" y="877" class="branch">已完成且可知周RSI14</text>
+<text x="58" y="909" class="branch">≤55且严格高于前周</text>
+<text x="58" y="976" class="label">通道内：全部条件「且」</text>
+<rect x="456" y="684" width="408" height="324" rx="12" class="panel"/>
+<text x="478" y="724" class="heading">③ B · 趋势回踩</text>
+<text x="478" y="763" class="branch">复权净值、MA60 &gt; MA250</text>
+<text x="478" y="799" class="branch">距60日高点回落 2%～8%</text>
+<text x="478" y="835" class="branch">较10日低点恢复 ≥1.5%</text>
+<text x="478" y="871" class="branch">BIAS250 ≤10%</text>
+<text x="478" y="907" class="branch">已完成且可知周RSI14</text>
+<text x="478" y="939" class="branch">45～65，且严格高于前周</text>
+<text x="478" y="976" class="label">通道内：全部条件「且」</text>
+<path class="connector" d="M240 1008V1042H660V1008"/>
+<path class="line" d="M450 1042V1080"/>
+<text x="461" y="1065" class="label">或 · 双触发仅一个候选</text>
+<rect x="36" y="1084" width="828" height="154" rx="12" class="panel"/>
+<text x="58" y="1122" class="heading">④ 独立市场判断与证据</text>
+<text x="58" y="1161" class="body">任一路径buy → 可加仓；两路已知hold → 等待机会</text>
+<text x="58" y="1196" class="body">无buy且任一路unknown → 无法判定；双触发仅一个候选</text>
+<text x="58" y="1226" class="note">最新周公告等待可沿用此前已知周；应已可知数据缺失则停止判断</text>
+<path class="line" d="M450 1238V1272"/>
+<rect x="36" y="1276" width="828" height="158" rx="12" class="panel"/>
+<text x="58" y="1314" class="heading">⑤ 交易约束与最终展示</text>
+<text x="58" y="1353" class="body">暂停／申购状态过期／用户零限额／政策限制 → 不可执行</text>
+<text x="58" y="1388" class="body">跨15:00重新推导申请日；未来申请仅提示届时复核</text>
+<text x="58" y="1418" class="note">实际正数申购上限只展示；不开自动订单、不加28天冷却或卖出规则</text>
+<rect x="36" y="1466" width="828" height="88" rx="12" fill="#FFFFFF" fill-opacity=".03" stroke="#9AA3C0" stroke-dasharray="7 5"/>
+<text x="58" y="1501" class="body">独立参考：ERP、250日净值分位</text>
+<text x="58" y="1532" class="note">不进入入口、路径、评分或交易限制；缺失不影响判断。</text>
+<line x1="36" y1="1590" x2="864" y2="1590" stroke="#FFFFFF" stroke-opacity=".12"/>
+<text x="36" y="1625" class="note">PE门槛可能漏买；趋势可能在高位；严格微小RSI回升有浮点风险。</text>
+<text x="36" y="1658" class="note">合同不全／源缺日则未知；PE可能修订；历史不保证未来盈利。</text>
+<text x="36" y="1691" class="label">SOURCE / nasdaqSignal · nasdaqData · nasdaq · decisionPipeline</text>
+</svg>

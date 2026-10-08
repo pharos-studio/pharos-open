@@ -84,32 +84,76 @@ function pickWeekAgo(history) {
 // 结论文案由 conclusionOf(dec.action, score, ...) 两维派生（funds 组装处调用），verdict 字段保留机器值供历史/周对比。
 function buildCard(f, dec, dailyLimits, cfg) {
   const actLabel = dec.action === 'add' ? '加仓' : '不动';
-  if (dec.matrix._type === 'dividend') {
-    const m = dec.matrix;
-    const zoneTxt = m.yieldZone === 'cheap' ? '便宜' : m.yieldZone === 'expensive' ? '贵' : m.yieldZone === 'neutral' ? '中性' : '数据缺失';
-    const maTxt = m.maZone === 'below' ? '年线下方' : m.maZone === 'above' ? '年线上方' : m.maZone === 'near' ? '年线附近' : '—';
-    // ★2026-09-17 文案改 absYield 口径。旧版是 `股息率锚：xx（ratio r）｜MA250：xx｜PE闸：放行`，两处失真：
-    //   ① ratio 已换义——旧口径 ratio = 基金股息率 / 3年均值锚，现口径 = 基金股息率 / 000922 参考股息率；
-    //      继续叫「股息率锚」并把 ratio 单摆出来会误导（看不出带在哪）。
-    //   ② PE闸 在红利线上恒为 pass（dividend.js 传 pePercentile:null，总闸对其不生效），是恒真装饰。
-    // 现直接展示带本身：股息率 vs 参考带（贵线~便宜线）+ 000922 参考值，一眼能看出离加仓线多远。
-    const pctOf = (x) => (x != null && !isNaN(x)) ? (x * 100).toFixed(2) : '—';
-    const yieldTxt = pctOf(m.yield);
-    const bandTxt = `${pctOf(m.expensiveYield)}~${pctOf(m.cheapYield)}`;
-    const refTxt = pctOf(m.refYield);
-    const matrixTxt = `股息率带：${zoneTxt}（股息率 ${yieldTxt}% ｜ 参考带 ${bandTxt}%，000922参考 ${refTxt}%）｜MA250：${maTxt}（${m.devPct != null ? m.devPct + '%' : '—'}）`;
-    return {
-      level: 'L2', type: 'dividend', code: f.code, name: f.name,
-      title: `红利·低波 决策：${actLabel}`,
-      detail: matrixTxt + '。' + (dec.reasons.length ? dec.reasons.join('；') : ''),
-      factors: [
-        { dim: '股息率锚', value: zoneTxt, status: m.yieldZone },
-        { dim: '股息率', value: `${yieldTxt}%`, status: 'neutral' },
-        { dim: 'MA250', value: maTxt, status: maStatus(m.maZone) },
-      ],
-      verdict: dec.action === 'add' ? 'add' : 'hold',
-    };
-  } else if (dec.matrix._type === 'tech') {
+  if(dec.strategyVersion==='gold-dual-v1'){
+    const m=dec.matrix,x=m.metrics,fmt=v=>v==null?'—':Number(v).toFixed(3),names={negativeBias:'BIAS120 ≤−5%',biasRepair:'近10日BIAS修复 ≥1个百分点',rsiRising:'日RSI14严格回升',rsiCeiling:'日RSI14 ≤55',aboveLongMA:'复权净值 > MA250',trendMA:'MA60 > MA250',drawdownRange:'60日回撤 3%～10%',recovery:'10日恢复 ≥1.5%',biasCeiling:'BIAS60 ≤2%',rsiRange:'日RSI14 45～65'};
+    const factors=['A','B'].flatMap(p=>Object.entries(m.conditions[p]||{}).map(([k,v])=>({dim:(p==='A'?'A 回撤修复':'B 趋势回踩')+' · '+names[k],value:v===true?'达标':v===false?'未达标':'无法判定',status:v===true?'cheap':'neutral'})));
+    factors.push({dim:'250日位置（仅参考）',value:fmt(x.position250)+'%',status:'neutral'},{dim:'版本启用',value:m.releaseLabel,status:'neutral'});
+    const evidenceNames={profile_unverified:'当前官方身份',daily_sampling_unverified:'日频采样',initialization_unverified:'策略起点／连续性',official_actions_history_unverified:'完整官方分红拆分史',fund_calendar_unverified:'基金日期与开放规则'};
+    if(m.evidenceBlockers.length)factors.push({dim:'尚未核验项目',value:m.evidenceBlockers.map(k=>evidenceNames[k]||k).join('、'),status:'neutral'});
+    const detail=`A：BIAS120≤−5%、近10日最低乖离修复≥1个百分点、日RSI14严格回升且≤55。B：复权净值及MA60均>MA250、60日回撤3%～10%、近10日恢复≥1.5%、BIAS60≤2%、日RSI14为45～65且严格回升。路径内全部且，两路或；重合只形成一个候选。BIAS120 ${fmt(x.bias120)}%、BIAS60 ${fmt(x.bias60)}%、回撤 ${fmt(x.drawdown60)}%、恢复 ${fmt(x.recovery10)}%、RSI ${fmt(x.rsi14)}（前日 ${fmt(x.previousRsi14)}）。信号净值日 ${x.navDate||'—'}；申请日 ${m.orderDate||'—'}；计算 ${m.computedAt||'—'}。${dec.action==null?dec.reasons.join('；')+'。':''}${m.releasePending?'待独立终审与确认启用；当前不可执行。':''}${m.futureOrder?'未来申请日须届时复核。':''}仅判断买入，无卖出或补仓；250日位置只参考。趋势回踩可能位于长期相对高位，历史结果不保证盈利；${m.dataCaveat}。`;
+    return {title:'国内黄金：'+m.marketStateLabel,detail,verdict:dec.action,factors};
+  }
+  if(dec.strategyVersion==='active-equity-buy-v1'){
+    const m=dec.matrix,fmt=v=>v==null?'—':Number(v).toFixed(3),pct=v=>v==null?'—':fmt(v*100)+'%',names={drawdown:'窗口回撤',bias:'BIAS',recovery:'近10日恢复 ≥2%',rsi:'日RSI14严格回升且在范围内',priceTrend:'净值 > MA250',shortTrend:'MA60 > MA250',longDirection:'MA250 > 20个有效净值日前'};
+    const factors=['A','B'].flatMap(path=>Object.entries(m.conditions[path]||{}).map(([key,pass])=>({dim:(path==='A'?'A 回撤修复':'B 趋势回踩')+' · '+names[key],value:pass===true?'达标':pass===false?'未达标':'无法判定',status:pass===true?'cheap':'neutral'})));
+    for(const path of ['A','B']){const x=m.metrics[path];if(x)factors.push({dim:path+' 指标（原精度判断）',value:`回撤 ${pct(x.D)}；BIAS ${pct(x.BIAS)}；恢复 ${pct(x.R10)}；日RSI ${fmt(x.rsi)} / 前日 ${fmt(x.previousRsi)}`,status:'neutral'});else factors.push({dim:path+' 通道',value:'无法判定；'+(m.pathReasons[path]||[]).join('；'),status:'neutral'});}
+    const detail=`仅买入判断。A：120日回撤≥15%、BIAS120≤−8%、近10日恢复≥2%、日RSI14严格回升且≤55。B：净值及MA60均>MA250、MA250高于20个有效净值日前、60日回撤5%～15%、恢复≥2%、BIAS60≤0%、日RSI14为40～60且严格回升。任一路成立为候选，两路均有效不成立为等待，其余无法判定。信号净值日 ${m.metrics.navDate||'—'}；申请日 ${m.orderDate||'—'}；计算 ${m.computedAt||'—'}。${m.futureOrder?'未来申请日需届时复核。':''}${dec.action==null?dec.reasons.join('；')+'。':''}身份、日频采样、数据可知性和申购状态分别核验；${m.dataCaveat||''}。没有PE或综合分门槛；不含卖出、补仓节奏或金额建议，历史结果不保证盈利。`;
+    return {title:'主动权益：'+m.marketStateLabel,detail,verdict:dec.action,factors};
+  }
+  if(dec.strategyVersion==='nasdaq-dual-v1'){
+    const m=dec.matrix,x=m.metrics,fmt=v=>v==null?'—':Number(v).toFixed(3),pct=v=>fmt(v)+'%';
+    const names={pePercentile:'PE三年分位 ≤25%',bias:'BIAS',biasRepair:'10日BIAS修复 ≥1个百分点',
+      rsiCeiling:'周RSI14 ≤55',rsiRising:'周RSI14严格回升',priceAboveMa250:'净值 > MA250',ma60AboveMa250:'MA60 > MA250',
+      pullback:'60日回落 2%～8%',recovery:'10日恢复 ≥1.5%',rsiRange:'周RSI14 45～65'};
+    const labels={draw:'回撤修复',trend:'趋势回踩'},states={buy:'触发',hold:'未触发',unknown:'无法判定'};
+    const factors=['draw','trend'].flatMap(path=>Object.entries(m.conditions[path]||{}).map(([key,c])=>({
+      dim:labels[path]+' · '+(key==='bias'?(path==='draw'?'BIAS120 ≤−5%':'BIAS250 ≤10%'):names[key]||key),
+      value:fmt(c.value)+'；'+(c.pass==null?'无法判定':c.pass?'达标':'未达标'),status:c.pass===true?'cheap':'neutral'})));
+    const detail=`PE仅为回撤通道门槛，PE在趋势通道仅参考。回撤 ${states[m.pathStates.draw]}；趋势 ${states[m.pathStates.trend]}。`+
+      `BIAS120 ${pct(x.bias120)}、修复 ${fmt(x.biasRepair120)} 个百分点；BIAS250 ${pct(x.bias250)}；60日回落 ${pct(x.dip60)}、10日恢复 ${pct(x.recovery10)}。`+
+      `已完成且本次可知周RSI14 ${fmt(x.weeklyRsi)}（前周 ${fmt(x.previousWeeklyRsi)}；周末 ${x.weeklyDate||'—'}）。`+
+      `信号净值日 ${x.navDate||'—'}；目标申请日 ${m.orderDate||'—'}；本次计算 ${m.computedAt||'—'}。`+
+      `PE三年分位 ${pct(x.pePercentile)}（当前观察不计，严格较低）；PE日 ${m.peDate||'—'}；ERP ${pct(m.erpReference)}仅参考。`+
+      `${dec.action==null?dec.reasons.join('；')+'。':''}${m.futureOrder?'未来申请日需届时复核。':''}`+
+      `${m.officialPurchaseConstraint?(m.officialPurchaseConstraint.status==='unknown'?'官方申购约束正文或恢复待核；':'官方暂停自 '+m.officialPurchaseConstraint.start+'；')+'最近核验 '+m.officialPurchaseConstraint.checkedAt+'，证据超过24小时执行待复核。':''}`+
+      `${m.observedPurchaseLimit?'官方已观察正限额 ¥'+m.observedPurchaseLimit.amountCny+'（账户每日合计；核验 '+m.observedPurchaseLimit.checkedAt+'；具体渠道仍需复核）。':''}`+
+      `本次取得快照不证明历史当时可知；历史可能修订。RSI按原始精度严格比较，极小浮点回升也可能达标；历史结果不保证盈利。`;
+    factors.push({dim:'ERP（仅参考）',value:pct(m.erpReference),status:'neutral'},{dim:'250日净值分位（仅参考）',value:pct(x.position250),status:'neutral'});
+    return {title:'纳斯达克100 决策：'+m.marketStateLabel,detail,verdict:dec.action,factors};
+  }
+  if(dec.strategyVersion==='hs300-dual-v1') {
+    const m=dec.matrix,x=m.metrics,pct=v=>v==null?'—':v+'%';
+    const names={negativeBias:'回撤修复 · BIAS120 ≤−3.0084%',repair:'回撤修复 · 10日乖离修复 ≥1百分点',
+      rsiRising:'周 RSI14 严格回升',priceAbove:'趋势回踩 · 复权净值 > MA250',maAbove:'趋势回踩 · MA60 > MA250',
+      dip:'趋势回踩 · 60日回落 2%～6%',recovery:'趋势回踩 · 10日恢复 ≥1.5%',bias:'趋势回踩 · BIAS250 ≤8%',rsiRange:'趋势回踩 · 周 RSI14 45～65'};
+    const factor=(dim,value)=>({dim,value:value==null?'无法判断':value?'达标':'未达标',status:value===true?'cheap':'neutral'});
+    const paths={deep:'回撤修复',trend:'趋势回踩',both:'双通道同时触发'};
+    const detail=`共同入口 PE分位 ${pct(x.pePercentile)}（≤25%；此前60个连续自然月，当前月不计入）｜BIAS120 ${pct(x.bias120)}、修复 ${x.biasRepair120??'—'} 个百分点｜BIAS250 ${pct(x.bias250)}｜60日回落 ${pct(x.dip60)}、10日恢复 ${pct(x.recovery10)}｜已完成且可知周 RSI14 ${x.weeklyRsi??'—'}（前周 ${x.previousWeeklyRsi??'—'}；周末 ${x.weeklyDate||'—'}）。信号净值日 ${x.navDate||'—'}；申请日 ${m.orderDate||'—'}；PE日 ${m.peDate||'—'}（${m.peSource||'—'}）。触发路径：${paths[m.route]||'无'}。${dec.action==null?dec.reasons.join('；')+'。':''}ERP ${pct(m.erpReference)}仅参考。${m.individuallyBacktested?'已观察四只同指数样本，不是四份独立市场证据':'此份额未经逐只回测'}；历史PE可能修订，历史结果不保证未来盈利。`;
+    return {title:`沪深300 决策：${m.marketStateLabel}`,detail,verdict:dec.action,
+      factors:[factor('共同PE入口 ≤25%',m.conditions.peGate),
+        ...['deep','trend'].flatMap(path=>Object.entries(m.conditions[path]).filter(([key])=>!['peGate','rsiCap'].includes(key)).map(([key,value])=>factor((key==='rsiRising'?(path==='deep'?'回撤修复 · ':'趋势回踩 · '):'')+names[key],value))),
+        {dim:'ERP（仅参考）',value:pct(m.erpReference),status:'neutral'},
+        {dim:'250日净值分位（仅参考）',value:pct(x.position250),status:'neutral'}]};
+  }
+  if (dec.strategyVersion === 'dividend-trend-v1') {
+    const m=dec.matrix,x=m.metrics,pct=v=>v==null?'—':v+'%';
+    const conditions=m.conditions, names={navAboveMa250:'复权净值 > MA250',ma60AboveMa250:'MA60 > MA250',
+      dip60InRange:'60日回落 2%～6%',recovery10Ready:'10日恢复 ≥1.5%',bias250Allowed:'BIAS250 ≤8%',
+      weeklyRsiInRange:'周 RSI14 45～65',weeklyRsiRising:'周 RSI 严格回升'};
+    const yr=m.yieldReference;
+    const errorText=({profile_unverified:'自动档案或官方指数身份未核验',scope_unsupported:'仅支持国内红利指数、联接和指数增强基金',
+      incomplete_week_close:'最新完整周收盘净值尚不可知',calendar_unverified:'交易日历尚未核验',nav_calendar_coverage_gap:'近期开放日净值存在缺口',
+      stale_nav_history:'净值已过期',insufficient_adjusted_nav:'至少需要260个合格净值日',
+      insufficient_completed_weeks:'至少需要16个合格周',reported_return_mismatch:'净值收益与分红拆分记录不一致',
+      dividend_data_unavailable:'完整复权净值尚未取得'})[m.dataError]|| (m.dataError?'完整净值或复权资料核验未通过':'');
+    const detail=`信号净值日 ${x.navDate||'—'}；目标申请日 ${m.orderDate||'—'}。BIAS250 ${pct(x.bias250)}｜60日回落 ${pct(x.dip60)}｜10日恢复 ${pct(x.recovery10)}｜已完成周 RSI14 ${x.weeklyRsi14??'—'}（前周 ${x.previousWeeklyRsi14??'—'}）。${m.dataError?'暂不判定：'+errorText+'。':''}股息率 ${yr?.value!=null?pct(+(yr.value*100).toFixed(2)):'未取得'}（${yr?.indexName||'对应指数未核验'}；${yr?.asOf||'发布时间未核验'}），仅参考，不参与判断。`;
+    return {title:`红利·低波 决策：${m.marketStateLabel}`,detail,verdict:dec.action,
+      factors:[...Object.entries(names).map(([key,dim])=>({dim,value:Object.hasOwn(conditions,key)?conditions[key]?'达标':'未达标':'—',
+        status:conditions[key]===true?'cheap':'neutral'})),
+        {dim:'250日净值分位（参考）',value:pct(x.percentile250),status:'neutral'},
+        {dim:'对应指数股息率（参考）',value:yr?.value!=null?pct(+(yr.value*100).toFixed(2)):'—',status:'neutral'}]};
+  }
+  if (dec.matrix._type === 'tech') {
     const m = dec.matrix;
     const dipTxt = m.drawdown != null ? `${m.drawdown.toFixed(1)}%` : '—';
     const maTxt = m.goldenState === true ? '金叉(MA20>MA60)' : m.goldenState === false ? '死叉(MA20<MA60)' : '—';
@@ -272,31 +316,33 @@ async function buildAdvice(session = 'am') {
   const decMap = {}; // 买入时机复盘：am 会话收集全量基金当日判定（code → action/matrix/name/category），matrix 需带 _type
 
   for (const f of a.funds) {
-    const hit = f.profileState === 'needs_review' ? null : resolveRegistry(f);
-    if (!hit) {
+    const resolved=resolveRegistry(f);
+    const hit = f.profileState === 'needs_review' && !['broad300','nasdaq','activeEquity','goldDual'].includes(resolved?.reg.type) ? null : resolved;
+    if (!hit || hit.reg.enabled === false) {
       // ★ 类别没有对应算法 → **不再静默丢弃**。
       //   旧实现这里是 `continue`，该基金在决策页整只消失，用户只会觉得"少了一只"、看不出原因
       //   （净值行虽有复盘页 live.funds 兜底，决策页没有任何兜底）。
       //   现在改为产出显式卡片：待建设的类别说明「暂不判定」，未归类的类别提示去改类别。
       const pending = isPendingCategory(f.category);
       const needsReview = f.profileState === 'needs_review';
+      const disabled = !!(hit && hit.reg.enabled === false);
       funds.push({
         code: f.code, name: f.name, category: f.category,
         caliber: util.caliberOf(f) || null,
-        categoryName: needsReview ? '待确认' : pending ? '待建设' : '未归类',
+        categoryName: disabled ? '红利·低波' : needsReview ? '待确认' : pending ? '待建设' : '未归类',
         unsupported: true,
-        unsupportedReason: needsReview ? 'needs_review' : pending ? 'pending' : 'unknown',
+        unsupportedReason: disabled ? 'rule_disabled' : needsReview ? 'needs_review' : pending ? 'pending' : 'unknown',
         verdict: null,
-        title: (needsReview ? '待确认：' : pending ? '暂不支持：' : '未归类：') + f.name,
-        detail: needsReview ? '自动档案分类待确认；市值照常显示，暂不提供可执行建议。' : pending
+        title: (disabled ? '红利规则调整中：' : needsReview ? '待确认：' : pending ? '暂不支持：' : '未归类：') + f.name,
+        detail: disabled ? '红利规则调整中，暂不判定。旧股息率买入规则已停用，新双路径尚未上线；持仓与购买记录照常保留。' : needsReview ? '自动档案分类待确认；市值照常显示，暂不提供可执行建议。' : pending
           ? '该类别的决策算法尚未开放（待建设），不参与买卖判定；市值仍计入总资产与配置占比。'
           : '该类别没有对应算法，请到「配置」页把它改到已有类别上；市值仍计入总资产与配置占比。',
         factors: [], matrix: null,
         score: null, scoreLabel: null,
         valueScore: null, momentumScore: null,
-        compositeLabel: pending ? '待建设' : '未归类',
+        compositeLabel: disabled ? '红利规则调整中，暂不判定' : pending ? '待建设' : '未归类',
         weights: null, degraded: [],
-        conclusion: needsReview ? '分类待确认 · 暂不判定' : pending ? '待建设 · 暂不判定' : '未归类 · 暂不判定',
+        conclusion: disabled ? '红利规则调整中，暂不判定' : needsReview ? '分类待确认 · 暂不判定' : pending ? '待建设 · 暂不判定' : '未归类 · 暂不判定',
         suspended: false, dailyLimit: null,
         currentValue: f.currentValue != null ? f.currentValue : 0,
         latestNav: f.latestNav,
@@ -304,28 +350,15 @@ async function buildAdvice(session = 'am') {
         latestDate: f.latestDate,
         profitPct: f.profitPct != null ? +f.profitPct.toFixed(2) : null,
         eligible: false,
+        ...(disabled || f.category==='dividend' ? { marketVerdict: null, executable: false } : {}),
+        ...(f.category==='dividend' ? {strategyVersion:'dividend-trend-v1',marketState:'profile_unverified',
+          marketStateLabel:'档案待确认',blockedReason:'profile_unverified'} : {}),
         valuationAnchor: f.valuationAnchor || null
       });
       continue;
     }
 
-    // ⚠ 副作用①（R2 保留）：红利基金每日把当天 dyr 写入自建序列（积累 ≥windowYears 年后算真 3 年滚动均值锚）。
-    // 独立于 builder 调用（不放则删 L2 循环后 loadYieldAnchor3y 的序列断供）——reg.type==='dividend' 即触发。
     const reg = hit.reg;
-    if (reg.type === 'dividend') {
-      const todayYield = (f.valuation && f.valuation.dyr) || null;
-      if (todayYield != null && todayYield > 0) {
-        try {
-          let seq = null;
-          try { seq = store.readJSON('yield_history.json'); } catch (e) { seq = null; }
-          seq = (seq && typeof seq === 'object') ? seq : {};
-          // 按基金 code 分桶存储：支持多只红利基金各自积累独立序列（loadYieldAnchor3y 新结构）
-          seq[f.code] = seq[f.code] || {};
-          seq[f.code][today] = +(+todayYield).toFixed(4);
-          store.writeJSONSafe('yield_history.json', seq);
-        } catch (e) { /* 序列写入失败不致命 */ }
-      }
-    }
 
     // 决策判定：直接复用 computeAllocation 已挂在 a.funds[i] 上的 _dec（同一数组引用，同参等价无漂移，见计划 §七）；
     // 仅当异常路径（buildAnalysis 内打分半路中断）未挂载时补算一次兜底。
@@ -334,15 +367,35 @@ async function buildAdvice(session = 'am') {
     // computeAllocation 路径不设 matrix._type（strategies builder 均不写），决策卡格式化/timing 采集依赖它 → 这里补
     // （对 a.funds 上对象赋值会在 /api/refresh 响应多出 _type 字段，无害；decMap 引用的 matrix 因此带 _type）
     if (dec && dec.matrix) {
-      dec.matrix._type = reg.type;
+      dec.matrix._type = dec.strategyVersion === 'dividend-trend-v1' ? 'dividendTrend' : reg.type;
       dec.matrix._caliber = reg.caliber || null;  // 口径（broad 下 cn/us）：决策卡文案与 timing 分组用
     }
 
     const card = buildCard(f, dec, dailyLimits, cfg); // title/detail/factors/verdict（展示层原样保留）
-    const sm = scoreMap[f.code] || {};
+    const dailyLimit = dailyLimits[f.code] != null ? dailyLimits[f.code] : null;
+    const hs300Fallback = ['broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) && !scoreMap[f.code] ? (() => {
+      let ps = allocation.purchaseStatusMeta(f,['nasdaq','activeEquity','goldDual'].includes(reg.type)?Date.parse(dec.matrix.computedAt):undefined);
+      if(['activeEquity','goldDual'].includes(reg.type)){
+        const instant=Date.parse(dec.matrix.computedAt),stamp=Number(f.purchaseStatus?.updatedAt);
+        if(!Number.isFinite(stamp)||stamp>instant){ps.fresh=false;ps.unavailable=true;ps.suspended=false;}
+      }
+      if(reg.type==='nasdaq'){
+        const instant=Date.parse(dec.matrix.computedAt),stamp=Number(f.purchaseStatus?.updatedAt);
+        if(!Number.isFinite(stamp)||stamp>instant){ps.fresh=false;ps.unavailable=true;ps.suspended=false;}
+        ps=require('../lib/nasdaqExecution').overlay(ps,dec.matrix.officialPurchaseConstraint,instant);
+      }
+      const marketVerdict = dec.action;
+      const decision = marketVerdict==null?{verdict:null,executable:false}:allocation.purchaseDecision(marketVerdict, ps, dailyLimit);
+      const policyAllowed = !dec.matrix.futureOrder&&(reg.type!=='goldDual'||dec.matrix.releaseEnabled)&&(policy[util.engineCategoryToBucket(f.category)] || 'buy') === 'buy';
+      return { marketState: dec.matrix.marketState, marketStateLabel: dec.matrix.marketStateLabel,
+        marketVerdict, verdict:marketVerdict==null?null:policyAllowed ? decision.verdict : 'hold',
+        executable: policyAllowed && decision.executable, eligible:marketVerdict!=null&&policyAllowed && !ps.unavailable && !ps.suspended && dailyLimit!==0,
+        blockedReason:marketVerdict==null?dec.matrix.dataError:ps.officialConstraintReason||(ps.suspended?'purchase_suspended':ps.unavailable?'purchase_status_unverified':dailyLimit===0?'user_limit_zero':dec.matrix.futureOrder?'future_order_recheck':reg.type==='goldDual'&&!dec.matrix.releaseEnabled?'release_pending':!policyAllowed?'policy_blocked':null),
+        suspended: ps.suspended || dailyLimit === 0, statusFresh: ps.fresh };
+    })() : null;
+    const sm = scoreMap[f.code] || hs300Fallback || {};
     const score = sm.marketScore != null ? sm.marketScore : null; // 真实市场分（0~100, toFixed(1)）；与决策页旧 scoreMap 同源
     const suspended = !!(sm && sm.suspended);
-    const dailyLimit = dailyLimits[f.code] != null ? dailyLimits[f.code] : null;
     // ★ 估值锚降级提示（2026-09-19）：缺跟踪指数（或抓取失败）时判定会退化成「价格分位弱信号」，
     //   外在表现就是恒定建议持仓不动 —— 必须显式说出来，否则用户会以为它在正常工作。
     const anchorWarn = (f.valuationAnchor && f.valuationAnchor.degraded)
@@ -352,10 +405,34 @@ async function buildAdvice(session = 'am') {
       code: f.code, name: f.name, category: f.category,
       caliber: reg.caliber || null,  // 口径（仅 broad 下有值：cn/us），供前端展示「宽基 · 海外口径」
       categoryName: reg.label, // = REGISTRY.label（引擎类别中文名：宽基/宽基·海外/红利·低波/主题·行业(高波动)/商品·对冲）；⚠ 非分配桶名
-      unsupported: false,
+      unsupported: ['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) ? !!dec.unsupported : false,
+      ...(reg.type === 'dividend' ? {unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,
+        metrics:dec.matrix.metrics,conditions:dec.matrix.conditions,signalNavDate:dec.matrix.metrics.navDate||null,
+        orderDate:dec.matrix.orderDate,blockedReason:sm.blockedReason||null,yieldReference:dec.matrix.yieldReference} : {}),
+      ...(reg.type==='broad300'?{unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,
+        metrics:dec.matrix.metrics,conditions:dec.matrix.conditions,route:dec.matrix.route,
+        signalNavDate:dec.matrix.metrics.navDate,orderDate:dec.matrix.orderDate,peDate:dec.matrix.peDate,
+        peSource:dec.matrix.peSource,blockedReason:sm.blockedReason||null}:{}),
+      ...(reg.type==='nasdaq'?{unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,inputVersion:dec.matrix.inputVersion,
+        metrics:dec.matrix.metrics,conditions:dec.matrix.conditions,route:dec.matrix.route,paths:dec.matrix.paths,pathStates:dec.matrix.pathStates,
+        signalNavDate:dec.matrix.metrics.navDate,orderDate:dec.matrix.orderDate,computedAt:dec.matrix.computedAt,
+        peDate:dec.matrix.peDate,peSource:dec.matrix.peSource,blockedReason:sm.blockedReason||null}:{}),
+      ...(reg.type==='activeEquity'?{unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,inputVersion:dec.matrix.inputVersion,
+        metrics:dec.matrix.metrics,conditions:dec.matrix.conditions,route:dec.matrix.route,paths:dec.matrix.paths,pathStates:dec.matrix.pathStates,
+        signalNavDate:dec.matrix.metrics.navDate,orderDate:dec.matrix.orderDate,computedAt:dec.matrix.computedAt,
+        source:dec.matrix.source,sourceHash:dec.matrix.sourceHash,sourceFetchedAt:dec.matrix.sourceFetchedAt,
+        futureOrder:dec.matrix.futureOrder,buyOnly:true,blockedReason:sm.blockedReason||null}:{}),
+      ...(reg.type==='goldDual'?{unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,inputVersion:dec.matrix.inputVersion,
+        metrics:dec.matrix.metrics,conditions:dec.matrix.conditions,route:dec.matrix.route,paths:dec.matrix.paths,pathStates:dec.matrix.pathStates,
+        signalNavDate:dec.matrix.metrics.navDate,orderDate:dec.matrix.orderDate,computedAt:dec.matrix.computedAt,
+        source:dec.matrix.source,sourceHash:dec.matrix.sourceHash,sourceFetchedAt:dec.matrix.sourceFetchedAt,
+        releaseEnabled:dec.matrix.releaseEnabled,releaseLabel:dec.matrix.releaseLabel,
+        futureOrder:dec.matrix.futureOrder,buyOnly:true,blockedReason:sm.blockedReason||null}:{}),
       valuationAnchor: f.valuationAnchor || null,
-      marketVerdict: sm.marketVerdict || card.verdict,
-      verdict: sm.verdict || card.verdict,
+      marketState: sm.marketState || null,
+      marketStateLabel: sm.marketStateLabel || null,
+      marketVerdict: ['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) ? (Object.hasOwn(sm,'marketVerdict')?sm.marketVerdict:dec.action) : sm.marketVerdict || card.verdict,
+      verdict: ['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) ? (Object.hasOwn(sm,'verdict')?sm.verdict:null) : sm.verdict || card.verdict,
       title: card.title, detail: card.detail, factors: card.factors,
       matrix: (dec && dec.matrix) || null,
       score,                                   // ← 语义变更：位置分 → **综合分**（= wV×V + wM×M）
@@ -366,7 +443,17 @@ async function buildAdvice(session = 'am') {
       compositeLabel: sm.compositeLabel || null,                          // 拦截/降级说明
       weights: sm.weights || null,                                        // { wV, wM }
       degraded: sm.degraded || [],                                        // ['V'] / ['M'] / ['V','M']
-      conclusion: anchorWarn + conclusionOf(dec.action, score, suspended, dailyLimit, sm.compositeLabel), // ★ 两维派生；compositeLabel 用于区分「硬约束归零」与「估值真贵」；anchorWarn 见上
+      conclusion: reg.type==='goldDual'
+        ? `${dec.matrix.marketStateLabel}；${dec.action==null?'身份、基金日期或数据尚未通过核验':dec.action==='add'?'双路径之一条件成立':'两个通道均有条件未达标'}。${dec.matrix.releasePending?'待启用，当前不可执行。':sm.executable?'当前约束允许执行。':'当前执行受限，申请日需复核。'}仅买入判断；趋势回踩不等于长期低位，历史结果不保证盈利。`
+        : reg.type==='activeEquity'
+        ? `${dec.matrix.marketStateLabel}；${dec.action==null?'必要身份、采样或数据尚未通过核验':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，当前执行受限；申请日需复核'):'两个通道均未全部成立'}。仅买入判断，金额与节奏由你决定；不含退出规则，历史结果不保证盈利。`
+        : reg.type==='nasdaq'
+        ? `${dec.matrix.marketStateLabel}；${dec.action==null?'必要身份或数据未通过核验':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，当前执行受限；目标申请日需复核'):'两个通道均未全部成立'}。PE只限制回撤通道，趋势不设PE门槛；金额和节奏由你决定。`
+        : reg.type === 'dividend'
+        ? `${dec.matrix.marketStateLabel}；${dec.action==null?'必要档案或数据尚未核验，暂不判定':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，但当前申购或资金政策不允许执行'):'趋势回踩条件尚未全部成立'}。趋势回踩可能在长期相对高位，历史结果不保证未来盈利；股息率仅供参考。`
+        : reg.type === 'broad300'
+        ? `${sm.marketStateLabel || dec.matrix.marketStateLabel}；${dec.action==null?'必要档案或数据未通过核验，暂不判定':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，但当前申购或资金政策不允许执行'):'共同PE入口或双通道条件尚未全部成立'}。共同25%入口可能漏买，趋势回踩可能处于相对高位；历史PE可能修订，历史结果不保证未来盈利。`
+        : anchorWarn + conclusionOf(dec.action, score, suspended, dailyLimit, sm.compositeLabel), // 其他策略仍沿用综合分文案
       suspended, dailyLimit,
       purchaseStatus: sm.purchaseStatus || f.purchaseStatus || null,
       statusFresh: sm.statusFresh === true,
@@ -380,7 +467,8 @@ async function buildAdvice(session = 'am') {
     });
     if (!isPM) {
       // ⚠ 副作用②（D1 保留）：timing 采集输入（复盘「每月」tab 战役状态机），仅 am 收集——随 funds 组装保留
-      decMap[f.code] = { action: dec.action, matrix: (dec && dec.matrix) || null, name: f.name, category: f.category, caliber: reg.caliber || null };
+      decMap[f.code] = { action: dec.action, matrix: (dec && dec.matrix) || null, name: f.name, category: f.category, caliber: reg.caliber || null,
+        ...(['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type)?{strategyVersion:dec.strategyVersion,unsupported:dec.unsupported,executable:sm.executable,blockedReason:sm.blockedReason}: {}) };
     }
   }
 
@@ -392,6 +480,8 @@ async function buildAdvice(session = 'am') {
   //   将来恢复 frozen 时按净口径浮盈判断 —— 那更准确（收益本就该扣费）。仅 feeRate > 0 的基金两口径才有差异。
   const trimPct = sig.trimProfitPct == null ? 12 : sig.trimProfitPct;
   for (const f of a.funds) {
+    // This route is buy-only, including unknown admission states and frozen C shares.
+    if (require('../lib/activeEquityIdentity').isActiveEquityRoute(f)||require('../lib/goldIdentity').isGoldRoute(f)) continue;
     if ((policy[util.engineCategoryToBucket(f.category)] || 'buy') !== 'frozen') continue;
     if (!f.currentValue || !f.principal) continue;
     if (!/C$/.test((f.name || '').trim())) continue; // 仅 C 类：按日计提销售服务费，长期持有更贵
@@ -442,7 +532,9 @@ async function buildAdvice(session = 'am') {
     // 只保留有 factors/verdict 的决策卡（alerts 无 factors 不进，避免污染前端按 code 取数）；conclusion 顺带存备用。
     const decSnap = {};
     funds.forEach(s => {
-      if (s.factors && s.verdict) decSnap[s.code] = { factors: s.factors, verdict: s.verdict, conclusion: s.conclusion };
+      if (s.factors && s.verdict) decSnap[s.code] = { factors: s.factors, verdict: s.verdict, conclusion: s.conclusion,
+        ...(s.strategyVersion?{strategyVersion:s.strategyVersion,marketState:s.marketState,marketVerdict:s.marketVerdict,
+          executable:s.executable,metrics:s.metrics,signalNavDate:s.signalNavDate}: {}) };
     });
     store.writeDecisionHistory({ date: today, funds: decSnap });
     // 买入时机复盘：战役状态机采集（am-only，pm 只陈述不改状态；采集失败不致命，不阻塞决策主流程）
@@ -460,7 +552,9 @@ async function buildAdvice(session = 'am') {
     cooldownDays, calibratedAt: sig.calibratedAt,
     // 周对比快照：取 7 天前决策快照的 {code:{factors,verdict}}，前端只渲染不自己算 diff。
     // 早期无历史时返回 {}（前端不显示对比列）。
-    weekAgo: pickWeekAgo(store.readDecisionHistory())
+    weekAgo: Object.fromEntries(Object.entries(pickWeekAgo(store.readDecisionHistory())).filter(([code,s])=>{
+      const current=funds.find(f=>f.code===code);return !current?.strategyVersion || current.strategyVersion===s.strategyVersion;
+    }))
     // 已删除：l2、l3、fundSnap、navDates（信息全部并入 funds[]；latestDate 即原净值日，见计划 §三 字段去向表）
   };
 }
