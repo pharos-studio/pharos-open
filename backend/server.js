@@ -31,6 +31,9 @@ const schema = require('./lib/schema'); // 数据结构版本与迁移（唯一�
 const trackIndex = require('./lib/trackIndex'); // 指数白名单与类别推断（唯一真相源）
 const categories = require('./lib/categories'); // 内置类别/算法/口径/预设（唯一真相源 + 启动补齐）
 const fundProfile = require('./lib/fundProfile');
+// 降级视图（路线 3）：未过闸门的基金也给净值事实，但结构上不给任何判断。纯计算在 lib/degradedView.js。
+const degradedView = require('./lib/degradedView');
+const activeEquityIdentity = require('./lib/activeEquityIdentity');
 
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -264,6 +267,37 @@ const server = http.createServer(async (req, res) => {
           purchaseStatus,
         }));
       } catch (e) { return json(res, { ok: false, error: (e && e.message) || String(e) }, 500); }
+    }
+    if (p === '/api/fund-degraded') {
+      // 路线 3「降级视图」：未通过证据闸门的基金也返回**净值事实**，不再让用户面对空屏。
+      // ★ 只读免鉴权（与 /api/nav-on-date 同级：无副作用、不下发任何凭据、不写盘）。
+      // ★ 一只基金不允许同时存在两套口径 —— 台账里已核验的基金直接指回 /api/advice，不给降级视图。
+      // ★ 本端点只读**主动权益线**台账；该线未收录的基金一律记 profile_unverified（诚实的通用答案），
+      //   其他策略线日后接入只需传入本线自己的原因码，lib/degradedView.js 与本路由都不用改。
+      const code = (u.searchParams.get('code') || '').trim();
+      if (!/^\d{6}$/.test(code)) return json(res, { ok: false, degraded: false, error: 'code 须为 6 位数字' }, 400);
+      const days = Math.min(1200, Math.max(60, Number(u.searchParams.get('days')) || 500));
+      const entry = activeEquityIdentity.LEDGER.funds.find(e => e.code === code) || null;
+      const gateError = entry ? activeEquityIdentity.eligibility(entry) : 'profile_unverified';
+      if (!gateError) return json(res, { ok: true, degraded: false, reason: 'fund_verified', advicePath: '/api/advice' });
+      const [profile, nav] = await Promise.all([
+        fundProfile.lookup(code).catch(() => null),
+        fetchers.fetchNavHistory(code, days).catch(() => ({ history: [], failed: true })),
+      ]);
+      // 事实也拿不到时如实报失败，绝不用「空事实」假装有视图。
+      if (!nav || nav.failed || !Array.isArray(nav.history) || !nav.history.length)
+        return json(res, { ok: false, degraded: false, error: 'nav_unavailable', blockedReason: gateError }, 502);
+      const ap = (profile && profile.autoProfile) || {};
+      const view = degradedView.build({
+        code,
+        name: profile && profile.name,
+        fundType: (profile && profile.type) || ap.fundType || null,
+        market: ap.market || null,
+        rows: nav.history,
+        blockedReason: gateError,
+        source: `https://fundf10.eastmoney.com/jjjz_${code}.html`,
+      });
+      return json(res, view, view.ok ? 200 : 422);
     }
     if (p === '/api/funds' && req.method === 'POST' || /^\/api\/funds\/\d{6}\/reidentify$/.test(p) && req.method === 'POST') {
       const ak = config.getApiKey();

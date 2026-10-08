@@ -21,4 +21,4 @@ function eligibility(e){if(e?.identityVerified!==true||!e.source||!/^\d{6}$/.tes
   if(e.samplingVerified!==true||e.sampling!=='all-economic-nav')return 'daily_sampling_unverified';
   if(e.continuityVerified!==true||!require('./activeEquitySignal').validDate(e.initializationFrom))return 'initialization_unverified';return null;}
 function isOverseasActiveEquityRoute(f){return !!f&&(f.market==='QDII'||f.caliber==='us'||/QDII|海外/i.test(String(f.fundType||'')+' '+String(f.name||'')))&&isActiveEquityRoute(f);}
-module.exports={isActiveEquityRoute,isOverseasActiveEquityRoute,eligibility};
+module.exports={LEDGER,isActiveEquityRoute,isOverseasActiveEquityRoute,eligibility};

@@ -1,11 +1,12 @@
 /* 我的基金：代码查询、只读自动档案、受限确认和批量入口。 */
 import * as api from '../../api.js';
 import * as store from '../../store.js';
-import { el } from '../../util.js';
+import { el, loadingHTML } from '../../util.js';
 import { CATS_FALLBACK } from './constants.js';
 import { ensureFundList } from './fundMeta.js';
 import { readFunds, addFund } from './fundStore.js';
 import { parseBulkRows, commitBulkRows, renderBulkPreview } from './bulkAdd.js';
+import { renderDegraded, isDegraded } from '../../degraded-view.js';
 
 export function labeled(label, input) {
   return el('div', { class: 'field' }, [el('label', { text: label }), input]);
@@ -30,10 +31,28 @@ export function addFundPanel() {
   addBtn.disabled = true;
   let lookup = null, seq = 0, timer = null;
   const hasFund = value => readFunds(store.getState()).some(f => f.code === value);
+  // 未通过证据闸门的基金，在这里补一段「净值事实」（路线 3 降级视图）。
+  // ★ 只画事实、不画判断；已核验的基金不重复给事实，避免一只基金两套口径。
+  const degradedSlot = el('div');
+  const showDegraded = async (value, ticket) => {
+    degradedSlot.innerHTML = loadingHTML('正在获取净值事实…', true);
+    try {
+      const d = await api.getFundDegraded(value, 300);
+      if (ticket !== seq) return;
+      const node = isDegraded(d) ? renderDegraded(d) : null;
+      degradedSlot.innerHTML = '';
+      if (node) degradedSlot.appendChild(node);
+    } catch (e) {
+      if (ticket !== seq) return;
+      degradedSlot.innerHTML = '';
+      degradedSlot.appendChild(el('div', { class: 'hint', text: '净值事实获取失败：' + e.message }));
+    }
+  };
   const reset = () => {
     lookup = null; name.value = ''; type.value = ''; market.value = ''; category.value = '';
     caliber.value = ''; tracked.value = ''; estimate.value = ''; proxy.checked = false;
     proxyRow.style.display = 'none'; addBtn.disabled = true;
+    degradedSlot.innerHTML = '';   // ★ 换代码时必须清掉上一只基金的降级视图
   };
   const show = d => {
     lookup = d;
@@ -64,6 +83,7 @@ export function addFundPanel() {
       if (ticket !== seq || code.value.trim() !== value) return;
       if (!d.found || !d.autoProfile) { msg.textContent = '没有找到该基金档案'; return; }
       show(d);
+      showDegraded(value, ticket);   // 未核验 → 给净值事实；已核验 → 后端回 fund_verified，这里不画
     } catch (e) {
       if (ticket === seq) msg.textContent = '查询失败：' + e.message;
     }
@@ -103,6 +123,7 @@ export function addFundPanel() {
     labeled('官方跟踪指数', tracked), labeled('盘中估算指数', estimate),
   ]));
   p.appendChild(proxyRow); p.appendChild(suggestions); p.appendChild(msg);
+  p.appendChild(degradedSlot);   // 未核验基金的「净值事实（非建议）」挂在这里
   p.appendChild(el('div', { class: 'btn-row' }, [addBtn]));
 
   const bulkTa = el('textarea', { class: 'input', rows: '5', placeholder: '每行一条：6位代码 [日期] [金额]' });

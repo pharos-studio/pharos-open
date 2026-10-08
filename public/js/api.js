@@ -75,6 +75,11 @@ export const getPurchasePreview = (code, date, session, amount, feeWaived, known
     + (pricingDate ? '&pricingDate=' + encodeURIComponent(pricingDate) : ''));
 export const retryMigration = () => request('/api/migration/retry', { method: 'POST' });
 export const getFundLookup = (code) => request('/api/fund-lookup?code=' + encodeURIComponent(code)); // 添加基金：单只带出（A名单+B兜底）
+// 降级视图（只读、免鉴权）：未通过证据闸门的基金返回「净值事实」，已核验的返回 fund_verified。
+// ★ 返回体里没有 action/verdict/marketVerdict 等判断字段（后端 lib/degradedView.js 结构性禁止），
+//   前端也不得凭空造判断文案。见 public/js/degraded-view.js。
+export const getFundDegraded = (code, days) =>
+  request('/api/fund-degraded?code=' + encodeURIComponent(code) + (days ? '&days=' + encodeURIComponent(days) : ''));
 export const createFund = (code, profileRevision, confirmations) => request('/api/funds', {
   method: 'POST', body: JSON.stringify({ code, profileRevision, confirmations }),
 });

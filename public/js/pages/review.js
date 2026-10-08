@@ -2,6 +2,7 @@
 // 手机端（≤760px）改卡片式竖排，纯纵向滚、无横滑/无缩放（方案 A）
 import * as store from '../store.js';
 import { signPct, cls, el, tableWrap, loadingHTML } from '../util.js';
+import { attachLazyDegraded } from '../degraded-view.js';
 
 let activeTab = 'daily';
 
@@ -182,6 +183,10 @@ async function renderDaily(body, live, state, mobile) {
     }
 
     det.appendChild(bodyWrap);
+    // 「没有 verdict 也没有暂停状态」= 上方徽章位渲染成空 <span> 的那种空屏。
+    // 这时挂上降级视图：展开卡片才去拉净值（一次 500 行，走外网，不能进页面就全量拉）。
+    // ★ 只画事实不画判断；已核验但数据不足的基金会收到 fund_verified 并被跳过。
+    if (!verdict && !suspended) attachLazyDegraded(det, f.code, 300);
     panel.appendChild(det);
   });
 
