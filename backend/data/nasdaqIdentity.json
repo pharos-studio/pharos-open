@@ -676,24 +676,36 @@
       "initializationPolicy": "first-ten-joint",
       "initializationFrom": null,
       "seedEstablishedOn": null,
-      "rulesVerified": false,
+      "rulesVerified": true,
       "sourceVersion": "2026-08-14 prospectus",
-      "checkedAt": "2026-10-04T06:23:32.095Z",
-      "effectiveBoundary": "Observed original NDX identity and current scope only; current full rules unknown",
-      "contractSource": null,
-      "contractSourceHash": null,
-      "workCalendar": null,
-      "openCalendar": null,
-      "valuationCalendar": null,
-      "navLagWorkDays": null,
+      "checkedAt": "2026-10-08T02:53:05.721Z",
+      "effectiveBoundary": "Official 2026-08-14 prospectus retrieved and byte-identical to the persisted snapshot; current rules verified; effectiveFrom unknown; not continuous historical rule-vintage proof",
+      "contractSource": "https://www.99fund.com/announcement/zx/upload/2026/20260813/6493101051fa41f598580d3f18aa711b.pdf",
+      "contractSourceHash": "3bc64a31188955503fb630a803c4c321b85354f7a4ad1884298bce9682476722",
+      "workCalendar": "cn",
+      "openCalendar": "joint",
+      "valuationCalendar": "cn",
+      "navLagWorkDays": 2,
       "statutoryDates": [
         "06-30",
         "12-31"
       ],
       "ruleUnknowns": [
-        "Complete investment US securities markets and related valuation venues not verified",
-        "Own share-class initialization awaiting validated complete source and persisted first prefix"
+        "Own initialization established only from validated complete source and immutable persisted origin proof",
+        "Announcement exceptions and actual channel purchase status remain independent"
       ],
+      "contractRetrievedAt": "2026-10-08T02:53:05.721Z",
+      "currentContractVerified": true,
+      "contractPages": {
+        "work": 11,
+        "open": 80,
+        "valuation": 99,
+        "navPublication": [
+          89,
+          99,
+          106
+        ]
+      },
       "purchaseConstraint": {
         "status": "suspended",
         "start": "2026-09-24",
