@@ -49,11 +49,11 @@ async function run(){let checks=0;const test=async(fn)=>{await fn();checks++;};
     assert.equal(D.revalidateInput(input,clock-1).error,'historical_asof_not_supported');});
   await test(async()=>{const service=I.createService({resolveOfficial:async code=>({...F.evidence(code),currency:'USD'})});assert.equal((await service.resolve('999001')).error,'scope_unsupported');
     assert.equal((await I.createService({resolveOfficial:async()=>null}).resolve('999001')).error,'profile_unverified');
-    for(const code of ['270042','160213','161130','015299','015300','016452']){
+    for(const code of ['270042','160213','161130','015299','015300','016452','018966']){
       const real=await I.resolve(code);assert.equal(real.error,undefined);assert.equal(real.evidence.identityVerified,true);
       assert.equal(C.validContract(real.evidence),true);
     }
-    for(const code of ['040046','000834','018966']){const real=await I.resolve(code);assert.equal(real.error,undefined);
+    for(const code of ['040046','000834']){const real=await I.resolve(code);assert.equal(real.error,undefined);
       assert.equal(C.orderContext(F.NOW,real.evidence).error,'fund_calendar_unverified');}
     assert.equal((await I.resolve('008971')).error,'index_continuity_unverified');
   });
@@ -70,7 +70,8 @@ async function run(){let checks=0;const test=async(fn)=>{await fn();checks++;};
     assert(!JSON.stringify(input).includes('originHistory'),'runtime origin history must not enter public analysis input');
     const earlier=D.prepareInput(next,{rows:peRows,fetchedAt:clock},e,C.orderContext(clock,e));assert.equal(earlier.error,'pre_identity_nav_observation');
     const ledger=require('../data/nasdaqIdentity.json');assert.equal(ledger.funds.find(f=>f.code==='016452').rulesVerified,true);
-    assert.equal(ledger.funds.find(f=>f.code==='018966').rulesVerified,false);
+    assert.equal(ledger.funds.find(f=>f.code==='018966').rulesVerified,true);
+    assert.equal(ledger.funds.find(f=>f.code==='040046').rulesVerified,false);
   });
   await test(async()=>{const e={...F.evidence(),initializationFrom:null,seedEstablishedOn:null,initializationPolicy:'first-ten-joint',identityNotBefore:'2024-01-02'};
     const raw=history.map(r=>({...r,rawFields:{FSRQ:r.date,DWJZ:r.nav,JZZZL:'',NAVTYPE:'1'}})).reverse();
