@@ -35,7 +35,10 @@ function evaluate(rows, orderDate, options = {}) {
 function eligibility(fund) {
   if (!fund || fund.profileState === 'needs_review') return 'profile_unverified';
   if (fund.market && fund.market !== 'A' || /QDII|混合|主动|债券|货币/.test(fund.fundType || '')) return 'scope_unsupported';
-  if (/港股|香港|恒生|全球|海外|美股|标普|纳斯达克/.test(fund.indexName || '')) return 'scope_unsupported';
+  // ★「标普」不能一刀切拦：'标普中国A股大盘红利低波50指数' 是 **A 股**指数（编制方挂了标普的名），
+  //   而且 trackIndex.js 已为它登记人工确认的代理映射 SPCLLHCP→CSI930955，本就该走红利线。
+  //   旧写法把它当海外红利误杀成「暂不支持」。这里用 (?!中国) 放行它，仍拦住「标普500／标普全球」这类真海外。
+  if (/港股|香港|恒生|全球|海外|美股|纳斯达克|标普(?!中国)/.test(fund.indexName || '')) return 'scope_unsupported';
   if (fund.market !== 'A' || !fund.fundType || !fund.indexCode || !fund.indexName) return 'profile_unverified';
   if (!/^指数型/.test(fund.fundType) || !/红利|股息/.test(fund.indexName)) return 'scope_unsupported';
   return null;
