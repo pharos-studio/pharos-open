@@ -183,10 +183,12 @@ async function renderDaily(body, live, state, mobile) {
     }
 
     det.appendChild(bodyWrap);
-    // 「没有 verdict 也没有暂停状态」= 上方徽章位渲染成空 <span> 的那种空屏。
-    // 这时挂上降级视图：展开卡片才去拉净值（一次 500 行，走外网，不能进页面就全量拉）。
-    // ★ 只画事实不画判断；已核验但数据不足的基金会收到 fund_verified 并被跳过。
-    if (!verdict && !suspended) attachLazyDegraded(det, f.code, 300);
+    // 没有 verdict = 上方徽标位渲染成空 <span> 的那种空屏 → 挂上降级视图（展开才拉取）。
+    // ★ 判据只看「有没有 verdict」，**不能加 !suspended**：暂停申购（如 QDII 外汇额度限售、
+    //   配置里 dailyLimit=0）与「未通过证据闸门」是两件正交的事。只看 suspended 会让
+    //   「既暂停又未核验」的基金退回空屏 —— 这正是本视图要消灭的那种空白。
+    //   实测踩过：012920 因 dailyLimit=0 被判 suspended，降级视图被跳过。
+    if (!verdict) attachLazyDegraded(det, f.code, 300);
     panel.appendChild(det);
   });
 
