@@ -144,6 +144,7 @@ async function renderDaily(body, live, state, mobile) {
 
     // ③ 估值信号层（结构化分项 + 上周对比）
     if (fc && fc.factors && fc.factors.length) {
+      const secTitle = fc.strategyVersion==='gold-dual-v1'?'黄金A/B双路径；仅买入判断':fc.strategyVersion==='active-equity-buy-v1'?'主动权益A/B双通道；仅买入判断':fc.strategyVersion==='nasdaq-dual-v1'?'纳指双通道条件；PE仅回撤门槛':fc.strategyVersion==='hs300-dual-v1'?'共同PE入口、双通道条件与参考':fc.strategyVersion==='dividend-trend-v1'?'趋势回踩条件与参考':'估值信号';
       const table = el('table', { class: 'tbl dec-factors',...(nasdaq?{style:'table-layout:fixed;width:100%;min-width:0;overflow-wrap:anywhere'}:{}) });
       table.appendChild(el('thead', {}, [el('tr', {}, [
         el('th', { text: '维度' }), el('th', { text: '值' }),
@@ -160,9 +161,26 @@ async function renderDaily(body, live, state, mobile) {
         ]));
       });
       table.appendChild(tb);
+      // ★ 一行都取不到**实测值**时，这张表不给判断也不给数字，只是把同一句「无法判定」重复 N 遍，
+      //   还会让标题里的「仅买入判断」读成"正在判"。此时折叠成一行，把版面让给净值事实。
+      //   实测踩过：三只 QDII 13 行全「无法判定」、红利低波 9 行全「—」。
+      //   ⚠️ 判空要按「是不是实测值」判，不能只判 null/空串：
+      //     · 各策略占位写法不统一 —— 红利线写「—」，主动权益/纳指写「无法判定」；
+      //     · 通道行会带原因后缀：「无法判定；daily_sampling_unverified」，等值比较会漏掉。
+      //   但「待启用」「尚未核验项目：…」这类**带信息的文案不算空**，它们要照常显示。
+      const NO_VALUE = v => v == null || v === '' || v === '—' || /^无法判定/.test(String(v));
+      const hasValue = fc.factors.some(x => !NO_VALUE(x.value));
+      const tableNode = nasdaq ? el('div',{style:'min-width:0;max-width:100%;width:100%;overflow-wrap:anywhere'},[table]) : tableWrap(table);
       bodyWrap.appendChild(el('div', { class: 'dec-sec' }, [
-        el('div', { class: 'dec-sec-h', text: fc.strategyVersion==='gold-dual-v1'?'黄金A/B双路径；仅买入判断':fc.strategyVersion==='active-equity-buy-v1'?'主动权益A/B双通道；仅买入判断':fc.strategyVersion==='nasdaq-dual-v1'?'纳指双通道条件；PE仅回撤门槛':fc.strategyVersion==='hs300-dual-v1'?'共同PE入口、双通道条件与参考':fc.strategyVersion==='dividend-trend-v1'?'趋势回踩条件与参考':'估值信号' }),
-        nasdaq?el('div',{style:'min-width:0;max-width:100%;width:100%;overflow-wrap:anywhere'},[table]):tableWrap(table),
+        el('div', { class: 'dec-sec-h' }, [
+          document.createTextNode(secTitle),
+          hasValue ? null : el('span', { class: 'badge badge-hold', style: 'margin-left:8px',
+            text: fc.factors.length + ' 项本次未取值' }),
+        ]),
+        hasValue ? tableNode : el('details', {}, [
+          el('summary', { style: 'cursor:pointer', text: '查看条件清单（本次均未取值）' }),
+          tableNode,
+        ]),
       ]));
     }
 
