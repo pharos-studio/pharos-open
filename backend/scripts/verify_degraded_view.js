@@ -110,20 +110,41 @@ function main() {
   }
   // 未核验条目必须给出本模块认识的原因码（否则降级端点会 422）
   // 已核验基金不得走降级：一套口径
-  //  ⚠️ 「被拦住」必须按**端到端**判，不能只看 eligibility()：2026-10-08 签署三只 QDII 的
-  //  采样/连续性后，台账 9 条在四道门这一层已全部放行，剩下的拦截发生在**日历层**
-  //  （qdiiCalendar 未落 ⇒ fund_calendar_unverified）。只看 eligibility 会误判成"没有拦住任何条目"。
+  //  ⚠️ 「被拦住」必须按**端到端**判，不能只看 eligibility()：拦截可能发生在日历层
+  //  （qdiiCalendar 未落 ⇒ fund_calendar_unverified），eligibility() 看不到那一层。
+  //
+  //  ⚠️ 台账已 9 条全部签署放行（2026-10-08 含三只 QDII 的日历门），真实台账里**不再有**
+  //  被拦的条目。若断言依赖「台账里存在被拦条目」，台账一推进就会假失败——那是在测台账进度，
+  //  不是在测降级路径。故改用**合成条目**逐个原因码验证：意图更明确，且与台账进度解耦。
   const CAL = require('../lib/activeEquityCalendar');
   const T = Date.parse('2026-10-08T04:00:00Z');
   const endToEndBlocked = e => identity.eligibility(e) || (CAL.orderContext(T, e) || {}).error || null;
-  const blocked = identity.LEDGER.funds.filter(e => endToEndBlocked(e));
-  assert(blocked.length > 0, '应存在端到端被拦住的条目，否则降级路径无从验证');
-  for (const e of blocked) {
+
+  const base = structuredClone(identity.LEDGER.funds.find(e => e.code === '008903'));
+  const cases = [
+    ['未核验身份', e => { e.identityVerified = false; }, 'profile_unverified'],
+    ['日频采样未核验', e => { e.samplingVerified = false; }, 'daily_sampling_unverified'],
+    ['连续性未核验', e => { e.continuityVerified = false; }, 'initialization_unverified'],
+    ['规则/日历未核验', e => { e.rulesVerified = false; }, 'fund_calendar_unverified'],
+  ];
+  const blocked = [];
+  for (const [label, mutate, expected] of cases) {
+    const e = structuredClone(base);
+    mutate(e);
     const r = endToEndBlocked(e);
-    assert(degradedView.KNOWN_BLOCK_REASONS.has(r), '拦截原因必须被降级视图认识：' + e.code + ' → ' + r);
+    assert(r, label + ' 应被端到端拦住');
+    assert.equal(r, expected, label + ' 拦截原因应为 ' + expected + '，实际 ' + r);
+    assert(degradedView.KNOWN_BLOCK_REASONS.has(r), '拦截原因必须被降级视图认识：' + label + ' → ' + r);
+    blocked.push({ code: label, reason: r });
+  }
+  // 真实台账当前的状态只作为观察输出记录，不再作为断言前提
+  const ledgerBlocked = identity.LEDGER.funds.filter(e => endToEndBlocked(e));
+  for (const e of ledgerBlocked) {
+    const r = endToEndBlocked(e);
+    assert(degradedView.KNOWN_BLOCK_REASONS.has(r), '台账中若存在被拦条目，其原因也必须被认识：' + e.code + ' → ' + r);
   }
   const reasonTally = {};
-  blocked.forEach(e => { const r = endToEndBlocked(e); reasonTally[r] = (reasonTally[r] || 0) + 1; });
+  blocked.forEach(e => { reasonTally[e.reason] = (reasonTally[e.reason] || 0) + 1; });
 
   console.log('degraded view: 事实口径、禁字段、fail-closed 与一套口径校验通过');
   console.log('  降级已知原因码 ' + degradedView.KNOWN_BLOCK_REASONS.size + ' 种；已核验 ' + verified.length +
