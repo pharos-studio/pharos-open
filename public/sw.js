@@ -18,7 +18,8 @@
 // v36：纳斯达克100专线三态与独立申购限制。
 // v37：主动权益买入判断与未核验采样状态；实际份额门禁保留。
 // v39：全部决策卡片折叠，状态与交易约束分别显示。
-const CACHE = 'fund-board-v39';
+// v40：决策页改纯状态行（无折叠），证据明细移至每日复盘页。
+const CACHE = 'fund-board-v40';
 const SHELL = [
   '/', '/index.html', '/style.css',
   '/js/app.js', '/js/store.js', '/js/api.js', '/js/util.js',

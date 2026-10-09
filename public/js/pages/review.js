@@ -3,6 +3,7 @@
 import * as store from '../store.js';
 import { signPct, cls, el, tableWrap, loadingHTML } from '../util.js';
 import { attachLazyDegraded } from '../degraded-view.js';
+import { decisionDetailSections } from './decision-card.js';
 
 let activeTab = 'daily';
 
@@ -199,6 +200,10 @@ async function renderDaily(body, live, state, mobile) {
         wkNode,
       ]));
     }
+
+    // ⑤ 决策详情段（判断说明/条件与指标/数据核验/数据日期/交易限制）——由决策页折叠区搬迁而来，
+    //    承接原决策卡的证据明细；类别外基金 fc 为 null，无引擎记录可展示，跳过。
+    if (fc) bodyWrap.appendChild(decisionDetailSections(fc, {}));
 
     det.appendChild(bodyWrap);
     // 没有 verdict = 上方徽标位渲染成空 <span> 的那种空屏 → 挂上降级视图（展开才拉取）。
