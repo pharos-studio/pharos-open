@@ -59,4 +59,6 @@ async function openCalendarGates(){const C=require('../lib/activeEquityCalendar'
   assert.equal(at('2025-07-01',{...e,openCalendar:'cn'}).orderDate,'2025-07-01','旧口径行为不得改变');
   console.log('主动权益开放日例外：官方清单健全、实测停业日全被覆盖、例外日顺延、证据缺失退回、旧口径不变 通过');
 }
-if(require.main===module)run().then(realGates).then(openCalendarGates).then(buyOnlyScope).catch(e=>{console.error(e);process.exitCode=1;});module.exports={snapshot,syntheticPayload:snapshot,run,realGates,openCalendarGates,trimSnapshot,buyOnlyScope};
+// ★ realGates（真实台账 × 真实净值，需联网）已移到verify_active_equity_real_gates.js，
+//   归入 test:network：净值快照缓存在被 gitignore 的目录里，CI 的全新 checkout 必然要联网。
+if(require.main===module)run().then(openCalendarGates).then(buyOnlyScope).catch(e=>{console.error(e);process.exitCode=1;});module.exports={snapshot,syntheticPayload:snapshot,run,realGates,openCalendarGates,trimSnapshot,buyOnlyScope};

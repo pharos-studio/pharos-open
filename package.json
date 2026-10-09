@@ -14,7 +14,7 @@
     "test:active-equity": "node backend/scripts/verify_active_equity_signal.js && node backend/scripts/verify_active_equity_data.js && node backend/scripts/verify_active_equity_api.js && node backend/scripts/verify_active_equity_timing.js && node backend/scripts/verify_active_equity_backfill.js && node backend/scripts/verify_active_equity_qdii.js && node backend/scripts/verify_decision_cards.js",
     "test:gold": "node backend/scripts/verify_gold_signal.js && node backend/scripts/verify_gold_data.js && node backend/scripts/verify_gold_api.js && node backend/scripts/verify_gold_timing.js && node backend/scripts/verify_gold_backfill.js",
     "test:nasdaq": "node backend/scripts/verify_nasdaq_signal.js && node backend/scripts/verify_nasdaq_data.js && node backend/scripts/verify_nasdaq_api.js && node backend/scripts/verify_nasdaq_timing.js && node backend/scripts/verify_nasdaq_backfill.js",
-    "test:network": "node backend/scripts/verify_bond10y.js && node backend/scripts/verify_active_equity_qdii.js",
+    "test:network": "node backend/scripts/verify_bond10y.js && node backend/scripts/verify_active_equity_qdii.js && node backend/scripts/verify_active_equity_real_gates.js",
     "check:offline": "node backend/scripts/check_offline.js",
     "evidence": "node backend/scripts/collect_evidence.js",
     "queue": "node backend/scripts/plan_verification_queue.js",
