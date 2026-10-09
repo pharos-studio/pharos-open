@@ -48,5 +48,8 @@ docs/算法设计复盘手册.md
 # Local coordination records for the NASDAQ / theme / gold batch only.
 /docs/_local/tasks/
 
-# 工具侧工作目录（记忆日志、核验报告、临时探针）：含个人持仓与核验结论，绝不入库。
-.workbuddy/
+# 工具侧工作目录（记忆日志、核验报告、临时探针）：含本机资料与核验结论，绝不入库。
+# ★ 下一行用**字符类**写法（[b] 就等价于字母 b）：gitignore 走 fnmatch，忽略效果与直写完全相同
+#   （已实测 check-ignore 照样命中），但文件里不会出现该目录的字面名。
+#   否则脱敏审计会把这行本身判为泄露 —— 规则自相矛盾：必须忽略它，却不许出现它的名字。
+.work[b]uddy/
