@@ -11,8 +11,6 @@
 //   3. **只接受闸门自己的原因码。** 原因码不认识 ⇒ 不降级（fail-closed）。
 //      「不知道为什么不给」和「知道为什么不给」必须能被下游区分开。
 //
-// 设计依据：`.workbuddy/门禁解除方案-QDII与港股通.md` §4.2 路线 3。
-
 // 复用 activeEquitySignal 的日期校验，避免本仓库出现第二份日期解析实现。
 const validDate = require('./activeEquitySignal').validDate;
 

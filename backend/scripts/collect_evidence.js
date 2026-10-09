@@ -7,7 +7,7 @@
 //      默认落在 %TEMP%。误传 --out 指向 data/ 时**直接报错退出**，不静默写进去。
 //   2. **永不把任何 `*Verified` 填成 true。** 台账的核验标记是「人的结论」，不是「脚本的产出」。
 //      草稿条目里四道门一律 false，并在 `_needsHuman` 里点名还差哪几道。
-//      理由见 AGENTS.md 与 .workbuddy/门禁解除方案-QDII与港股通.md §4.2：本脚本
+//      理由见 AGENTS.md：本脚本
 //      「不能全自动放行」——它只把 30–60 分钟的人工动作压成 5 分钟复核。
 //   3. **不重写已有口径。** 净值抓取/复权/交易日历一律调用仓库自己那份实现
 //      （activeEquityData / activeEquityNav / activeEquityCalendar），
