@@ -47,10 +47,12 @@ const flat=known.map(r=>({...r,close:1}));const flatResult=trend.evaluate(flat,o
 assert.equal(flatResult.metrics.weeklyRsi14,50);assert.equal(flatResult.conditions.weeklyRsiRising,false);
 const futureChanged=rows.map((r,i)=>({...r,close:i>=278?99:r.close}));
 assert.deepEqual(trend.evaluate(futureChanged.slice(0,278),orderDate),candidate);
-const summary=pipeline({...base});assert.equal(summary.marketVerdict,'add');assert.equal(summary.verdict,'add');
-assert.equal(summary.executable,true);assert.equal(summary.marketScore,null);assert.deepEqual(summary.metrics,rounded(candidate));
+const monthly=builder(base);assert.equal(monthly.strategyVersion,'dividend-monthly-dca-v1');
+assert.equal(monthly.matrix.marketState,'monthly_dca');assert.equal(monthly.matrix.displayKind,'plan');assert.equal(monthly.matrix.frequency,'monthly');
+const summary=pipeline({...base});assert.equal(summary.marketVerdict,null);assert.equal(summary.verdict,null);
+assert.equal(summary.executable,false);assert.equal(summary.marketScore,null);assert.equal(summary.displayKind,'plan');assert.equal(summary.frequency,'monthly');
 for(const reference of [null,{value:0},{value:.09},{value:.01,asOf:'2001-01-01'}]) {
-  const r=pipeline({...base,dividendYieldReference:reference});assert.equal(r.marketVerdict,'add');
+  const r=pipeline({...base,dividendYieldReference:reference});assert.equal(r.marketVerdict,null);
 }
 for(const fund of [{...base,market:'QDII'},{...base,fundType:'混合型-偏股'},{...base,indexName:'DEMO 普通指数'},{...base,indexName:'恒生港股高股息指数'}]) {
   const r=pipeline(fund);assert.equal(r.marketVerdict,null);assert.equal(r.unsupportedReason,'scope_unsupported');assert.equal(r.executable,false);
@@ -58,6 +60,8 @@ for(const fund of [{...base,market:'QDII'},{...base,fundType:'混合型-偏股'}
 for(const fund of [{...base,indexCode:null},{...base,_dividendData:{error:'incomplete_week_close'}},{...base,_dividendData:null}]) {
   const r=pipeline(fund);assert.equal(r.marketVerdict,null);assert.equal(r.verdict,null);assert.equal(r.executable,false);
 }
+assert.equal(pipeline({...base,profileState:'needs_review'}).displayKind,undefined);
+assert.equal(pipeline({...base,market:'QDII'}).displayKind,null);
 const pending=pipeline({...base,profileState:'needs_review',_composite:{composite:100},_dec:{action:'add'}});
 assert.equal(pending.marketVerdict,null);assert.equal(pending.executable,false);
 for(const [fund,limits,policy] of [
@@ -66,7 +70,7 @@ for(const [fund,limits,policy] of [
   [{...base,purchaseStatus:{state:'open',updatedAt:1}}, {},{dividend:'buy'}],
   [{...base}, {[base.code]:0},{dividend:'buy'}],
   [{...base}, {},{core:'frozen'}]]) {
-  const r=pipeline(fund,limits,policy);assert.equal(r.marketVerdict,'add');assert.equal(r.verdict,'hold');assert.equal(r.executable,false);
+  const r=pipeline(fund,limits,policy);assert.equal(r.marketVerdict,null);assert.equal(r.verdict,null);assert.equal(r.executable,false);
 }
 assert.equal(calendar.isOpen('2026-10-01'),false);
 assert.equal(calendar.isOpen('2026-10-10'),false);
@@ -108,6 +112,10 @@ assert.equal(memory['timing_samples.json'][0].campaign,null);
 assert.equal(memory['timing_samples.json'].at(-1).campaign.id,open.campaign.id);
 assert.equal(timing.stats(example).strategyVersions.find(r=>r.version===trend.VERSION).open,1);
 day='2026-09-21';feed('hold');assert.equal(memory['timing_samples.json'].filter(r=>r.type==='advice-close').length,1);
+const beforeMonthlySamples=memory['timing_samples.json'].length;
+timing.onDecide({[base.code]:{category:'dividend',strategyVersion:'dividend-monthly-dca-v1',action:null,
+  matrix:{_type:'dividendMonthlyDca',marketState:'monthly_dca'}}},example);
+assert.equal(memory['timing_samples.json'].length,beforeMonthlySamples,'monthly plan must not open a daily timing campaign');
 
 async function dataTests() {
   const history=[];let date=new Date('2010-01-01T00:00:00Z');
@@ -153,9 +161,10 @@ async function adviceTests() {
       analysis.buildAnalysis=async()=>({funds:[f],plan:{scoreMap:{[f.code]:sm}},asOf:'DEMO',allocation:[],
         totals:{totalPrincipal:100,totalNetInvested:100,totalFee:0,totalValue:100,totalProfit:0,totalProfitPct:0}});
       const card=(await require('../engines/advice').buildAdvice('pm')).funds[0];
-      assert.equal(card.marketVerdict,sm.marketVerdict);assert.equal(card.verdict,sm.verdict);
-      assert.equal(card.score,null);assert(!card.conclusion.includes('数据不足但'));
-      assert.match(card.detail,/仅参考/);
+      assert.equal(card.marketVerdict,null);assert.equal(card.verdict,null);
+      assert.equal(card.score,null);assert.equal(card.strategyVersion,'dividend-monthly-dca-v1');
+      assert.equal(card.displayKind,'plan');assert.equal(card.frequency,'monthly');
+      assert.match(card.conclusion,/每月定投，手动执行/);
     }
   } finally {
     analysis.buildAnalysis=old.analysis;store.readJSON=old.read;store.writeJSONSafe=old.write;store.writeDecisionHistory=old.history;config.getConfig=old.cfg;
@@ -181,15 +190,14 @@ async function analysisTests() {
     patch(fetchers,'fetchNavHistory',async()=>({history:known.slice(-250).reverse().map(r=>({date:r.date,nav:r.close})),failed:false}));
     patch(fetchers,'fetchValuation',()=>{throw Error('dividend used obsolete valuation proxy');});
     patch(fetchers,'fetchDanjuanEvaList',async()=>({'SH000922':{dyr:.09}}));
-    patch(service,'forFund',async fund=>{inputCalls++;return fund.profileState==='needs_review'?{error:'profile_unverified'}:base._dividendData;});
+    patch(service,'forFund',async()=>{inputCalls++;throw Error('monthly DCA fetched legacy trend history');});
     const built=await analysis.buildAnalysis();
-    assert.equal(inputCalls,2);
-    assert.equal(built.funds[0].dividendYieldReference.value,null,'another index was used as dividend reference');
+    assert.equal(inputCalls,0,'live analysis must not fetch legacy dividend trend history');
     const encoded=JSON.stringify(built);
     assert(!encoded.includes('_dividendData'));assert(!encoded.includes('"known":'),'full signal history leaked into API');
     assert.equal(built.plan.scoreMap['999992'].marketVerdict,null);
     assert.equal(built.plan.scoreMap['999992'].verdict,null);
-    assert.equal(built.plan.scoreMap['999992'].marketStateLabel,'档案待确认');
+    assert.equal(built.plan.scoreMap['999992'].marketStateLabel,'需要处理');
     patch(analysis,'buildAnalysis',async()=>built);
     for(const reg of Object.values(REGISTRY)) patch(reg,'builder',()=>{throw Error('duplicate dividend strategy calculation');});
     const advice=await require('../engines/advice').buildAdvice('pm');
@@ -198,8 +206,20 @@ async function analysisTests() {
       assert.equal(f.marketVerdict,sm.marketVerdict);assert.equal(f.verdict,sm.verdict);
       assert.equal(f.executable,sm.executable);assert.equal(f.marketState,sm.marketState);
       assert.equal(f.score,null);assert.equal(f.valueScore,null);assert.equal(f.momentumScore,null);
+      assert.equal(f.strategyVersion,'dividend-monthly-dca-v1');
+      if(f.code===base.code){assert.equal(f.marketState,'monthly_dca');assert.equal(f.displayKind,'plan');assert.equal(f.frequency,'monthly');}
+      assert.equal(f.metrics,undefined,'obsolete daily trend metrics must not appear in live advice');
     }
-    assert.equal(inputCalls,2,'advice repeated full-history fetch');
+    const unsupportedAdvice=advice.funds.find(f=>f.code==='999992');
+    assert.equal(unsupportedAdvice.marketStateLabel,'需要处理');
+    assert.equal(unsupportedAdvice.displayKind,undefined,'unverified dividend fund must not appear as an active monthly plan');
+    assert.equal(unsupportedAdvice.frequency,undefined);
+    assert.equal(unsupportedAdvice.marketVerdict,null);
+    assert.equal(unsupportedAdvice.verdict,null);
+    assert.deepEqual(advice.issues.map(i=>[i.code,i.type]),[['999992','category']]);
+    assert(!JSON.stringify(advice).includes('档案待确认'));
+    assert(!JSON.stringify(advice).includes('分类待确认'));
+    assert.equal(inputCalls,0,'advice repeated full-history fetch');
   } finally {undo.reverse().forEach(restore=>restore());}
 }
 (async()=>{await dataTests();await adviceTests();await analysisTests();console.log('国内红利正式规则：纯计算、完整历史、时序、约束、接口同源、空值和版本隔离通过');})().catch(e=>{console.error(e);process.exitCode=1;});

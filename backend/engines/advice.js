@@ -15,6 +15,7 @@ const store = require('../lib/store');
 const util = require('../lib/util');
 const config = require('../lib/config');
 const timing = require('./timing'); // 买入时机复盘：战役状态机采集（am-only，不进校准统计的用户买入 = buyScan 处理）
+const fundIssues = require('../lib/fundIssues');
 
 // factors 状态三态 helper：cheap=绿(偏便宜/有利买入) / expensive=红(偏贵/不利买入) / neutral=灰(信息项不判好坏)
 function maStatus(z) { return z === 'below' ? 'cheap' : z === 'above' ? 'expensive' : 'neutral'; }
@@ -83,6 +84,7 @@ function pickWeekAgo(history) {
 // ⚠ 不再生成写死 action 中文句（R1：原 L2 条目 .action 是中文展示句，.verdict 才是机器值）——
 // 结论文案由 conclusionOf(dec.action, score, ...) 两维派生（funds 组装处调用），verdict 字段保留机器值供历史/周对比。
 function buildCard(f, dec, dailyLimits, cfg) {
+  const m = dec.matrix || {};
   const actLabel = dec.action === 'add' ? '加仓' : '不动';
   if(dec.strategyVersion==='gold-dual-v1'){
     const m=dec.matrix,x=m.metrics,fmt=v=>v==null?'—':Number(v).toFixed(3),names={negativeBias:'BIAS120 ≤−5%',biasRepair:'近10日BIAS修复 ≥1个百分点',rsiRising:'日RSI14严格回升',rsiCeiling:'日RSI14 ≤55',aboveLongMA:'复权净值 > MA250',trendMA:'MA60 > MA250',drawdownRange:'60日回撤 3%～10%',recovery:'10日恢复 ≥1.5%',biasCeiling:'BIAS60 ≤2%',rsiRange:'日RSI14 45～65'};
@@ -134,6 +136,12 @@ function buildCard(f, dec, dailyLimits, cfg) {
         ...['deep','trend'].flatMap(path=>Object.entries(m.conditions[path]).filter(([key])=>!['peGate','rsiCap'].includes(key)).map(([key,value])=>factor((key==='rsiRising'?(path==='deep'?'回撤修复 · ':'趋势回踩 · '):'')+names[key],value))),
         {dim:'ERP（仅参考）',value:pct(m.erpReference),status:'neutral'},
         {dim:'250日净值分位（仅参考）',value:pct(x.position250),status:'neutral'}]};
+  }
+  if (dec.strategyVersion === 'dividend-monthly-dca-v1') {
+    return {title:`红利·低波：${m.marketStateLabel}`,detail:m.marketState==='monthly_dca'
+      ? '每月定投，手动执行。不指定月内日期或金额，不跟踪完成度，也不自动下单。暂停申购和用户限额等约束仍需单独留意。'
+      : `暂不提供月度计划：${m.marketStateLabel}（基金档案或适用范围未通过核验）。`,
+      verdict:null,factors:[]};
   }
   if (dec.strategyVersion === 'dividend-trend-v1') {
     const m=dec.matrix,x=m.metrics,pct=v=>v==null?'—':v+'%';
@@ -329,12 +337,12 @@ async function buildAdvice(session = 'am') {
       funds.push({
         code: f.code, name: f.name, category: f.category,
         caliber: util.caliberOf(f) || null,
-        categoryName: disabled ? '红利·低波' : needsReview ? '待确认' : pending ? '待建设' : '未归类',
+        categoryName: disabled ? '红利·低波' : needsReview ? '需要处理' : pending ? '待建设' : '未归类',
         unsupported: true,
         unsupportedReason: disabled ? 'rule_disabled' : needsReview ? 'needs_review' : pending ? 'pending' : 'unknown',
         verdict: null,
-        title: (disabled ? '红利规则调整中：' : needsReview ? '待确认：' : pending ? '暂不支持：' : '未归类：') + f.name,
-        detail: disabled ? '红利规则调整中，暂不判定。旧股息率买入规则已停用，新双路径尚未上线；持仓与购买记录照常保留。' : needsReview ? '自动档案分类待确认；市值照常显示，暂不提供可执行建议。' : pending
+        title: (disabled ? '红利规则调整中：' : needsReview ? '需要处理：' : pending ? '暂不支持：' : '未归类：') + f.name,
+        detail: disabled ? '红利规则调整中，暂不判定。旧股息率买入规则已停用，新双路径尚未上线；持仓与购买记录照常保留。' : needsReview ? '基金仍保留在持仓中。类别尚未识别，请在基金详情中选择基础类别并重新识别；处理前不显示策略信号。' : pending
           ? '该类别的决策算法尚未开放（待建设），不参与买卖判定；市值仍计入总资产与配置占比。'
           : '该类别没有对应算法，请到「配置」页把它改到已有类别上；市值仍计入总资产与配置占比。',
         factors: [], matrix: null,
@@ -342,7 +350,7 @@ async function buildAdvice(session = 'am') {
         valueScore: null, momentumScore: null,
         compositeLabel: disabled ? '红利规则调整中，暂不判定' : pending ? '待建设' : '未归类',
         weights: null, degraded: [],
-        conclusion: disabled ? '红利规则调整中，暂不判定' : needsReview ? '分类待确认 · 暂不判定' : pending ? '待建设 · 暂不判定' : '未归类 · 暂不判定',
+        conclusion: disabled ? '红利规则调整中，暂不判定' : needsReview ? '需要处理 · 暂不判定' : pending ? '待建设 · 暂不判定' : '未归类 · 暂不判定',
         suspended: false, dailyLimit: null,
         currentValue: f.currentValue != null ? f.currentValue : 0,
         latestNav: f.latestNav,
@@ -350,9 +358,9 @@ async function buildAdvice(session = 'am') {
         latestDate: f.latestDate,
         profitPct: f.profitPct != null ? +f.profitPct.toFixed(2) : null,
         eligible: false,
-        ...(disabled || f.category==='dividend' ? { marketVerdict: null, executable: false } : {}),
-        ...(f.category==='dividend' ? {strategyVersion:'dividend-trend-v1',marketState:'profile_unverified',
-          marketStateLabel:'档案待确认',blockedReason:'profile_unverified'} : {}),
+        ...(needsReview || disabled || f.category==='dividend' ? { marketVerdict: null, verdict: null, executable: false } : {}),
+        ...(needsReview && f.category==='dividend' ? {strategyVersion:'dividend-monthly-dca-v1',marketState:'profile_unverified',
+          marketStateLabel:'需要处理',blockedReason:'profile_unverified'} : {}),
         valuationAnchor: f.valuationAnchor || null
       });
       continue;
@@ -367,7 +375,8 @@ async function buildAdvice(session = 'am') {
     // computeAllocation 路径不设 matrix._type（strategies builder 均不写），决策卡格式化/timing 采集依赖它 → 这里补
     // （对 a.funds 上对象赋值会在 /api/refresh 响应多出 _type 字段，无害；decMap 引用的 matrix 因此带 _type）
     if (dec && dec.matrix) {
-      dec.matrix._type = dec.strategyVersion === 'dividend-trend-v1' ? 'dividendTrend' : reg.type;
+      dec.matrix._type = dec.strategyVersion === 'dividend-trend-v1' ? 'dividendTrend'
+        : dec.strategyVersion === 'dividend-monthly-dca-v1' ? 'dividendMonthlyDca' : reg.type;
       dec.matrix._caliber = reg.caliber || null;  // 口径（broad 下 cn/us）：决策卡文案与 timing 分组用
     }
 
@@ -401,14 +410,14 @@ async function buildAdvice(session = 'am') {
     const anchorWarn = (f.valuationAnchor && f.valuationAnchor.degraded)
       ? '⚠ 缺估值锚（跟踪指数），当前按价格分位降级判定，不会给加仓信号。'
       : '';
-    funds.push({
+    const adviceFund = {
       code: f.code, name: f.name, category: f.category,
       caliber: reg.caliber || null,  // 口径（仅 broad 下有值：cn/us），供前端展示「宽基 · 海外口径」
       categoryName: reg.label, // = REGISTRY.label（引擎类别中文名：宽基/宽基·海外/红利·低波/主题·行业(高波动)/商品·对冲）；⚠ 非分配桶名
       unsupported: ['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) ? !!dec.unsupported : false,
       ...(reg.type === 'dividend' ? {unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,
-        metrics:dec.matrix.metrics,conditions:dec.matrix.conditions,signalNavDate:dec.matrix.metrics.navDate||null,
-        orderDate:dec.matrix.orderDate,blockedReason:sm.blockedReason||null,yieldReference:dec.matrix.yieldReference} : {}),
+        displayKind:dec.matrix.displayKind,frequency:dec.matrix.frequency,
+        blockedReason:sm.blockedReason||null} : {}),
       ...(reg.type==='broad300'?{unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,
         metrics:dec.matrix.metrics,conditions:dec.matrix.conditions,route:dec.matrix.route,
         signalNavDate:dec.matrix.metrics.navDate,orderDate:dec.matrix.orderDate,peDate:dec.matrix.peDate,
@@ -450,7 +459,9 @@ async function buildAdvice(session = 'am') {
         : reg.type==='nasdaq'
         ? `${dec.matrix.marketStateLabel}；${dec.action==null?'必要身份或数据未通过核验':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，当前执行受限；目标申请日需复核'):'两个通道均未全部成立'}。PE只限制回撤通道，趋势不设PE门槛；金额和节奏由你决定。`
         : reg.type === 'dividend'
-        ? `${dec.matrix.marketStateLabel}；${dec.action==null?'必要档案或数据尚未核验，暂不判定':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，但当前申购或资金政策不允许执行'):'趋势回踩条件尚未全部成立'}。趋势回踩可能在长期相对高位，历史结果不保证未来盈利；股息率仅供参考。`
+        ? dec.matrix.marketState==='monthly_dca'
+          ? '每月定投，手动执行；不指定日期或金额，不跟踪完成度，不自动申购。申购状态和限额为独立约束提示。'
+          : `${dec.matrix.marketStateLabel}；档案或基金适用范围尚未通过核验，暂不显示月度计划。`
         : reg.type === 'broad300'
         ? `${sm.marketStateLabel || dec.matrix.marketStateLabel}；${dec.action==null?'必要档案或数据未通过核验，暂不判定':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，但当前申购或资金政策不允许执行'):'共同PE入口或双通道条件尚未全部成立'}。共同25%入口可能漏买，趋势回踩可能处于相对高位；历史PE可能修订，历史结果不保证未来盈利。`
         : anchorWarn + conclusionOf(dec.action, score, suspended, dailyLimit, sm.compositeLabel), // 其他策略仍沿用综合分文案
@@ -464,7 +475,23 @@ async function buildAdvice(session = 'am') {
       latestDate: f.latestDate,
       profitPct: f.profitPct != null ? +f.profitPct.toFixed(2) : null,
       eligible: !!(sm && sm.eligible) // = 原 scoreMap.eligible（policy=buy ∧ 未暂停申购）
-    });
+    };
+    const issue = fundIssues.issueForFund(adviceFund);
+    if (issue) {
+      adviceFund.marketStateLabel = issue.type === 'data' ? '数据待补齐' : '需要处理';
+      adviceFund.title = `${f.name} · ${adviceFund.marketStateLabel}`;
+      adviceFund.detail = `${issue.detail} ${issue.nextStep}`;
+      adviceFund.marketVerdict = null;
+      adviceFund.verdict = null;
+      adviceFund.executable = false;
+      adviceFund.eligible = false;
+      adviceFund.score = null;
+      adviceFund.scoreLabel = null;
+      adviceFund.valueScore = null;
+      adviceFund.momentumScore = null;
+      adviceFund.conclusion = `${adviceFund.marketStateLabel}；暂不提供策略信号。`;
+    }
+    funds.push(adviceFund);
     if (!isPM) {
       // ⚠ 副作用②（D1 保留）：timing 采集输入（复盘「每月」tab 战役状态机），仅 am 收集——随 funds 组装保留
       decMap[f.code] = { action: dec.action, matrix: (dec && dec.matrix) || null, name: f.name, category: f.category, caliber: reg.caliber || null,
@@ -547,7 +574,7 @@ async function buildAdvice(session = 'am') {
 
   return {
     asOf: a.asOf, date: today, session: isPM ? 'pm' : 'am',
-    l1, funds, alerts,
+    l1, funds, alerts, issues: fundIssues.collectIssues(funds),
     thresholds, categoryPolicy: policy,
     cooldownDays, calibratedAt: sig.calibratedAt,
     // 周对比快照：取 7 天前决策快照的 {code:{factors,verdict}}，前端只渲染不自己算 diff。

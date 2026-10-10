@@ -10,8 +10,8 @@ const BLOCK = {
   official_purchase_suspended: '官方暂停申购', official_resumption_unverified: '官方恢复申购待核',
   official_constraint_unverified: '官方申购约束待核',
 };
-const FAILURE = { pending: '待建设', rule_disabled: '规则调整中', needs_review: '档案待确认',
-  profile_unverified: '档案待确认', initialization_unverified: '档案待确认', scope_unsupported: '暂不支持' };
+const FAILURE = { pending: '待建设', rule_disabled: '规则调整中', needs_review: '需要处理',
+  profile_unverified: '需要处理', initialization_unverified: '需要处理', scope_unsupported: '暂不支持' };
 
 // 展示现成证据；不把分数分段为状态，不显示评分文案。
 export function evidenceText(value) {
@@ -47,7 +47,8 @@ function textNode(value) {
 // 状态行：只渲染名称与代码、当日涨跌幅、市场判断徽标及约束徽标，不做折叠也不带任何交互。
 export function decisionStatusCard(sig, options = {}) {
   const state = cardState(sig, options), meta = options.alert ? options.fund || sig : sig;
-  const badges = [el('span', { class: 'badge ' + (BADGE[state.action] || 'badge-hold'), text: (options.alert ? '提醒：' : '市场：') + state.market })];
+  const plan = !options.alert && sig.displayKind === 'plan';
+  const badges = [el('span', { class: 'badge ' + (plan ? 'badge-add' : BADGE[state.action] || 'badge-hold'), text: options.alert ? '提醒：' + state.market : plan ? '计划：' + state.market : '市场：' + state.market })];
   if (state.constraint) badges.push(el('span', { class: 'badge badge-hold', text: state.constraint }));
   // ★ 涨跌取 meta 而非 sig：alert 记录（advice.js 的 alerts[]）只带 id/type/code/name/title/detail，
   //   本身没有 dayChange，只有经 options.fund 传进来的基金记录才有。用 sig 会让「持有提醒」行恒为「—」。
@@ -79,6 +80,7 @@ export function decisionDetailSections(sig, options = {}) {
   const dates = [['信号净值日', sig.signalNavDate || sig.matrix?.metrics?.navDate],
     ['最新净值日', sig.latestDate], ['申请日', sig.orderDate], ['PE日期', sig.peDate], ['计算时间', sig.computedAt]];
   section(wrap, '数据日期', dates.filter(([, value]) => value).map(([label, value]) => textNode(label + '：' + value)));
+  if (sig.displayKind === 'plan') section(wrap, '计划说明', [textNode('每月定投，手动执行；不指定日期或金额，不跟踪完成度，也不自动下单。')]);
   const limits = [];
   if (state.constraint) limits.push(textNode(state.constraint));
   else if (!options.alert && meta.executable === true) limits.push(textNode('当前交易约束允许执行。'));

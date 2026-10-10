@@ -71,17 +71,20 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
   // 3) 综合分信号（前端决策页/复盘页兜底，唯一活输出）
   const scoreMap = {};
   funds.forEach(f => {
-    if (f._dec && ['dividend-trend-v1','hs300-dual-v1','nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(f._dec.strategyVersion)) {
+    if (f._dec && ['dividend-monthly-dca-v1','dividend-trend-v1','hs300-dual-v1','nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(f._dec.strategyVersion)) {
       const dec=f._dec,m=dec.matrix,lim=dailyLimits&&dailyLimits[f.code]!=null?dailyLimits[f.code]:null;
       const ps=f._purchaseStatusMeta||purchaseStatusMeta(f,now),allowed=eligible.includes(f);
       const judged=dec.action!=null;
       const result=judged?policyDecision(purchaseDecision(dec.action,ps,lim),allowed,true):{verdict:null,executable:false};
-      const blockedReason=!judged?m.dataError:ps.officialConstraintReason|| (ps.suspended?'purchase_suspended':ps.unavailable?'purchase_status_unverified':
+      const blockedReason=dec.strategyVersion==='dividend-monthly-dca-v1'
+        ? (ps.officialConstraintReason || (ps.suspended?'purchase_suspended':ps.unavailable?'purchase_status_unverified':lim!=null&&lim<=0?'user_limit_zero':!allowed?'policy_blocked':null))
+        : !judged?m.dataError:ps.officialConstraintReason|| (ps.suspended?'purchase_suspended':ps.unavailable?'purchase_status_unverified':
         lim!=null&&lim<=0?'user_limit_zero':m.futureOrder?'future_order_recheck':dec.strategyVersion==='gold-dual-v1'&&!m.releaseEnabled?'release_pending':!allowed?'policy_blocked':null);
       scoreMap[f.code]={code:f.code,name:f.name,marketScore:null,valueScore:null,momentumScore:null,
         compositeLabel:m.marketStateLabel,weights:null,degraded:[],positionLabel:null,
         strategyVersion:dec.strategyVersion,marketState:m.marketState,marketStateLabel:m.marketStateLabel,
-        metrics:m.metrics,conditions:m.conditions,signalNavDate:m.metrics.navDate||null,orderDate:m.orderDate,
+        ...(dec.strategyVersion==='dividend-monthly-dca-v1'?{displayKind:m.displayKind,frequency:m.frequency}:{}),
+        ... (dec.strategyVersion==='dividend-monthly-dca-v1'?{}:{metrics:m.metrics,conditions:m.conditions,signalNavDate:m.metrics.navDate||null,orderDate:m.orderDate}),
         ...(dec.strategyVersion==='hs300-dual-v1'?{route:m.route,peDate:m.peDate,peSource:m.peSource,
           peCaveat:m.peCaveat,erpReference:m.erpReference,erpReferenceOnly:true,individuallyBacktested:m.individuallyBacktested}:{}),
         ...(dec.strategyVersion==='nasdaq-dual-v1'?{route:m.route,paths:m.paths,pathStates:m.pathStates,pathReasons:m.pathReasons,
@@ -95,7 +98,7 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
           sourceFetchedAt:m.sourceFetchedAt,actionHash:m.actionHash,initializationFrom:m.initializationFrom,segmentFrom:m.segmentFrom,
           releaseEnabled:m.releaseEnabled,releaseLabel:m.releaseLabel,buyOnly:true}:{}),
         unsupported:dec.unsupported,unsupportedReason:dec.unsupportedReason,
-        eligible:judged&&allowed,suspended:ps.suspended||lim!=null&&lim<=0,purchaseStatus:f.purchaseStatus||null,
+        eligible:dec.strategyVersion==='dividend-monthly-dca-v1'?false:judged&&allowed,suspended:ps.suspended||lim!=null&&lim<=0,purchaseStatus:f.purchaseStatus||null,
         statusFresh:ps.fresh,marketVerdict:dec.action,verdict:result.verdict,executable:result.executable,blockedReason};
       return;
     }
@@ -122,14 +125,14 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
         scoreMap[f.code] = {
           code: f.code, name: f.name,
           marketScore: null, valueScore: null, momentumScore: null,
-          compositeLabel: f._unsupported.reason === 'rule_disabled' ? '红利规则调整中，暂不判定' : f._unsupported.reason === 'needs_review' ? '分类待确认' : f._unsupported.pending ? '待建设' : '未归类',
+          compositeLabel: f._unsupported.reason === 'rule_disabled' ? '红利规则调整中，暂不判定' : f._unsupported.reason === 'needs_review' ? '需要处理' : f._unsupported.pending ? '待建设' : '未归类',
           weights: null, degraded: [],
           positionLabel: null,
           eligible: false, suspended: false,
           unsupported: true, unsupportedReason: f._unsupported.reason,
           ...(f._unsupported.reason === 'rule_disabled' || f.category==='dividend' ? { marketVerdict: null, verdict: null, executable: false } : {}),
-          ...(f.category==='dividend' ? {strategyVersion:'dividend-trend-v1',marketState:'profile_unverified',
-            marketStateLabel:'档案待确认',blockedReason:'profile_unverified'} : {})
+          ...(f.category==='dividend' ? {strategyVersion:'dividend-monthly-dca-v1',marketState:'profile_unverified',
+            marketStateLabel:'需要处理',blockedReason:'profile_unverified'} : {})
         };
       }
       return;

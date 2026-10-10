@@ -69,6 +69,7 @@ export function purchaseList(code, list, navMeta) {
 
 export function fundCard(f, list, state) {
   const card = el('div', { class: 'fund-card' });
+  card.id = `fund-${f.code}`;
   const fcMeta = el('div', { class: 'fc-meta', text: `${f.code} · ${catNameWithCaliber(state, f.category, f.caliber)}` });
   const feeTip = feeNote(f); // 申购费：后端抓取写入，界面只读（没有输入框）
   if (feeTip) { fcMeta.textContent += ' · ' + feeTip.text; fcMeta.setAttribute('title', feeTip.title); }

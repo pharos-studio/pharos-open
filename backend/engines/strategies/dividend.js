@@ -1,23 +1,29 @@
 'use strict';
-const trend = require('../../lib/dividendTrend');
-const LABELS = { profile_unverified:'档案待确认',scope_unsupported:'暂不支持',insufficient:'数据不足' };
+const profile = require('../../lib/dividendTrend');
+
+// 月频计划仅表达策略节奏，不产生择时、买入或执行信号。
+const VERSION = 'dividend-monthly-dca-v1';
 function buildDividendDecision(fund) {
-  const error = trend.eligibility(fund) || fund._dividendData?.error || (!fund._dividendData ? 'dividend_data_unavailable' : null);
-  const data = fund._dividendData;
-  const result = error ? {available:false,reason:error} : trend.evaluate(data.known,data.context.orderDate,{weekEndDates:data.weekEndDates});
-  const unsupported = ['profile_unverified','scope_unsupported'].includes(result.reason);
-  const state = result.available ? result.trend ? 'candidate':'waiting' : unsupported ? result.reason:'insufficient';
-  const label = LABELS[state] || (state==='candidate'?'可加仓':'等待机会');
-  const metrics = Object.fromEntries(Object.entries(result.metrics||{}).map(([k,v])=>[k,typeof v==='number'?+v.toFixed(3):v]));
-  return {action:result.available?result.trend?'add':'hold':null,
-    reasons:[result.available ? result.trend?'趋势回踩全部条件成立':'趋势回踩条件尚未全部成立':label+'：'+result.reason],
-    strategyVersion:trend.VERSION,unsupported,unsupportedReason:unsupported?result.reason:null,
-    matrix:{_type:'dividendTrend',strategyVersion:trend.VERSION,marketState:state,marketStateLabel:label,
-      dataError:result.reason||null,metrics,conditions:result.conditions||{},
-      orderDate:data?.context?.orderDate||null,calendarSource:data?.context?.source||null,
-      dataSource:data?.source||null,adjustment:data?.adjustment||null,
-      yieldReference:fund.dividendYieldReference||null,referenceOnly:true},
-    positionScore:null,marketVerdict:result.available?result.trend?'add':'hold':null,
-    verdict:result.available?result.trend?'add':'hold':null,executable:false};
+  const reason = profile.eligibility(fund);
+  const label = reason === 'profile_unverified' ? '需要处理'
+    : reason === 'scope_unsupported' ? '暂不支持' : '每月定投';
+  const supported = !reason;
+  return {
+    action: null,
+    reasons: [supported ? '每月定投，手动执行；系统不指定日期、金额或完成情况。' : label + '：' + reason],
+    strategyVersion: VERSION,
+    unsupported: !supported,
+    unsupportedReason: reason || null,
+    matrix: {
+      _type: 'dividendMonthlyDca', strategyVersion: VERSION,
+      marketState: supported ? 'monthly_dca' : reason,
+      marketStateLabel: label, displayKind: supported ? 'plan' : null,
+      frequency: supported ? 'monthly' : null,
+      dataError: reason || null
+    },
+    positionScore: null, marketVerdict: null, verdict: null, executable: false
+  };
 }
+
+buildDividendDecision.VERSION = VERSION;
 module.exports = buildDividendDecision;

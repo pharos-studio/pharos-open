@@ -1,6 +1,6 @@
 'use strict';
 const S=require('../../lib/nasdaqSignal'),{eligibility}=require('../../lib/nasdaqIdentity');
-const LABELS={candidate:'市场可加仓',waiting:'等待机会',insufficient:'无法判定',profile_unverified:'档案待确认',scope_unsupported:'暂不支持'};
+const LABELS={candidate:'市场可加仓',waiting:'等待机会',insufficient:'无法判定',profile_unverified:'需要处理',scope_unsupported:'暂不支持'};
 function buildNasdaqDecision(fund,valuationMap,config){
   const input=fund._nasdaqData||{},error=fund.profileState==='needs_review'||fund.category!=='broad'?'profile_unverified':input.error||eligibility(input.evidence);
   const result=error?{state:'unknown',draw:{state:'unknown',reason:error,conditions:{}},trend:{state:'unknown',reason:error,conditions:{}},paths:[]}:

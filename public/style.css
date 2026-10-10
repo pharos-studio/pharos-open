@@ -256,6 +256,24 @@ html.sb-collapsed .sb-toggle::before { content: '»'; }      /* 收起态：提�
 }
 .panel-head .sub { font-family: var(--font-sans); font-size: 12px; font-weight: 400; color: var(--text-muted); }
 
+/* 我的基金 · 轻量问题提醒（沿用深藏蓝×鎏金设计变量） */
+.fund-issue-summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 16px; margin-bottom: 14px;
+  background: var(--panel); border: 1px solid var(--gold-line); border-radius: var(--radius);
+}
+.fund-issue-summary-copy { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.fund-issue-summary-copy strong { font-weight: 600; }
+.fund-issue-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+.fund-issue-link { color: var(--accent-soft); white-space: nowrap; }
+.fund-issue-details { scroll-margin-top: 20px; }
+.fund-issue-explainer { margin: -4px 0 8px; }
+.fund-issue-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 12px 2px; border-top: 1px solid var(--border); }
+.fund-issue-name { font-weight: 600; }
+.fund-issue-next { color: var(--accent-soft); font-size: 12px; margin-top: 2px; }
+.fund-issue-action { white-space: nowrap; }
+.fund-issue-wait { white-space: nowrap; }
+
 /* ---------- KPI ---------- */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .kpi { padding: 16px 18px; }
@@ -284,6 +302,23 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 /* 表格在窄屏内横向滚动，避免整页左右滑（手机端“要滑动”的主因） */
 .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .tbl-wide { min-width: 520px; }
+.monthly-note { margin: 4px 0 14px; padding: 10px 12px; border: 1px solid var(--gold-line); border-radius: var(--radius-sm); background: var(--panel); line-height: 1.65; }
+.monthly-table { min-width: 900px; }
+.monthly-cards { display: none; }
+.monthly-empty { padding: 22px 14px; color: var(--text-muted); border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); text-align: center; }
+@media (max-width: 760px) {
+  .monthly-purchases { min-width: 0; padding: 14px; }
+  .monthly-purchases .panel-head { align-items: flex-start; gap: 6px; flex-direction: column; }
+  .monthly-table { min-width: 820px; }
+  .monthly-purchases > .table-wrap { display: none; }
+  .monthly-cards { display: grid; gap: 10px; }
+  .monthly-record { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--panel); min-width: 0; }
+  .monthly-record-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .monthly-record-name { margin: 5px 0 8px; color: var(--accent-soft); overflow-wrap: anywhere; }
+  .monthly-record-grid { display: grid; grid-template-columns: minmax(70px,auto) minmax(0,1fr); gap: 4px 10px; font-size: 12px; }
+  .monthly-record-grid > :nth-child(odd) { color: var(--text-muted); }
+  .monthly-record-grid > :nth-child(even) { overflow-wrap: anywhere; }
+}
 .name-cell { display: flex; flex-direction: column; }
 .name-cell .nm { font-weight: 500; }
 .name-cell .meta { font-size: 11px; color: var(--text-muted); }
@@ -555,6 +590,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
     background: rgba(10,16,32,0.85); backdrop-filter: blur(10px); z-index: 20;
   }
   .main { padding: 10px 14px calc(var(--bottom-nav-h) + 20px + env(safe-area-inset-bottom)); }
+  .fund-issue-summary { align-items: flex-start; }
+  .fund-issue-summary-copy { align-items: flex-start; }
+  .fund-issue-summary-copy .hint { flex-basis: 100%; margin-left: 16px; }
+  .fund-issue-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .fund-issue-row .fund-issue-action { justify-self: start; }
   .bottom-nav { display: grid; }
   .kpi-value { font-size: 22px; }
 }

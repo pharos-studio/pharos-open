@@ -65,7 +65,7 @@ async function renderDaily(body, live, state, mobile) {
   try { advice = await store.reloadAdvice('am'); } catch (e) { advice = {}; }
   const weekAgo = advice.weekAgo || {};
   const allFunds = advice.funds || [];
-  if(allFunds.some(f=>['nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(f.strategyVersion))){
+  if(allFunds.some(f=>['nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1','dividend-monthly-dca-v1'].includes(f.strategyVersion))){
     panel.style.minWidth='0';panel.style.maxWidth='100%';panel.style.boxSizing='border-box';
     body.style.minWidth='0';body.style.maxWidth='100%';
   }
@@ -100,7 +100,8 @@ async function renderDaily(body, live, state, mobile) {
     const suspended = !!(fc && fc.suspended) || !!(fc && fc.dailyLimit === 0);
     const score = fc ? fc.score : null; // 综合分（与决策页同一记录，物理同源）
     const posCls = (!suspended && verdict === 'add') ? 'badge-add' : 'badge-hold';
-    const vBadgeTxt = suspended ? '暂停申购' : ['active-equity-buy-v1','gold-dual-v1'].includes(fc?.strategyVersion)?(fc.marketStateLabel||'无法判定'):(verdict ? verdictLabel(verdict) : '');
+    const monthlyPlan = fc?.strategyVersion === 'dividend-monthly-dca-v1' && fc.marketState === 'monthly_dca';
+    const vBadgeTxt = suspended ? '暂停申购' : monthlyPlan ? '每月定投，手动执行' : ['active-equity-buy-v1','gold-dual-v1'].includes(fc?.strategyVersion)?(fc.marketStateLabel||'无法判定'):(verdict ? verdictLabel(verdict) : '');
     const vBadgeCls = suspended ? 'badge-hold' : (verdict === 'add' ? 'badge-add' : 'badge-hold');
 
     const nasdaq=['nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(fc?.strategyVersion);
@@ -111,12 +112,12 @@ async function renderDaily(body, live, state, mobile) {
         f._planned ? el('span', { class: 'tag-planned', text: '未持仓' }) : null,
       ]),
       el('span', { class: 'dec-meta',...(nasdaq?{style:'display:flex;flex-wrap:wrap;min-width:0;gap:6px;justify-content:flex-start'}:{}) }, [
-        fc && ['dividend-trend-v1','hs300-dual-v1','nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(fc.strategyVersion) && fc.blockedReason ? el('span',{class:'badge badge-hold',text:
+        fc && ['dividend-monthly-dca-v1','dividend-trend-v1','hs300-dual-v1','nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(fc.strategyVersion) && fc.blockedReason ? el('span',{class:'badge badge-hold',text:
           ({release_pending:'待启用',purchase_suspended:'暂停申购',purchase_status_unverified:'申购状态待核验',user_limit_zero:'用户限额为零',policy_blocked:'资金政策限制',future_order_recheck:'未来申请日需复核',official_purchase_suspended:'官方暂停申购',official_resumption_unverified:'官方恢复申购待核',official_constraint_unverified:'官方申购约束待核'})[fc.blockedReason]||'当前不可执行'}) : null,
         fc?.strategyVersion==='gold-dual-v1'&&fc.releaseEnabled!==true&&fc.blockedReason!=='release_pending'?el('span',{class:'badge badge-hold',text:'待启用'}):null,
         chg != null ? el('span', { class: 'dec-chg ' + cls(chg), text: signPct(chg) }) : el('span', { class: 'dec-chg', text: '—' }),
         score != null ? el('span', { class: 'badge ' + posCls, text: `综合分 ${score}` }) : null,
-        fc && fc.marketStateLabel ? el('span', { class: 'badge ' + (fc.marketState === 'candidate' ? 'badge-add' : 'badge-hold'), text: fc.marketStateLabel }) : null,
+        fc && fc.marketStateLabel ? el('span', { class: 'badge ' + (monthlyPlan ? 'badge-add' : fc.marketState === 'candidate' ? 'badge-add' : 'badge-hold'), text: monthlyPlan ? '计划：每月定投' : fc.marketStateLabel }) : null,
         fc && fc.unsupportedReason === 'rule_disabled' ? el('span', { class: 'badge badge-hold', text: '规则调整中' }) : null,
         (verdict || suspended) && (fc?.strategyVersion!=='gold-dual-v1'||suspended&&!['purchase_suspended','official_purchase_suspended'].includes(fc.blockedReason)) ? el('span', { class: 'badge ' + vBadgeCls, text: vBadgeTxt }) : el('span', {}),
       ]),
@@ -211,16 +212,60 @@ async function renderDaily(body, live, state, mobile) {
     //   配置里 dailyLimit=0）与「未通过证据闸门」是两件正交的事。只看 suspended 会让
     //   「既暂停又未核验」的基金退回空屏 —— 这正是本视图要消灭的那种空白。
     //   实测踩过：012920 因 dailyLimit=0 被判 suspended，降级视图被跳过。
-    if (!verdict) attachLazyDegraded(det, f.code, 300);
+    if (!verdict && !monthlyPlan) attachLazyDegraded(det, f.code, 300);
     panel.appendChild(det);
   });
 
   mount(panel);
 }
 
-async function renderMonthly(body) {
+async function renderMonthly(body, live) {
   body.innerHTML = '';
-  // 2026-09-12 每月复盘内容停用（原买入时机复盘面板移除；后端 timing 采样继续独立运行，
-  // 数据仍写入 data/state/timing_samples.json，需要时经 GET /api/timing 查看）。
-  body.appendChild(el('div', { class: 'hint', style: 'margin-top:8px', text: '每月复盘内容已停用。' }));
+  const panel = el('div', { class: 'panel monthly-purchases' });
+  panel.appendChild(el('div', { class: 'panel-head' }, [
+    el('span', { text: '红利基金每月购买记录' }),
+    el('span', { class: 'sub', text: '按手动录入流水汇总' }),
+  ]));
+  panel.appendChild(el('div', { class: 'hint monthly-note', text: '每月定投，手动执行。以下金额来自手动录入的购买记录，不代表系统自动申购、计划金额或定投完成率。旧版趋势回踩历史记录仍按原口径保留。' }));
+  const groups = new Map();
+  (live?.funds || []).filter(f => f.category === 'dividend').forEach(f => {
+    (Array.isArray(f.purchases) ? f.purchases : []).forEach((p, index) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date || '') || p.amount == null || !Number.isFinite(Number(p.amount))) return;
+      const month = p.date.slice(0, 7), state = p.shares == null ? '待确认' : '已确认';
+      const key = `${month}|${f.code}|${state}`;
+      if (!groups.has(key)) groups.set(key, {month, code:f.code, name:f.name, state, dates:[], pricingDates:[], count:0, amount:0});
+      const row = groups.get(key); row.count++; row.amount += Number(p.amount); row.dates.push(p.date);
+      const pricingDate = p.pricingDate || p.navDate || p.confirmDate;
+      if (pricingDate && !row.pricingDates.includes(pricingDate)) row.pricingDates.push(pricingDate);
+    });
+  });
+  const rows = [...groups.values()].sort((a,b)=>b.month.localeCompare(a.month)||a.name.localeCompare(b.name)||a.state.localeCompare(b.state));
+  if (!rows.length) {
+    panel.appendChild(el('div', { class: 'monthly-empty', text: '暂无红利基金购买记录。录入购买流水后，这里会按交易日期汇总；不会补造缺失交易。' }));
+  } else {
+    const table = el('table', { class: 'tbl monthly-table' });
+    table.appendChild(el('thead', {}, [el('tr', {}, ['月份','基金','份额状态','笔数','录入金额','交易日期','定价日'].map(x=>el('th',{text:x})))]));
+    const tb = el('tbody', {});
+    rows.forEach(r=>tb.appendChild(el('tr', {}, [
+      el('td',{text:r.month}),el('td',{text:`${r.name} ${r.code}`}),
+      el('td',{},[el('span',{class:'badge '+(r.state==='已确认'?'badge-add':'badge-hold'),text:r.state})),
+      el('td',{class:'tnum',text:String(r.count)}),el('td',{class:'tnum',text:'¥'+r.amount.toFixed(2)}),
+      el('td',{text:[...new Set(r.dates)].sort().join('、')}),el('td',{text:r.pricingDates.sort().join('、')||'—'})
+    ])));
+    table.appendChild(tb);
+    panel.appendChild(tableWrap(table));
+    const cards = el('div', { class: 'monthly-cards' });
+    rows.forEach(r=>cards.appendChild(el('article',{class:'monthly-record'},[
+      el('div',{class:'monthly-record-head'},[el('strong',{text:r.month}),el('span',{class:'badge '+(r.state==='已确认'?'badge-add':'badge-hold'),text:r.state})]),
+      el('div',{class:'monthly-record-name',text:`${r.name} · ${r.code}`}),
+      el('div',{class:'monthly-record-grid'},[
+        el('span',{text:'笔数'}),el('strong',{text:String(r.count)}),
+        el('span',{text:'录入金额'}),el('strong',{text:'¥'+r.amount.toFixed(2)}),
+        el('span',{text:'交易日期'}),el('span',{text:[...new Set(r.dates)].sort().join('、')}),
+        el('span',{text:'定价日'}),el('span',{text:r.pricingDates.sort().join('、')||'—'})
+      ])
+    ])));
+    panel.appendChild(cards);
+  }
+  body.appendChild(panel);
 }

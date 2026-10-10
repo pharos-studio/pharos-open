@@ -1,6 +1,6 @@
 'use strict';
 const S=require('../../lib/goldSignal'),{eligibility,LEDGER,evidenceSummary,evidenceBlockers}=require('../../lib/goldIdentity');
-const LABELS={candidate:'可加仓',waiting:'等待机会',insufficient:'无法判定',profile_unverified:'档案待确认',scope_unsupported:'暂不支持'};
+const LABELS={candidate:'可加仓',waiting:'等待机会',insufficient:'无法判定',profile_unverified:'需要处理',scope_unsupported:'暂不支持'};
 const REASONS={profile_unverified:'官方身份尚未核验',scope_unsupported:'不属于首批国内黄金ETF联接范围',daily_sampling_unverified:'日频采样尚未核验',initialization_unverified:'策略起点与连续性尚未核验',fund_calendar_unverified:'基金工作、估值和申购日期尚未核验',calendar_coverage_short:'核验日历覆盖不足',release_pending:'工程候选待独立终审与用户确认启用',gold_input_missing:'完整净值数据尚未取得'};
 function buildGoldDualDecision(fund){const input=fund?._goldData||{},error=fund?.profileState==='needs_review'?'profile_unverified':input.evidence?.code!==fund?.code?'profile_unverified':input.error||eligibility(input.evidence)||input.context?.error;
   const r=error?null:input.result,reason=error||(!r?'gold_input_missing':r.values.OR===null?'path_data_insufficient':null),state=r?.values.OR===true?'candidate':r?.values.OR===false?'waiting':['profile_unverified','scope_unsupported'].includes(reason)?reason:'insufficient',action=r?.values.OR===true?'add':r?.values.OR===false?'hold':null;

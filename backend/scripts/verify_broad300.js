@@ -61,7 +61,7 @@ test('旧入口、旧参数、人工分位不能恢复单通道',()=>{
   f.adjustedHistory=Array.from({length:300},(_,i)=>({date:'2026-01-01',close:100+i}));
   assert.equal(buildBroad300Decision(f,{[f.code]:{pePercentile:0}},{signals:{broad300:{biasPct:100}}}).action,null);
   assert.equal(evaluate({rows:f.adjustedHistory,pePercentile:0}).action,null);
-  assert.equal(buildBroad300Decision(F.fund({profileState:'needs_review'})).matrix.marketStateLabel,'档案待确认');
+  assert.equal(buildBroad300Decision(F.fund({profileState:'needs_review'})).matrix.marketStateLabel,'需要处理');
   assert.equal(buildBroad300Decision(F.fund({_hs300Data:{error:'scope_unsupported'}})).matrix.marketStateLabel,'暂不支持');
   assert.equal(resolveRegistry(F.fund()).key,'broad:hs300');
   assert.equal(resolveRegistry(F.fund({indexCode:'000905',trackIndex:'SH000905'})).key,'broad');

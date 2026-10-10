@@ -8,11 +8,14 @@
 */
 
 import * as store from '../../store.js';
-import { setRoot, setMobile, setRerender } from './state.js';
+import { setRoot, setMobile, setRerender, refreshPage } from './state.js';
 import { renderDesktop } from './desktop.js';
 import { renderMobile } from './mobile.js';
 import * as api from '../../api.js';
 import { el } from '../../util.js';
+import { issueSummary, issueDetails } from './issues.js';
+
+let renderSequence = 0;
 
 function pageSettings(state) {
   const checked = !!(state.config && state.config.purchaseDefaults && state.config.purchaseDefaults.feeWaived);
@@ -52,18 +55,35 @@ function migrationBanner(state) {
 // 2026-09-18：编辑表单取消勾选框 —— 改日期/时段即自动重算；删除「手动校正」与在途「补填」手动入口（均由系统/数据层负责）
 /* ---------- 入口 ---------- */
 export async function render(root) {
+  const ticket = ++renderSequence;
   setRoot(root);
   setMobile(window.matchMedia('(max-width: 760px)').matches);
   const live = store.getLive();
   const state = store.getState();
+  const issueRequest = store.reloadAdvice('pm').catch(() => null);
   root.innerHTML = '';
   const banner = migrationBanner(state); if (banner) root.appendChild(banner);
   root.appendChild(pageSettings(state));
+  const summarySlot = el('div');
+  root.appendChild(summarySlot);
   if (window.matchMedia('(max-width: 760px)').matches) {
     renderMobile(root, live, state);
   } else {
     renderDesktop(root, live, state);
   }
+  const detailsSlot = el('div');
+  root.appendChild(detailsSlot);
+  const advice = await issueRequest;
+  if (ticket !== renderSequence) return;
+  if (!advice) {
+    summarySlot.replaceWith(el('div', { class: 'error-box fund-issue-load-error', role: 'alert', text: '基金问题状态暂时无法读取；请刷新重试。' }));
+    detailsSlot.remove();
+    return;
+  }
+  const issues = advice?.issues || [];
+  const summary = issueSummary(issues); if (summary) summarySlot.replaceWith(summary); else summarySlot.remove();
+  const details = issueDetails(issues, async () => { await refreshPage(); });
+  if (details) detailsSlot.replaceWith(details); else detailsSlot.remove();
 }
 
 setRerender(render);

@@ -1,6 +1,6 @@
 'use strict';
 const S=require('../../lib/activeEquitySignal'),{eligibility}=require('../../lib/activeEquityIdentity');
-const LABELS={candidate:'可考虑买入',waiting:'等待机会',insufficient:'无法判定',profile_unverified:'档案待确认',scope_unsupported:'范围外'};
+const LABELS={candidate:'可考虑买入',waiting:'等待机会',insufficient:'无法判定',profile_unverified:'需要处理',scope_unsupported:'范围外'};
 const REASONS={profile_unverified:'官方身份或份额档案尚未核验',scope_unsupported:'不属于已核验的人民币场外主动权益范围',daily_sampling_unverified:'日频净值采样的历史有效区间尚未核验',initialization_unverified:'固定序列起点或策略连续性尚未核验',fund_calendar_unverified:'基金专属申购、估值日历和公告规则尚未核验',calendar_coverage_short:'核验日历覆盖不足',publication_time_unverified:'净值公告的可知时点尚未核验',valuation_date_unverified:'净值日期不在已核验的基金估值日历中',stale_nav_over_14d:'最新可知净值已超过14个自然日',no_known_nav:'净值仍在公告等待期，尚无可用数据',nav_snapshot_not_current:'净值快照已过期或取得时间无效',active_equity_input_missing:'必要数据尚未取得'};
 function reasonLabel(reason){return REASONS[reason]||(reason?.startsWith('expected_nav_gap:')?'应已公布的净值缺失：'+reason.split(':')[1]:reason);}
 function buildActiveEquityDecision(fund){const input=fund?._activeEquityData||{},error=fund?.profileState==='needs_review'?'profile_unverified':input.evidence?.code!==fund?.code?'profile_unverified':input.error||eligibility(input.evidence)||input.context?.error;

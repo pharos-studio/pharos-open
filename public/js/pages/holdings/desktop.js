@@ -108,6 +108,7 @@ export function renderDesktop(root, live, state) {
   const tbody = el('tbody', {});
   funds.forEach(f => {
     const tr = el('tr', {});
+    tr.id = `fund-${f.code}`;
     const nameCell = el('div', { class: 'name-cell' }, [
       el('span', { class: 'nm', text: f.name }),
       el('span', { class: 'meta', text: `${f.code} · ${catNameWithCaliber(state, f.category, f.caliber)}` }),

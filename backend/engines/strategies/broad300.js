@@ -1,7 +1,7 @@
 'use strict';
 const signal=require('../../lib/hs300Signal');
 const {eligibility}=require('../../lib/hs300Identity');
-const LABELS={profile_unverified:'档案待确认',scope_unsupported:'暂不支持',insufficient:'无法判定',candidate:'可加仓',waiting:'等待机会'};
+const LABELS={profile_unverified:'需要处理',scope_unsupported:'暂不支持',insufficient:'无法判定',candidate:'可加仓',waiting:'等待机会'};
 const REASONS={profile_unverified:'官方身份或策略生效日尚未核验',scope_unsupported:'不是国内场外普通沪深300指数或联接份额',
   hs300_data_unavailable:'尚未取得新版本完整数据',calendar_unverified:'交易日历缺少核验覆盖',price_warmup:'净值预热不足260日',
   rsi_incomplete_or_warmup:'已完成且可知周数据不足或缺失',pe_not_yet_available:'月度PE尚不可知',pe_missing_prior_months:'此前60个自然月PE不完整',

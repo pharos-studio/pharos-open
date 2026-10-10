@@ -44,6 +44,7 @@ async function snapshot() {
     const { REGISTRY } = require('../engines/registry');
     for (const reg of Object.values(REGISTRY)) patch(reg, 'builder', () => { throw Error('duplicate strategy calculation'); });
     const card = await advice.buildAdvice('pm');
+    assert.deepEqual(card.issues, [], 'normal and waiting funds should not appear in the issue list');
     for (const f of card.funds) {
       const sm = built.plan.scoreMap[f.code];
       assert.equal(f.score, sm.marketScore);
@@ -54,7 +55,9 @@ async function snapshot() {
       ? { length: value.length, sha256: crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex') }
       : value.map(compact) : value && typeof value === 'object'
         ? Object.fromEntries(Object.entries(value).map(([key, val]) => [key, compact(val)])) : value;
-    return JSON.parse(JSON.stringify(compact({ analysis: built, advice: card })));
+    const result = JSON.parse(JSON.stringify(compact({ analysis: built, advice: card })));
+    delete result.advice.issues; // the new top-level issue contract is asserted above; legacy snapshot covers unchanged fields.
+    return result;
   } finally { mutations.reverse().forEach(restore => restore()); }
 }
 if (require.main === module) snapshot().then(result => {

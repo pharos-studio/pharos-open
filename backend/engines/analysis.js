@@ -13,7 +13,6 @@ const buyPlan = require('../lib/buyPlan');
 const allocation = require('./alloc/allocation');
 const trackIndex = require('../lib/trackIndex'); // 指数白名单与"这条线能不能用锚"（唯一真相源）
 const indexQuote = require('../lib/indexQuote');
-const dividendData = require('../services/dividendData');
 const hs300Data = require('../services/hs300Data');
 const { isHs300Route } = require('../lib/hs300Identity');
 const nasdaqData=require('../services/nasdaqData');
@@ -158,19 +157,6 @@ async function buildAnalysis(opts) {
       } catch (e) { /* 不致命 */ }
     }
 
-    let dividendInput = null, dividendYieldReference = null;
-    if (f.category === 'dividend') {
-      dividendInput = await dividendData.forFund(f);
-      try {
-        const dj = await fetchers.fetchDanjuanEvaList();
-        const code = f.indexCode && (/^\d{6}$/.test(f.indexCode) ? 'SH' + f.indexCode : f.indexCode);
-        const ref = code && dj && dj[code];
-        dividendYieldReference = {indexCode:f.indexCode||null,indexName:f.indexName||null,
-          value:ref&&Number.isFinite(ref.dyr)?ref.dyr:null,source:ref?'danjuan':null,
-          asOf:ref?.asOf||null,fetchedAt:Date.now(),referenceOnly:true};
-      } catch (e) { /* 不致命 */ }
-    }
-
     // 仅精确跟踪沪深300的 A 股宽基走基金自身复权净值；持仓估值仍用原单位净值。
     const hs300Input=hs300?await hs300Data.forFund(f):null;
     const nasdaqInput=nasdaq?await nasdaqData.forFund(f):null;
@@ -193,7 +179,6 @@ async function buildAnalysis(opts) {
       } catch (e) { estimateQuoteState = 'unavailable'; }
     }
     return {
-      dividendInput,
       hs300Input,
       nasdaqInput,
       activeEquityInput,
@@ -212,7 +197,6 @@ async function buildAnalysis(opts) {
         profileState: f.profileState || 'ready', profileUpdatedAt: f.profileUpdatedAt || null,
         trackIndex: f.trackIndex || null,
         adjustedHistory:null,adjustedNavError:null, // Compatibility only; complete strategy inputs remain non-enumerable.
-        ...(f.category === 'dividend' ? {dividendYieldReference} : {}),
         // ★ 估值锚状态（2026-09-19 新增）：让前端能**显式**告诉用户「这只基金缺估值锚、判定已降级」，
         //   替代过去"界面显示 ? 且恒定建议持仓不动"的静默误导。
         valuationAnchor: {
@@ -249,8 +233,6 @@ async function buildAnalysis(opts) {
     if (r.currentValue != null) totalValue += r.currentValue;
   }
   const funds = results.map(r => r.fund);
-  results.forEach(r => { if (r.fund.category === 'dividend')
-    Object.defineProperty(r.fund,'_dividendData',{value:r.dividendInput,enumerable:false,configurable:true}); });
   results.forEach(r => {if(r.hs300Input)Object.defineProperty(r.fund,'_hs300Data',{value:r.hs300Input,enumerable:false,configurable:true});});
   results.forEach(r=>{if(r.nasdaqInput)Object.defineProperty(r.fund,'_nasdaqData',{value:r.nasdaqInput,enumerable:false,configurable:true});});
   results.forEach(r=>{if(r.activeEquityInput)Object.defineProperty(r.fund,'_activeEquityData',{value:r.activeEquityInput,enumerable:false,configurable:true});});
@@ -314,7 +296,7 @@ async function buildAnalysis(opts) {
     plan = allocation.computeAllocation(allocationRows, pol, funds, totalValue, 0, valuationMap, dl);
     for (const f of funds) if (f.category !== 'dividend' && !isNasdaqRoute(f) && !isActiveEquityRoute(f) && !isGoldRoute(f) && f.profileState === 'needs_review' && plan.scoreMap[f.code]) {
       plan.scoreMap[f.code] = { ...plan.scoreMap[f.code], verdict: 'hold', executable: false, eligible: false,
-        compositeLabel: '分类待确认' };
+        compositeLabel: '需要处理' };
     }
   } catch (e) { /* config 缺失不致命，plan 回退空 */ }
 

@@ -18,7 +18,7 @@ export function fundSettings(state, code, liveFund) {
     ? (fund.estimateIndexName || fund.estimateLabel || fund.estimateIndex) + ' · ' + (fund.estimateRelation === 'proxy' ? '代理' : '跟踪指数直连') + ' · ' + (fund.estimateProvider || 'sina')
     : '不估算';
   box.appendChild(el('div', { text: '自动档案（只读） · ' + [fund.fundType || '类型未知', fund.market || '市场未知',
-    CATS_FALLBACK.find(c => c.key === fund.category)?.name || '分类待确认',
+    CATS_FALLBACK.find(c => c.key === fund.category)?.name || '类别未选择',
     fund.caliber === 'us' ? '海外口径' : fund.caliber === 'cn' ? 'A 股口径' : null].filter(Boolean).join(' · ') }));
   box.appendChild(el('div', { text: '官方跟踪：' + (fund.indexName || '无') + ' · 盘中估算：' + estimate }));
   if (fund.estimateVerifiedAt) box.appendChild(el('div', { text: '估算指数验证：' + new Date(fund.estimateVerifiedAt).toLocaleString('zh-CN') }));
@@ -29,7 +29,7 @@ export function fundSettings(state, code, liveFund) {
       quoteState === 'stale' ? '本次行情已过期，暂不估算' :
       quoteState === 'unavailable' ? '本次行情不可用，暂不估算' : '当前非盘中估算时段' }));
   }
-  if (fund.profileState === 'needs_review') box.appendChild(el('div', { text: '分类待确认：暂不提供可执行建议。', style: 'color:#b78b40' }));
+  if (fund.profileState === 'needs_review') box.appendChild(el('div', { text: '请先选择基金类别；选定类别只用于匹配策略，仍需通过基金身份与数据核验。', style: 'color:#b78b40' }));
   const button = el('button', { class: 'btn', text: '重新识别自动档案', style: 'margin-top:5px;padding:3px 8px' });
   const detail = el('div', { class: 'hint', style: 'white-space:pre-wrap' });
   button.addEventListener('click', async () => {

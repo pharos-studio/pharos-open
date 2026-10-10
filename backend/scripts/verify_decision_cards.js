@@ -38,7 +38,16 @@ function run(){
   assert(!C.decisionDetailSections({name:'未知',marketVerdict:null,verdict:null}).textContent.includes('判断说明'));
   assert.match(C.decisionDetailSections({name:'未知',marketVerdict:null,verdict:null,matrix:{dataErrorLabel:'数据日期缺失'}}).textContent,/数据日期缺失/);
   assert.equal(C.cardState({unsupported:true,unsupportedReason:'scope_unsupported'}).market,'暂不支持');
+  assert.equal(C.cardState({unsupported:true,unsupportedReason:'needs_review'}).market,'需要处理');
+  assert.notEqual(C.cardState({unsupported:true,unsupportedReason:'profile_unverified'}).market,'档案待确认');
   assert.equal(C.cardState({marketVerdict:'hold',verdict:'hold'}).constraint,null);
+
+  const monthlyPlan=C.decisionStatusCard({code:'999003',name:'红利计划基金',displayKind:'plan',
+    marketState:'monthly_dca',marketStateLabel:'每月定投',marketVerdict:null,verdict:null,executable:false});
+  assert.match(monthlyPlan.textContent,/计划：每月定投/);
+  assert(!monthlyPlan.textContent.includes('市场：'));assert(!monthlyPlan.textContent.includes('不动'));
+  const planDetail=C.decisionDetailSections({displayKind:'plan',marketStateLabel:'每月定投',marketVerdict:null,verdict:null});
+  assert.match(planDetail.textContent,/手动执行/);assert.match(planDetail.textContent,/不自动下单/);
 
   // 旧策略：状态行给市场/约束；详情段**不再**承接理由与因子（那两块归复盘页，避免重复渲染）
   const old=C.decisionStatusCard({name:'旧规则',marketVerdict:'add',verdict:'hold',suspended:true});
