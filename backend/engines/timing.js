@@ -464,6 +464,9 @@ function buyScan(cfgOverride) {
         continue;
       }
       known.add(key);
+      // New monthly purchases never acquire a historical quant strategy or campaign.
+      // Existing explicitly versioned purchases above can still receive authorized pricing.
+      if(require('../lib/goldMonthlyIdentity').isMonthlyRoute(fund))continue;
       // 匹配战役窗口
       let cid = null;
       const hs=isHs300Route(fund);

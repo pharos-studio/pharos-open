@@ -12,7 +12,7 @@ function disabled() {
     unsupported:true,unsupportedReason:'rule_disabled',marketVerdict:null,verdict:null,eligible:false,executable:false };
 }
 function buildFundDecision(signalSource, params) {
-  if(require('../lib/goldIdentity').isGoldRoute(signalSource))return require('./strategies/goldDual')(signalSource);
+  if(require('../lib/goldIdentity').isGoldRoute(signalSource))return require(require('../lib/goldMonthlyIdentity').enabled()?'./strategies/goldMonthly':'./strategies/goldDual')(signalSource);
   const builder = params && Object.hasOwn(builders, params.cheapBy) && builders[params.cheapBy];
   return builder ? builder(signalSource, params) : disabled();
 }

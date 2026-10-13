@@ -11,6 +11,7 @@ module.exports = {
   buildActiveEquityDecision: require('./strategies/activeEquity'),
   buildGoldDecision:     require('./strategies/gold'),
   buildGoldDualDecision: require('./strategies/goldDual'),
+  buildGoldMonthlyDecision: require('./strategies/goldMonthly'),
   buildCoreDecision:     require('./strategies/core'),
   buildBroad300Decision: require('./strategies/broad300').buildBroad300Decision,
   buildBroadGlobalDecision

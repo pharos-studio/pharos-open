@@ -1,0 +1,325 @@
+{
+  "schemaVersion": 1,
+  "methodVersion": "gold-monthly-identity-v1",
+  "releaseEnabled": false,
+  "verifiedAt": "2026-10-12T21:37:58+08:00",
+  "scope": "Independent current official code/share/CNY/domestic-gold/off-exchange-link identity snapshot only",
+  "funds": [
+  {
+    "code": "000216",
+    "name": "华安黄金ETF联接A",
+    "shareClass": "A",
+    "domestic": true,
+    "otc": true,
+    "currency": "CNY",
+    "kind": "gold-etf-link",
+    "group": "spot-gold",
+    "identityVerified": true,
+    "verifiedAt": "2026-10-12T21:37:58+08:00",
+    "effectiveFrom": "2013-08-22",
+    "source": "https://www.huaan.com.cn/funds/000216/index.shtml",
+    "sourceSha256": "9a6362bb1a23289b9f958851f477d9ee837020a47ff1fe0557f3ea928b4f66e9",
+    "sources": [
+      {
+        "url": "https://www.huaan.com.cn/funds/000216/index.shtml",
+        "sha256": "9a6362bb1a23289b9f958851f477d9ee837020a47ff1fe0557f3ea928b4f66e9",
+        "publishedDate": null,
+        "verifiedAt": "2026-10-12",
+        "facts": [
+          "法定名称/基金代码000216",
+          "基金简称华安黄金ETF联接A",
+          "币种CNY",
+          "成立日期2013-08-22"
+        ],
+        "anchor": "termbox.fundtable product overview"
+      }
+    ],
+    "limitations": [
+      "官方产品页无身份字段公布日，抓取日不等于生效日",
+      "网站列出的开放申购/定投未作为实际渠道状态确认",
+      "完整有效合同变更链未核验"
+    ]
+  },
+  {
+    "code": "000217",
+    "name": "华安黄金ETF联接C",
+    "shareClass": "C",
+    "domestic": true,
+    "otc": true,
+    "currency": "CNY",
+    "kind": "gold-etf-link",
+    "group": "spot-gold",
+    "identityVerified": true,
+    "verifiedAt": "2026-10-12T21:37:58+08:00",
+    "effectiveFrom": "2013-08-22",
+    "source": "https://www.huaan.com.cn/funds/000217/index.shtml",
+    "sourceSha256": "d889160190d2c16e52d9d7f5122bd800a9419f26193eadf453e9cc375b66b16c",
+    "sources": [
+      {
+        "url": "https://www.huaan.com.cn/funds/000217/index.shtml",
+        "sha256": "d889160190d2c16e52d9d7f5122bd800a9419f26193eadf453e9cc375b66b16c",
+        "publishedDate": null,
+        "verifiedAt": "2026-10-12",
+        "facts": [
+          "法定名称/基金代码000217",
+          "基金简称华安黄金ETF联接C",
+          "币种CNY",
+          "成立日期2013-08-22"
+        ],
+        "anchor": "termbox.fundtable product overview"
+      }
+    ],
+    "limitations": [
+      "Web抓取失败，匿名curl200原HTML成功；不是A类资料代替C",
+      "公布日未知",
+      "完整有效合同变更链未核验"
+    ]
+  },
+  {
+    "code": "000218",
+    "name": "国泰黄金ETF联接A",
+    "shareClass": "A",
+    "domestic": true,
+    "otc": true,
+    "currency": "CNY",
+    "kind": "gold-etf-link",
+    "group": "spot-gold",
+    "identityVerified": true,
+    "verifiedAt": "2026-10-12T21:37:58+08:00",
+    "effectiveFrom": "2016-04-13",
+    "source": "https://st.gtfund.com/pis/www/CN_50010000_000218_FA010080_20250001_000218_20251015_090000_01.pdf",
+    "sourceSha256": "3adb1dbc6f9256f7c9283184c51ea93f478a922646c0d4c933bec9f5b0d2db9d",
+    "sources": [
+      {
+        "url": "https://www.gtfund.com/product/productlist/zhishu/000218/index.html",
+        "sha256": "3d6523e27aa28e362300c23cfcd9695079f27ca4d713ef44f835ebbdcbadbf93",
+        "publishedDate": null,
+        "verifiedAt": "2026-10-12",
+        "facts": [
+          "页面标题/产品栏国泰黄金ETF联接A和000218"
+        ],
+        "anchor": "title and li.product_li1"
+      },
+      {
+        "url": "https://st.gtfund.com/pis/www/CN_50010000_000218_FA010080_20250001_000218_20251015_090000_01.pdf",
+        "sha256": "3adb1dbc6f9256f7c9283184c51ea93f478a922646c0d4c933bec9f5b0d2db9d",
+        "compiledDate": "2025-09-25",
+        "publishedDate": "2025-10-15",
+        "verifiedAt": "2026-10-12",
+        "physicalPage": 1,
+        "visuallyChecked": true,
+        "facts": [
+          "000218=A份额",
+          "交易币种人民币",
+          "普通开放式",
+          "国泰黄金ETF联接",
+          "上海黄金交易所黄金现货"
+        ]
+      }
+    ],
+    "limitations": [
+      "最新检索到的正式概要送出于2025-10-15，不称已证明2026最新全部法律版本",
+      "旧官网信息披露子页停2017，与当前可访问产品身份分开，不能用旧列表验证最新状态",
+      "页面概况写交易型开放式与法定概要普通开放式有口径差异，场外身份按法定概要和联接结构"
+    ]
+  },
+  {
+    "code": "000307",
+    "name": "易方达黄金ETF联接A",
+    "shareClass": "A",
+    "domestic": true,
+    "otc": true,
+    "currency": "CNY",
+    "kind": "gold-etf-link",
+    "group": "spot-gold",
+    "identityVerified": true,
+    "verifiedAt": "2026-10-12T21:37:58+08:00",
+    "effectiveFrom": "2016-05-26",
+    "source": "https://cdn.efunds.com.cn/owch/data/bulletin/20260918/易方达黄金交易型开放式证券投资基金联接基金（易方达黄金ETF联接A）基金产品资料概要更新.pdf",
+    "sourceSha256": "bc5c9f6ee293cd4ddc0b16aed65cf2fe4121485c2a841c3be1e328dc1466fc9c",
+    "sources": [
+      {
+        "url": "https://www.efunds.com.cn/fund/000307.shtml",
+        "publishedDate": null,
+        "verifiedAt": "2026-10-12",
+        "facts": [
+          "000307/易方达黄金ETF联接A",
+          "当前产品公告指向2026-09-18概要",
+          "标的SGE黄金9999/国内黄金现货"
+        ]
+      },
+      {
+        "url": "https://cdn.efunds.com.cn/owch/data/bulletin/20260918/易方达黄金交易型开放式证券投资基金联接基金（易方达黄金ETF联接A）基金产品资料概要更新.pdf",
+        "sha256": "bc5c9f6ee293cd4ddc0b16aed65cf2fe4121485c2a841c3be1e328dc1466fc9c",
+        "compiledDate": "2026-09-16",
+        "publishedDate": "2026-09-18",
+        "verifiedAt": "2026-10-12",
+        "physicalPage": 1,
+        "visuallyChecked": true,
+        "facts": [
+          "000307=A份额",
+          "交易币种人民币",
+          "普通开放式",
+          "目标易方达黄金ETF/国内黄金现货"
+        ]
+      }
+    ],
+    "limitations": [
+      "基金中基金的法律类型不否定黄金ETF联接身份",
+      "完整有效合同变更链/申购状态/净值采样不在本次身份验收内"
+    ]
+  },
+  {
+    "code": "002610",
+    "name": "博时黄金ETF联接A",
+    "shareClass": "A",
+    "domestic": true,
+    "otc": true,
+    "currency": "CNY",
+    "kind": "gold-etf-link",
+    "group": "spot-gold",
+    "identityVerified": true,
+    "verifiedAt": "2026-10-12T21:37:58+08:00",
+    "effectiveFrom": "2016-05-27",
+    "source": "https://www.bosera.com/common/downloadFile.do?fileId=75321EDC16C61B607B9DBE42E57E0A5C",
+    "sourceSha256": "fecef4e22886a5770f85be1a85633be81369356eaf85e5009035b09c6c6e30ca",
+    "sources": [
+      {
+        "url": "https://www.bosera.com/fund/002610.html",
+        "publishedDate": null,
+        "verifiedAt": "2026-10-12",
+        "facts": [
+          "002610=A份额/博时黄金ETF联接A",
+          "上海黄金交易所AU99.99"
+        ]
+      },
+      {
+        "url": "https://www.bosera.com/common/downloadFile.do?fileId=75321EDC16C61B607B9DBE42E57E0A5C",
+        "sha256": "fecef4e22886a5770f85be1a85633be81369356eaf85e5009035b09c6c6e30ca",
+        "compiledDate": "2026-06-25",
+        "publishedDate": "2026-06-26",
+        "verifiedAt": "2026-10-12",
+        "physicalPage": 1,
+        "visuallyChecked": true,
+        "facts": [
+          "002610=A份额",
+          "交易币种人民币",
+          "普通开放式",
+          "目标博时黄金ETF/SGE黄金合约"
+        ]
+      }
+    ],
+    "limitations": [
+      "其他类型法律标签不否定黄金ETF联接身份",
+      "网页单位面值人民币并不独自证明交易币种，币种证据取正式概要",
+      "完整有效合同变更链未核验"
+    ]
+  },
+  {
+    "code": "018391",
+    "name": "南方上海金ETF发起联接A",
+    "shareClass": "A",
+    "domestic": true,
+    "otc": true,
+    "currency": "CNY",
+    "kind": "gold-etf-link",
+    "group": "shanghai-gold",
+    "identityVerified": true,
+    "verifiedAt": "2026-10-12T21:37:58+08:00",
+    "effectiveFrom": "2023-07-25",
+    "source": "https://www.nffund.com/main/files/2026/06/11/698220269915.pdf",
+    "sourceSha256": "2403bdf1f6411260a25382eb56f72a71fea9b7344a02fe2230eb6997b48ba0ec",
+    "sources": [
+      {
+        "url": "https://www.nffund.com/nfwebApi/fund/overreview",
+        "method": "POST",
+        "publicQuery": {
+          "fundCode": "018391"
+        },
+        "sha256": "08fbcd27291488467a9e587902e174a4d5f2652b9cb92a1c26680d26792228d5",
+        "publishedDate": null,
+        "verifiedAt": "2026-10-12",
+        "facts": [
+          "官方当前fund_info.fundCode=018391",
+          "fundNameEx=A类份额",
+          "普通开放式",
+          "目标南方上海金ETF/上海黄金交易所SHAU"
+        ]
+      },
+      {
+        "url": "https://www.nffund.com/main/files/2026/06/11/698220269915.pdf",
+        "sha256": "2403bdf1f6411260a25382eb56f72a71fea9b7344a02fe2230eb6997b48ba0ec",
+        "compiledDate": "2026-05-14",
+        "publishedDate": "2026-06-12",
+        "verifiedAt": "2026-10-12",
+        "physicalPage": 1,
+        "visuallyChecked": true,
+        "facts": [
+          "018391=A份额",
+          "交易币种人民币",
+          "普通开放式",
+          "ETF联接"
+        ]
+      }
+    ],
+    "limitations": [
+      "产品HTML空壳，API从官方加载script发现并匿名查询；不是搜索摘要冒充当前数据",
+      "路径2026/06/11不是送出日；概要和官方法律列表为06-12",
+      "2023-07-25成立，已跨3年；概要有资产规模/持有人条件触发终止条款，实际触发、存续与渠道申购状态未知，身份及API可达不证明仍存续或可申购"
+    ]
+  },
+  {
+    "code": "018392",
+    "name": "南方上海金ETF发起联接C",
+    "shareClass": "C",
+    "domestic": true,
+    "otc": true,
+    "currency": "CNY",
+    "kind": "gold-etf-link",
+    "group": "shanghai-gold",
+    "identityVerified": true,
+    "verifiedAt": "2026-10-12T21:37:58+08:00",
+    "effectiveFrom": "2023-07-25",
+    "source": "https://www.nffund.com/main/files/2026/06/11/698220679426.pdf",
+    "sourceSha256": "4f8000a9a371bb45965edc8795de02f6085b3ca336112221c8bedc982e6665a0",
+    "sources": [
+      {
+        "url": "https://www.nffund.com/nfwebApi/fund/overreview",
+        "method": "POST",
+        "publicQuery": {
+          "fundCode": "018392"
+        },
+        "sha256": "83ea68fa638e961b0eb3a6fdbf1d2d40d046af4edcf20ada187af9312836f73c",
+        "publishedDate": null,
+        "verifiedAt": "2026-10-12",
+        "facts": [
+          "官方当前fund_info.fundCode=018392",
+          "fundNameEx=C类份额",
+          "普通开放式",
+          "目标南方上海金ETF/上海黄金交易所SHAU"
+        ]
+      },
+      {
+        "url": "https://www.nffund.com/main/files/2026/06/11/698220679426.pdf",
+        "sha256": "4f8000a9a371bb45965edc8795de02f6085b3ca336112221c8bedc982e6665a0",
+        "compiledDate": "2026-05-14",
+        "publishedDate": "2026-06-12",
+        "verifiedAt": "2026-10-12",
+        "physicalPage": 1,
+        "visuallyChecked": true,
+        "facts": [
+          "018392=C份额",
+          "交易币种人民币",
+          "普通开放式",
+          "ETF联接"
+        ]
+      }
+    ],
+    "limitations": [
+      "没有由A类复制C类身份；各自官方API及各自概要核对",
+      "2023-07-25成立，已跨3年；概要有资产规模/持有人条件触发终止条款，实际触发、存续与渠道申购状态未知，身份及API可达不证明仍存续或可申购",
+      "实际交易/终止条件/完整最新法律链不在本次身份范围"
+    ]
+  }
+]
+}

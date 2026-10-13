@@ -86,6 +86,8 @@ function pickWeekAgo(history) {
 function buildCard(f, dec, dailyLimits, cfg) {
   const m = dec.matrix || {};
   const actLabel = dec.action === 'add' ? '加仓' : '不动';
+  if(dec.strategyVersion==='gold-monthly-dca-v1')return {title:'黄金：'+m.marketStateLabel,
+    detail:m.marketState==='monthly_dca'?'计划：每月定投；由你决定是否执行。近期政策仅供阅读。系统不指定日期、金额或完成情况，申购状态、用户限额及资金政策独立提示。':'当前官方基金身份或适用范围未通过核验，暂不显示月计划。',verdict:null,factors:[]};
   if(dec.strategyVersion==='gold-dual-v1'){
     const m=dec.matrix,x=m.metrics,fmt=v=>v==null?'—':Number(v).toFixed(3),names={negativeBias:'BIAS120 ≤−5%',biasRepair:'近10日BIAS修复 ≥1个百分点',rsiRising:'日RSI14严格回升',rsiCeiling:'日RSI14 ≤55',aboveLongMA:'复权净值 > MA250',trendMA:'MA60 > MA250',drawdownRange:'60日回撤 3%～10%',recovery:'10日恢复 ≥1.5%',biasCeiling:'BIAS60 ≤2%',rsiRange:'日RSI14 45～65'};
     const factors=['A','B'].flatMap(p=>Object.entries(m.conditions[p]||{}).map(([k,v])=>({dim:(p==='A'?'A 回撤修复':'B 趋势回踩')+' · '+names[k],value:v===true?'达标':v===false?'未达标':'无法判定',status:v===true?'cheap':'neutral'})));
@@ -325,7 +327,7 @@ async function buildAdvice(session = 'am') {
 
   for (const f of a.funds) {
     const resolved=resolveRegistry(f);
-    const hit = f.profileState === 'needs_review' && !['broad300','nasdaq','activeEquity','goldDual'].includes(resolved?.reg.type) ? null : resolved;
+    const hit = f.profileState === 'needs_review' && !['broad300','nasdaq','activeEquity','goldDual','goldMonthly'].includes(resolved?.reg.type) ? null : resolved;
     if (!hit || hit.reg.enabled === false) {
       // ★ 类别没有对应算法 → **不再静默丢弃**。
       //   旧实现这里是 `continue`，该基金在决策页整只消失，用户只会觉得"少了一只"、看不出原因
@@ -402,7 +404,13 @@ async function buildAdvice(session = 'am') {
         blockedReason:marketVerdict==null?dec.matrix.dataError:ps.officialConstraintReason||(ps.suspended?'purchase_suspended':ps.unavailable?'purchase_status_unverified':dailyLimit===0?'user_limit_zero':dec.matrix.futureOrder?'future_order_recheck':reg.type==='goldDual'&&!dec.matrix.releaseEnabled?'release_pending':!policyAllowed?'policy_blocked':null),
         suspended: ps.suspended || dailyLimit === 0, statusFresh: ps.fresh };
     })() : null;
-    const sm = scoreMap[f.code] || hs300Fallback || {};
+    const monthlyFallback=reg.type==='goldMonthly'&&!scoreMap[f.code]?(()=>{
+      const observed=Date.parse(dec.matrix.computedAt),ps=allocation.purchaseStatusMeta(f,observed),stamp=Number(f.purchaseStatus?.updatedAt);
+      if(!Number.isFinite(stamp)||stamp>observed){ps.fresh=false;ps.unavailable=true;ps.suspended=false;}
+      return {marketState:dec.matrix.marketState,marketStateLabel:dec.matrix.marketStateLabel,statusFresh:ps.fresh,
+        suspended:ps.suspended||dailyLimit!=null&&dailyLimit<=0,...require('../lib/goldMonthlyIdentity').monthlyFields(f,{policy,ps,limit:dailyLimit})};
+    })():null;
+    const sm = scoreMap[f.code] || hs300Fallback || monthlyFallback || {};
     const score = sm.marketScore != null ? sm.marketScore : null; // 真实市场分（0~100, toFixed(1)）；与决策页旧 scoreMap 同源
     const suspended = !!(sm && sm.suspended);
     // ★ 估值锚降级提示（2026-09-19）：缺跟踪指数（或抓取失败）时判定会退化成「价格分位弱信号」，
@@ -414,7 +422,9 @@ async function buildAdvice(session = 'am') {
       code: f.code, name: f.name, category: f.category,
       caliber: reg.caliber || null,  // 口径（仅 broad 下有值：cn/us），供前端展示「宽基 · 海外口径」
       categoryName: reg.label, // = REGISTRY.label（引擎类别中文名：宽基/宽基·海外/红利·低波/主题·行业(高波动)/商品·对冲）；⚠ 非分配桶名
-      unsupported: ['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) ? !!dec.unsupported : false,
+      unsupported: ['dividend','broad300','nasdaq','activeEquity','goldDual','goldMonthly'].includes(reg.type) ? !!dec.unsupported : false,
+      ...(reg.type==='goldMonthly'?{unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,
+        displayKind:dec.matrix.displayKind,frequency:dec.matrix.frequency,blockedReason:sm.blockedReason||null,constraints:sm.constraints||[]}:{}),
       ...(reg.type === 'dividend' ? {unsupportedReason:dec.unsupportedReason,strategyVersion:dec.strategyVersion,
         displayKind:dec.matrix.displayKind,frequency:dec.matrix.frequency,
         blockedReason:sm.blockedReason||null} : {}),
@@ -440,8 +450,8 @@ async function buildAdvice(session = 'am') {
       valuationAnchor: f.valuationAnchor || null,
       marketState: sm.marketState || null,
       marketStateLabel: sm.marketStateLabel || null,
-      marketVerdict: ['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) ? (Object.hasOwn(sm,'marketVerdict')?sm.marketVerdict:dec.action) : sm.marketVerdict || card.verdict,
-      verdict: ['dividend','broad300','nasdaq','activeEquity','goldDual'].includes(reg.type) ? (Object.hasOwn(sm,'verdict')?sm.verdict:null) : sm.verdict || card.verdict,
+      marketVerdict: ['dividend','broad300','nasdaq','activeEquity','goldDual','goldMonthly'].includes(reg.type) ? (Object.hasOwn(sm,'marketVerdict')?sm.marketVerdict:dec.action) : sm.marketVerdict || card.verdict,
+      verdict: ['dividend','broad300','nasdaq','activeEquity','goldDual','goldMonthly'].includes(reg.type) ? (Object.hasOwn(sm,'verdict')?sm.verdict:null) : sm.verdict || card.verdict,
       title: card.title, detail: card.detail, factors: card.factors,
       matrix: (dec && dec.matrix) || null,
       score,                                   // ← 语义变更：位置分 → **综合分**（= wV×V + wM×M）
@@ -452,7 +462,9 @@ async function buildAdvice(session = 'am') {
       compositeLabel: sm.compositeLabel || null,                          // 拦截/降级说明
       weights: sm.weights || null,                                        // { wV, wM }
       degraded: sm.degraded || [],                                        // ['V'] / ['M'] / ['V','M']
-      conclusion: reg.type==='goldDual'
+      conclusion: reg.type==='goldMonthly'
+        ? dec.matrix.marketState==='monthly_dca'?'计划：每月定投；由你决定是否执行。政策仅作阅读参考，申购与资金限制另列。':`${dec.matrix.marketStateLabel}；当前官方身份或适用范围尚未通过核验。`
+        : reg.type==='goldDual'
         ? `${dec.matrix.marketStateLabel}；${dec.action==null?'身份、基金日期或数据尚未通过核验':dec.action==='add'?'双路径之一条件成立':'两个通道均有条件未达标'}。${dec.matrix.releasePending?'待启用，当前不可执行。':sm.executable?'当前约束允许执行。':'当前执行受限，申请日需复核。'}仅买入判断；趋势回踩不等于长期低位，历史结果不保证盈利。`
         : reg.type==='activeEquity'
         ? `${dec.matrix.marketStateLabel}；${dec.action==null?'必要身份、采样或数据尚未通过核验':dec.action==='add'?(sm.executable?'市场条件成立，当前约束允许执行':'市场条件成立，当前执行受限；申请日需复核'):'两个通道均未全部成立'}。仅买入判断，金额与节奏由你决定；不含退出规则，历史结果不保证盈利。`

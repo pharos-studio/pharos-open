@@ -6,7 +6,7 @@ import { decisionStatusCard } from './decision-card.js';
 export async function render(root) {
   root.innerHTML = '';
   root.appendChild(el('div', { class: 'panel-head', style: 'border:none;margin:0 0 8px;padding:0', text: '每日决策信号' }));
-  root.appendChild(el('div', { class: 'hint', style: 'margin-bottom:12px', text: '这里只展示每只基金的当日状态与约束；判断说明、条件指标与数据日期等明细，请到「每日复盘」页查看。' }));
+  root.appendChild(el('div', { class: 'hint', style: 'margin-bottom:12px', text: '查看当日状态、原因与交易限制；每日复盘展开可看还缺什么，详细依据按需查看。' }));
   const list = el('div', { class: 'signals', id: 'decisionList' });
   list.innerHTML = loadingHTML('正在准备你的看板…', true);
   root.appendChild(el('div', { class: 'panel' }, [list]));

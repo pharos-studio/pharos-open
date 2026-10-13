@@ -173,6 +173,11 @@ const server = http.createServer(async (req, res) => {
   catch { return httpError(res, 400); } // 畸形请求路径（如 //）不应击垮整个服务
   const p = u.pathname;
   try {
+    if(p==='/api/gold-macro-policy'&&req.method==='GET'){
+      if([...u.searchParams.keys()].some(k=>u.searchParams.getAll(k).length!==1))return json(res,{error:'invalid_query'},400);
+      try{return json(res,await require('./services/goldMacroPolicy').get(Object.fromEntries(u.searchParams)));}
+      catch(e){return json(res,{error:e.statusCode?e.message:'macro_policy_unavailable'},e.statusCode||503);}
+    }
     if (p === '/api/migration/retry' && req.method === 'POST') {
       const ak = config.getApiKey();
       if (!ak || req.headers['x-api-key'] !== ak) return json(res, { ok: false, error: '鉴权失败' }, 401);

@@ -13,7 +13,7 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
   // 1) 真实市场分 + 决策副作用（给 funds 挂 _dec / _marketScore，advice.js 决策卡复用，同源零漂移）
   funds.forEach(f => {
     const resolved=resolveRegistry(f);
-    const hit = f.profileState === 'needs_review' && !['broad300','nasdaq','activeEquity','goldDual'].includes(resolved?.reg.type) ? null : resolved;
+    const hit = f.profileState === 'needs_review' && !['broad300','nasdaq','activeEquity','goldDual','goldMonthly'].includes(resolved?.reg.type) ? null : resolved;
     if (!hit || hit.reg.enabled === false) {
       // ★ 无算法的类别（待建设 / 未归类）：不能只是"清空分数"就完事。
       //   旧实现在下方 scoreMap 循环里遇到 `_marketScore == null` 就 return，
@@ -42,6 +42,11 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
       ps=require('../lib/nasdaqExecution').overlay(ps,dec.matrix.officialPurchaseConstraint,observed);
     }
     f._purchaseStatusMeta = ps;
+    if (hit.reg.type === 'goldMonthly') {
+      const stamp=Number(f.purchaseStatus?.updatedAt),observed=Number(now??Date.now());
+      if(!Number.isFinite(stamp)||stamp>observed){ps.fresh=false;ps.unavailable=true;ps.suspended=false;}
+      f._composite=null;f._marketScore=null;return;
+    }
     if (hit.reg.type === 'dividend') {
       f._composite = null; f._marketScore = null;
       return;
@@ -57,6 +62,7 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
 
   // 2) eligible：policy=buy 且未暂停申购（仅 scoreMap.eligible 标注用，与分配无关）
   const eligible = funds.filter(f => {
+    if (f._dec?.strategyVersion === 'gold-monthly-dca-v1') return false;
     if (f.category === 'dividend' && (!f._dec || f._dec.action == null)) return false;
     if (f._dec?.strategyVersion === 'hs300-dual-v1' && f._dec.action == null) return false;
     if(f._dec?.strategyVersion==='nasdaq-dual-v1'&&(f._dec.action==null||f._dec.matrix.futureOrder))return false;
@@ -71,6 +77,16 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
   // 3) 综合分信号（前端决策页/复盘页兜底，唯一活输出）
   const scoreMap = {};
   funds.forEach(f => {
+    if(f._dec?.strategyVersion==='gold-monthly-dca-v1'){
+      const dec=f._dec,m=dec.matrix,ps=f._purchaseStatusMeta||purchaseStatusMeta(f,now),limit=dailyLimits?.[f.code]??null;
+      scoreMap[f.code]={code:f.code,name:f.name,marketScore:null,valueScore:null,momentumScore:null,
+        compositeLabel:m.marketStateLabel,weights:null,degraded:[],positionLabel:null,strategyVersion:dec.strategyVersion,
+        marketState:m.marketState,marketStateLabel:m.marketStateLabel,displayKind:m.displayKind,frequency:m.frequency,
+        unsupported:dec.unsupported,unsupportedReason:dec.unsupportedReason,purchaseStatus:f.purchaseStatus||null,
+        statusFresh:ps.fresh,suspended:ps.suspended||limit!=null&&limit<=0,
+        ...require('../lib/goldMonthlyIdentity').monthlyFields(f,{policy,ps,limit})};
+      return;
+    }
     if (f._dec && ['dividend-monthly-dca-v1','dividend-trend-v1','hs300-dual-v1','nasdaq-dual-v1','active-equity-buy-v1','gold-dual-v1'].includes(f._dec.strategyVersion)) {
       const dec=f._dec,m=dec.matrix,lim=dailyLimits&&dailyLimits[f.code]!=null?dailyLimits[f.code]:null;
       const ps=f._purchaseStatusMeta||purchaseStatusMeta(f,now),allowed=eligible.includes(f);

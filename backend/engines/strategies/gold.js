@@ -11,7 +11,7 @@ const util = require('../../lib/util');
 // cycle 类（黄金/对冲）信号线：价格分位(便宜/贵) × 三重均线位置(跌破MA120=趋势弱) × 急涨总闸 × 止跌确认 → 本策略矩阵
 // 纯价格纪律，与仓位/资金解耦；金额由用户决定。不读舆论/新闻，只看客观价格证据。
 function buildGoldDecision(fund, valuationMap, config) {
-  if(require('../../lib/goldIdentity').isGoldRoute(fund))return require('./goldDual')(fund);
+  if(require('../../lib/goldIdentity').isGoldRoute(fund))return require(require('../../lib/goldMonthlyIdentity').enabled()?'./goldMonthly':'./goldDual')(fund);
   const g = (config && config.signals && config.signals.gold) || {};
   const v = (valuationMap && valuationMap[fund.code]) || (fund && fund.valuation) || {};
   const hist = (fund && fund.history) || [];
@@ -78,7 +78,7 @@ module.exports = buildGoldDecision;
 
 // Low-level legacy signal contract, owned by this strategy.
 function buildSignalDecision(signalSource, params) {
-  if(require('../../lib/goldIdentity').isGoldRoute(signalSource))return require('./goldDual')(signalSource);
+  if(require('../../lib/goldIdentity').isGoldRoute(signalSource))return require(require('../../lib/goldMonthlyIdentity').enabled()?'./goldMonthly':'./goldDual')(signalSource);
   const p = params || {};
   const cheapRatio = p.cheapRatio != null ? p.cheapRatio : 1.05;
   const expensiveRatio = p.expensiveRatio != null ? p.expensiveRatio : 0.90;

@@ -7,7 +7,8 @@ function load(){const context=vm.createContext({document:{createElement:t=>new N
   // ★ 剥 import 行时行尾要容忍 CRLF：Windows 导出/检出后是 `;\r\n`，
   //   只写 `;\n` 会匹配不上（import 留在源码里 → 报 Cannot use import statement outside a module），
   //   而 Linux CI 是 LF 所以照绿 —— 属于只在 Windows 本地复现的假红。
-  const src=fs.readFileSync(path.join(__dirname,'../../public/js/pages/decision-card.js'),'utf8').replace(/^import .*;\r?\n/m,'').replace(/export /g,'');vm.runInContext(src,context);return context;
+  const explanation=fs.readFileSync(path.join(__dirname,'../../public/js/pages/decision-explanation.js'),'utf8').replace(/export /g,'');vm.runInContext(explanation,context);
+  const src=fs.readFileSync(path.join(__dirname,'../../public/js/pages/decision-card.js'),'utf8').replace(/^import .*;\r?\n/gm,'').replace(/export /g,'');vm.runInContext(src,context);return context;
 }
 function run(){
   const C=load();
@@ -48,6 +49,13 @@ function run(){
   assert(!monthlyPlan.textContent.includes('市场：'));assert(!monthlyPlan.textContent.includes('不动'));
   const planDetail=C.decisionDetailSections({displayKind:'plan',marketStateLabel:'每月定投',marketVerdict:null,verdict:null});
   assert.match(planDetail.textContent,/手动执行/);assert.match(planDetail.textContent,/不自动下单/);
+
+  const goldPlan={strategyVersion:'gold-monthly-dca-v1',displayKind:'plan',marketState:'monthly_dca',marketStateLabel:'每月定投',marketVerdict:null,verdict:null,blockedReason:'purchase_suspended',constraints:['purchase_suspended','policy_blocked']};
+  const goldText=C.decisionStatusCard(goldPlan).textContent;
+  assert.match(goldText,/每月定投，手动执行/);assert.match(goldText,/资金政策限制/);
+  assert.equal((goldText.match(/暂停申购/g)||[]).length,1);assert(!/市场：|不动|加仓|计划：/.test(goldText));
+  const simpleDetail=C.decisionDetailSections({...goldPlan,latestDate:'2026-10-01',purchaseStatus:{state:'limited',maxBuy:50}},{simpleGold:true}).textContent;
+  assert.match(simpleDetail,/实际申购上限：50元/);assert(!/计划说明|数据日期|2026-10-01|暂停申购/.test(simpleDetail));
 
   // 旧策略：状态行给市场/约束；详情段**不再**承接理由与因子（那两块归复盘页，避免重复渲染）
   const old=C.decisionStatusCard({name:'旧规则',marketVerdict:'add',verdict:'hold',suspended:true});

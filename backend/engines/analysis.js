@@ -161,7 +161,7 @@ async function buildAnalysis(opts) {
     const hs300Input=hs300?await hs300Data.forFund(f):null;
     const nasdaqInput=nasdaq?await nasdaqData.forFund(f):null;
     const activeEquityInput=activeEquity?await activeEquityData.forFund(f):null;
-    const goldInput=gold?await goldData.forFund(f):null;
+    const goldInput=gold&&!require('../lib/goldMonthlyIdentity').enabled()?await goldData.forFund(f):null;
     if(hs300Input?.pe) {
       valuation={...valuation,pe:hs300Input.pe.pe??null,pePercentile:hs300Input.pe.percentile??null,
         asOf:hs300Input.pe.date||null,source:hs300Input.peSource,weak:false};

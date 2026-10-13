@@ -1,5 +1,6 @@
 // 决策页状态行与每日复盘详情段的渲染：状态行只给结论、涨跌与约束徽标，证据明细单独成段。
 import { el, cls, signPct } from '../util.js';
+import { buildDecisionExplanation } from './decision-explanation.js';
 
 const ACTION = { add: '加仓', hold: '不动', stop: '减仓' };
 const BADGE = { add: 'badge-add', hold: 'badge-hold', stop: 'badge-stop' };
@@ -48,8 +49,10 @@ function textNode(value) {
 export function decisionStatusCard(sig, options = {}) {
   const state = cardState(sig, options), meta = options.alert ? options.fund || sig : sig;
   const plan = !options.alert && sig.displayKind === 'plan';
-  const badges = [el('span', { class: 'badge ' + (plan ? 'badge-add' : BADGE[state.action] || 'badge-hold'), text: options.alert ? '提醒：' + state.market : plan ? '计划：' + state.market : '市场：' + state.market })];
-  if (state.constraint) badges.push(el('span', { class: 'badge badge-hold', text: state.constraint }));
+  const goldPlan = plan && !sig.unsupported && sig.strategyVersion === 'gold-monthly-dca-v1' && sig.marketState === 'monthly_dca';
+  const badges = [el('span', { class: 'badge ' + (plan ? 'badge-add' : BADGE[state.action] || 'badge-hold'), text: goldPlan ? '每月定投，手动执行' : options.alert ? '提醒：' + state.market : plan ? '计划：' + state.market : '市场：' + state.market })];
+  const constraints = goldPlan ? [...new Set([...(sig.constraints||[]).map(c=>BLOCK[c]||c),state.constraint].filter(Boolean))] : [state.constraint].filter(Boolean);
+  constraints.forEach(text=>badges.push(el('span', { class: 'badge badge-hold', text })));
   // ★ 涨跌取 meta 而非 sig：alert 记录（advice.js 的 alerts[]）只带 id/type/code/name/title/detail，
   //   本身没有 dayChange，只有经 options.fund 传进来的基金记录才有。用 sig 会让「持有提醒」行恒为「—」。
   const chg = meta.dayChange;
@@ -62,7 +65,8 @@ export function decisionStatusCard(sig, options = {}) {
       : el('span', { class: 'dec-chg ' + cls(chg), text: signPct(chg) }),
     el('div', { class: 'decision-status' }, badges),
   ]);
-  return el('div', { class: 'dec-card decision-card' }, [row]);
+  return el('div', { class: 'dec-card decision-card' }, [row,
+    ...(!options.alert ? [el('div', {class:'decision-explanation',text:buildDecisionExplanation(sig).summary})] : [])]);
 }
 
 // 详情段：数据核验、数据日期、交易限制三段，供复盘页折叠区展示。
@@ -71,18 +75,21 @@ export function decisionStatusCard(sig, options = {}) {
 export function decisionDetailSections(sig, options = {}) {
   const state = cardState(sig, options), meta = options.alert ? options.fund || sig : sig;
   const wrap = el('div', { class: 'dec-detail' });
+  const simpleGold = options.simpleGold && meta.strategyVersion === 'gold-monthly-dca-v1';
   const explanations = [sig.matrix?.dataErrorLabel, options.alert ? sig.action : null].map(textNode).filter(Boolean);
   if (sig.valuationAnchor?.degraded) explanations.push(textNode('估值锚缺失，当前判断已降级；详见自动档案。'));
   section(wrap, options.alert ? '持有提醒' : '判断说明', explanations);
-  const checks = sig.matrix?.evidenceChecks;
+  const checks = !simpleGold && sig.matrix?.evidenceChecks;
   if (checks) section(wrap, '数据核验', Object.entries({ identity: '官方份额身份', sampling: '日频采样完整性', continuity: '序列起点与策略连续性', calendar: '申购、估值日历与公告时点' })
     .map(([key, label]) => el('div', { class: 'decision-factor' }, [el('span', { text: label }), el('span', { text: checks[key] ? '已核验' : '待核验' })])));
   const dates = [['信号净值日', sig.signalNavDate || sig.matrix?.metrics?.navDate],
     ['最新净值日', sig.latestDate], ['申请日', sig.orderDate], ['PE日期', sig.peDate], ['计算时间', sig.computedAt]];
-  section(wrap, '数据日期', dates.filter(([, value]) => value).map(([label, value]) => textNode(label + '：' + value)));
-  if (sig.displayKind === 'plan') section(wrap, '计划说明', [textNode('每月定投，手动执行；不指定日期或金额，不跟踪完成度，也不自动下单。')]);
+  if (!simpleGold) section(wrap, '数据日期', dates.filter(([, value]) => value).map(([label, value]) => textNode(label + '：' + value)));
+  if (!simpleGold && sig.displayKind === 'plan') section(wrap, '计划说明', [textNode('每月定投，手动执行；不指定日期或金额，不跟踪完成度，也不自动下单。')]);
   const limits = [];
-  if (state.constraint) limits.push(textNode(state.constraint));
+  if (simpleGold) { /* The summary already shows the independent constraint badges. */ }
+  else if (meta.strategyVersion==='gold-monthly-dca-v1'&&meta.constraints?.length)meta.constraints.forEach(c=>limits.push(textNode(BLOCK[c]||c)));
+  else if (state.constraint) limits.push(textNode(state.constraint));
   else if (!options.alert && meta.executable === true) limits.push(textNode('当前交易约束允许执行。'));
   const status = meta.purchaseStatus;
   if (status) {
@@ -92,6 +99,6 @@ export function decisionDetailSections(sig, options = {}) {
   }
   if (meta.dailyLimit != null) limits.push(textNode('用户每日上限：' + meta.dailyLimit + '元'));
   section(wrap, '交易限制', limits.filter(Boolean));
-  if (!wrap.children.length) wrap.appendChild(textNode('本次未提供详细证据。'));
+  if (!simpleGold && !wrap.children.length) wrap.appendChild(textNode('本次未提供详细证据。'));
   return wrap;
 }

@@ -22,6 +22,7 @@ const strategies = {
   buildTechDecision: require('./strategies/tech'),
   buildActiveEquityDecision: require('./strategies/activeEquity'),
   buildGoldDualDecision: require('./strategies/goldDual'),
+  buildGoldMonthlyDecision: require('./strategies/goldMonthly'),
   buildGoldDecision: require('./strategies/gold')
 };
 const util = require('../lib/util');
@@ -31,6 +32,7 @@ const { isActiveEquityRoute } = require('../lib/activeEquityIdentity');
 const { isGoldRoute } = require('../lib/goldIdentity');
 
 const REGISTRY = {
+  goldMonthly: {builder:strategies.buildGoldMonthlyDecision,type:'goldMonthly',label:'黄金 · 每月定投',scope:'verified-own-share'},
   goldDual: {builder:strategies.buildGoldDualDecision,type:'goldDual',label:'国内黄金 · 双路径',scope:'verified-own-share'},
   activeEquity: { builder: strategies.buildActiveEquityDecision, type: 'activeEquity', label: '主动权益 · 买入判断', scope: 'verified-own-share' },
   broad:      { builder: strategies.buildCoreDecision,        type: 'broad',    label: '宽基',            caliber: 'cn', scope: 'category' },
@@ -64,7 +66,8 @@ function resolveRegistry(fund) {
   const baseCat = baseCategoryOf(fund.category);
   const view = (baseCat === fund.category) ? fund : Object.assign({}, fund, { category: baseCat });
   const cal = util.caliberOf(view);
-  if(isGoldRoute(fund))return {key:'goldDual',reg:REGISTRY.goldDual};
+  if(isGoldRoute(fund))return require('../lib/goldMonthlyIdentity').enabled()
+    ? {key:'goldMonthly',reg:REGISTRY.goldMonthly} : {key:'goldDual',reg:REGISTRY.goldDual};
   if(isActiveEquityRoute(fund))return {key:'activeEquity',reg:REGISTRY.activeEquity};
   if(isNasdaqRoute(fund))return {key:'broad:nasdaq',reg:REGISTRY['broad:nasdaq']};
   if (isHs300Route(fund))
