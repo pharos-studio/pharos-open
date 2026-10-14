@@ -11,12 +11,12 @@ function orderContext(t,e){if(!Number.isFinite(Number(t)))return {error:'invalid
   const c=e.calendars.subscription,before=Number(t)<Date.parse(current+'T15:00:00+08:00'),orderDate=c.dates.includes(current)&&before?current:c.dates.find(d=>d>current);
   return orderDate?{...common,orderDate,futureOrder:orderDate>current,calendarVersion:['work','valuation','subscription'].map(k=>e.calendars[k].version).join('|'),contractSource:e.contractSource}:{...common,error:'calendar_coverage_short'};}
 function selectKnown(economicRows,e,context){const out={rows:[],waitingForPublication:[],missingDates:[],segmentFrom:null};if(context?.error||!validContract(e))return {...out,error:context?.error||'fund_calendar_unverified'};
-  const c=e.calendars.valuation,view=compile(e);if(e.initializationFrom<c.from||context.asOfDate>c.to)return {...out,error:'calendar_coverage_short'};
+  const c=e.calendars.valuation,view=compile(e),workDates=new Set(e.calendars.work.dates);if(e.initializationFrom<c.from||context.asOfDate>c.to)return {...out,error:'calendar_coverage_short'};
   const byDate=new Map(economicRows.map(r=>[r.date,r]));if(!byDate.has(e.initializationFrom))return {...out,error:'initialization_history_missing'};
   for(const date of c.dates.filter(d=>d>=e.initializationFrom&&d<=context.asOfDate)){const knownAt=deadline(date,e,view);if(knownAt===null)return {...out,error:'calendar_coverage_short'};if(knownAt>context.knownAt){out.waitingForPublication.push(date);continue;}const r=byDate.get(date);
     // A gap resets only when its expected observation has become knowable.
     if(!r){out.missingDates.push(date);out.rows=[];out.segmentFrom=null;continue;}
-    if(String(r.navType)!=='1')return {...out,error:'daily_sampling_conflict'};
+    const navType=String(r.navType);if(!['0','1'].includes(navType)||(workDates.has(date)&&navType!=='1'))return {...out,error:'daily_sampling_conflict'};
     if(!out.rows.length)out.segmentFrom=date;out.rows.push({date,close:r.close,availableAt:new Date(knownAt).toISOString()});}
   if(!out.rows.length)return {...out,error:'no_known_nav'};
   if((Date.parse(context.asOfDate)-Date.parse(out.rows.at(-1).date))/86400000>14)return {...out,error:'stale_nav_over_14d'};return out;}
