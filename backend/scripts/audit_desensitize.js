@@ -86,6 +86,11 @@ const FORBIDDEN_PATHS = [
 // ★ 刻意用**白名单**而不是点名禁止某个文件：既不把私有文档的文件名写进公开仓，
 //   又能保证「以后新增一份 docs/*.md 忘了归类」时默认被拒绝（宁可吵，不可静默漏）。
 const DOCS_ALLOWED = new Set([
+  'docs/README.md',
+  'docs/使用指南.md',
+  'docs/策略说明与状态.md',
+  'docs/archive/README.md',
+  'docs/archive/open-source-design-plan.md',
   'docs/决策分配算法模型.md',
   'docs/前端设计系统.md',
   'docs/后端架构清单.md',
