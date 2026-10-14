@@ -210,14 +210,15 @@ console.log('\n【L2-2】已修正记录逐字段锁定（防漂回旧值）');
 console.log('\n【L3】前端接线不变量（public/js/pages/holdings/ 全模块并集源码级）');
 {
   /* 2026-09-23 结构调整：持仓页已从单文件拆到 pages/holdings/ 下，壳 holdings.js 只留 re-export。
-     这里把 13 个模块拼成同一份 src 继续断言 —— 判据不变，只是换了「从哪里读」。
-     （与 verify_landing_pages.js 同款做法） */
+     这里把 14 个模块拼成同一份 src 继续断言 —— 判据不变，只是换了「从哪里读」。
+     （与 verify_landing_pages.js 同款做法）
+     ★ 2026-10-14：远端新增 issues.js（基金问题浮出）却漏登记，闸门①当场红了 ⇒ 补登记。 */
   const HDIR = path.join(ROOT, 'public', 'js', 'pages', 'holdings');
   const HSHIM = path.join(ROOT, 'public', 'js', 'pages', 'holdings.js');
   const PARTS = [
     'addFundPanel.js', 'bulkAdd.js', 'constants.js', 'dailyLimit.js',
     'desktop.js', 'formShell.js', 'fundMeta.js', 'fundStore.js',
-    'index.js', 'mobile.js', 'preview.js', 'purchaseForm.js', 'state.js',
+    'index.js', 'issues.js', 'mobile.js', 'preview.js', 'purchaseForm.js', 'state.js',
   ];
   PARTS.forEach(function (f) {
     if (!fs.existsSync(path.join(HDIR, f))) { console.error('\u2717 缺少子模块：' + f); process.exit(1); }
@@ -239,7 +240,7 @@ console.log('\n【L3】前端接线不变量（public/js/pages/holdings/ 全模�
     shimCode.join(' | '));
 
   // ── 闸门③：子模块均非空 + 无单文件超 400 行（防拆分被反向撤销）──
-  t('13 个子模块均非空', PARTS.every(function (f) {
+  t('14 个子模块均非空', PARTS.every(function (f) {
     return fs.statSync(path.join(HDIR, f)).size > 200;
   }), '-');
   t('无子模块超过 400 行（防实现回流成巨型文件）', PARTS.every(function (f) {
