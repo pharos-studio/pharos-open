@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "methodVersion": "gold-monthly-identity-v1",
-  "releaseEnabled": false,
+  "releaseEnabled": true,
   "verifiedAt": "2026-10-12T21:37:58+08:00",
   "scope": "Independent current official code/share/CNY/domestic-gold/off-exchange-link identity snapshot only",
   "funds": [

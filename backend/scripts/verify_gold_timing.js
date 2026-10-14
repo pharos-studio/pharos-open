@@ -11,4 +11,7 @@ async function run(){let today='2026-09-24',memory={'timing_state.json':{version
     const closedState=JSON.stringify(memory['timing_state.json']);today='2026-10-06';assert.equal(staleAdd.matrix.releaseEnabled,true);assert.equal(T.onDecide({'000216':staleAdd}).opened,0);assert.equal(JSON.stringify(memory['timing_samples.json']),beforeDisabled);assert.equal(JSON.stringify(memory['timing_state.json']),closedState);
     L.releaseEnabled=true;today='2026-10-07';assert.equal(T.onDecide({'000216':staleAdd}).opened,1);const openState=JSON.stringify(memory['timing_state.json']),openSamples=JSON.stringify(memory['timing_samples.json']);L.releaseEnabled=false;today='2026-10-15';assert.equal(T.onDecide({'000216':staleHold}).closed,0);assert.equal(JSON.stringify(memory['timing_state.json']),openState);assert.equal(JSON.stringify(memory['timing_samples.json']),openSamples);
   }finally{L.releaseEnabled=enabled;T._forTest();}console.log('黄金 timing：待启用不采集、独立版本、基线/未知/拦截、购买及旧样本保护通过');}
-if(require.main===module)run().catch(e=>{console.error(e);process.exitCode=1;});module.exports={run};
+// Legacy collection is tested with the monthly route explicitly rolled back in memory.
+// Active-plan isolation is covered separately by verify_gold_monthly.
+async function verifyLegacyTiming(){const monthly=require('../data/goldMonthlyIdentity.json'),enabled=monthly.releaseEnabled;try{monthly.releaseEnabled=false;return await run();}finally{monthly.releaseEnabled=enabled;}}
+if(require.main===module)verifyLegacyTiming().catch(e=>{console.error(e);process.exitCode=1;});module.exports={run:verifyLegacyTiming};
