@@ -24,7 +24,8 @@
 // v43：政策可选正文节点不输出null，RSS降级保可靠ECB关联。
 // v44：每日黄金状态直接展开近期政策；每月页保留红利原流水。
 // v45：统一白话原因、双路径用户名称与条件性黄金政策解读。
-const CACHE = 'fund-board-v45';
+// v46：红利月定投卡片新增按需加载的独立加投参考。
+const CACHE = 'fund-board-v46';
 const SHELL = [
   '/', '/index.html', '/style.css',
   '/js/app.js', '/js/store.js', '/js/api.js', '/js/util.js',

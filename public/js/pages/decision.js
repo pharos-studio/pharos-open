@@ -1,7 +1,8 @@
-// 决策页：每只基金一行状态一览；证据、核验与交易约束明细在「每日复盘」页查看。
+// 决策页：状态一览；红利卡片可按需展开加投参考，其余证据在每日复盘查看。
 import * as store from '../store.js';
 import { el, escapeHtml, loadingHTML } from '../util.js';
 import { decisionStatusCard } from './decision-card.js';
+import { dividendReferenceSection } from './dividend-reference.js';
 
 export async function render(root) {
   root.innerHTML = '';
@@ -18,7 +19,12 @@ export async function render(root) {
       list.appendChild(el('div', { class: 'hint', text: '暂无判定结果。先去「我的基金」添加基金。' }));
       return;
     }
-    funds.forEach(f => list.appendChild(decisionStatusCard(f)));
+    funds.forEach(f => {
+      const card = decisionStatusCard(f);
+      if (f.strategyVersion === 'dividend-monthly-dca-v1' && f.displayKind === 'plan' &&
+          f.marketState === 'monthly_dca' && !f.unsupported) card.appendChild(dividendReferenceSection(f));
+      list.appendChild(card);
+    });
     const byCode = new Map(funds.map(f => [f.code, f]));
     alerts.forEach(a => list.appendChild(decisionStatusCard(a, { alert: true, fund: byCode.get(a.code) })));
   } catch (e) {

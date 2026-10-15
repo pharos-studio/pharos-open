@@ -625,6 +625,13 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
   .kpi-value { font-size: 22px; }
 }
 .decision-explanation{padding:0 16px 13px;line-height:1.7;color:var(--text);overflow-wrap:anywhere}
+.dividend-reference{margin:0 16px 14px;border-top:1px solid var(--gold-line);min-width:0}
+.dividend-reference>summary,.dividend-reference-formula>summary{cursor:pointer;color:var(--accent-soft);font-size:13px;padding:12px 0}
+.dividend-reference>summary:focus-visible,.dividend-reference-formula>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.dividend-reference-body{padding:4px 0;line-height:1.7;overflow-wrap:anywhere}
+.dividend-reference-copy{font-size:14px;margin:8px 0;color:var(--text)}
+.dividend-reference-dates,.dividend-reference-limits,.dividend-reference-note{margin:10px 0;font-size:12px}
+.dividend-reference-formula{margin-top:6px}
 .dec-card,.dec-body,.dec-overview,.decision-evidence{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
 .dec-sum{display:flex;flex-direction:column;align-items:stretch;gap:8px}
 .dec-sum .dec-name{white-space:normal;min-width:0;overflow-wrap:anywhere}

@@ -62,6 +62,7 @@ export const getState = () => request('/api/state');
 export const getRefresh = () => request('/api/refresh');
 export const getAdvice = (session = 'am') => request('/api/advice?session=' + session);
 export const getTiming = () => request('/api/timing'); // 买入时机复盘（只读统计；触发懒回填）
+export const getDividendReference = code => request('/api/dividend-reference?code=' + encodeURIComponent(code), { signal: AbortSignal.timeout(60000) });
 export const getGoldMacroPolicy = (options = {}) => request('/api/gold-macro-policy?' + new URLSearchParams(options), {signal:AbortSignal.timeout(60000)});
 export const getNavOnDate = (code, date) => request('/api/nav-on-date?code=' + encodeURIComponent(code) + '&date=' + encodeURIComponent(date));
 // 买入预览：口径 + 净值 + 份额一次算好，返回 { variants: { T, 'T+1' } } 两档（只读、免鉴权）。
