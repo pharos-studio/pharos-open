@@ -61,7 +61,7 @@ async function renderDaily(body, live, state, mobile, generation) {
   const funds=[...held,...(advice.funds||[]).filter(f=>!codes.has(f.code)).map(f=>({...f,_planned:true}))];
   if(!funds.length)panel.appendChild(el('div',{class:'hint',text:'暂无持仓基金。先去「持仓」页添加第一只。'}));
   funds.forEach(f=>{
-    const fc=byCode.get(f.code)||null, chg=fc?fc.dayChange:f.dayChange;
+    const fc=byCode.get(f.code)||(f.strategyScope==='record_only'||f.marketState==='record_only'?f:null), chg=fc?fc.dayChange:f.dayChange;
     const plan=fc?.displayKind==='plan'&&fc.marketState==='monthly_dca'&&!fc.unsupported;
     const state=fc?cardState(fc):{market:'暂无策略判断',action:null,constraint:null};
     const constraints=fc?[...new Set([...(fc.constraints||[]).map(reason=>cardState({...fc,blockedReason:reason}).constraint||reason),state.constraint].filter(Boolean))]:[];
@@ -75,7 +75,10 @@ async function renderDaily(body, live, state, mobile, generation) {
     ]);
     const det=el('details',{class:'dec-card','data-code':f.code,'data-strategy-version':fc?.strategyVersion||'legacy'},[summary]);
     const wrap=el('div',{class:'dec-body'});
-    if(fc?.strategyVersion==='gold-monthly-dca-v1') {
+    if(fc?.marketState==='record_only') {
+      wrap.appendChild(el('div',{class:'dec-raw',text:'仅记录持仓与收益，不生成新的策略信号。旧历史仍按原版本保留，不代表当前建议。'}));
+      wrap.appendChild(el('div',{class:'dec-raw',text:'净值 '+((fc.latestNav??f.latestNav)??'—')+' · 净值日 '+((fc.latestDate||f.latestDate)||'—')}));
+    } else if(fc?.strategyVersion==='gold-monthly-dca-v1') {
       wrap.appendChild(macroPolicySection({trigger:det}));
       wrap.appendChild(decisionDetailSections(fc,{simpleGold:true}));
     } else {
@@ -108,7 +111,7 @@ async function renderDaily(body, live, state, mobile, generation) {
       wrap.appendChild(evidence);
     }
     det.appendChild(wrap);
-    if(fc?.verdict==null&&!plan&&fc?.strategyVersion!=='gold-monthly-dca-v1')attachLazyDegraded(det,f.code,300);
+    if(fc?.verdict==null&&!plan&&fc?.marketState!=='record_only'&&fc?.strategyVersion!=='gold-monthly-dca-v1')attachLazyDegraded(det,f.code,300);
     panel.appendChild(det);
   });
   if(body._reviewGeneration===generation){body.innerHTML='';body.appendChild(panel);}

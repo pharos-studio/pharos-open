@@ -1,5 +1,5 @@
 'use strict';
-// 真实门禁抽检 —— 已核验条目必须被放行并产出真实判断，未核验条目必须被闸门挡住。
+// 历史资料门禁抽检（需另行联网授权）。旧公式只核对历史资料；实时入口始终仅记账。
 //
 // ★ 为什么单独成文件、归入联网分组：
 //   这段刻意用**真实台账**（已核验的基金专属日历与四道门）配**真实净值**，
@@ -9,7 +9,7 @@
 const {realGates}=require('./verify_active_equity_api');
 
 if(require.main===module)realGates().then(()=>{
-  console.log('主动权益真实门禁：已核验条目放行并出判断、未核验条目被闸门挡住且路由正确 通过');
+  console.log('主动权益历史资料门禁与旧公式核对；实时入口均保持仅记账 通过');
 }).catch(e=>{console.error(e);process.exitCode=1;});
 
 module.exports={realGates};

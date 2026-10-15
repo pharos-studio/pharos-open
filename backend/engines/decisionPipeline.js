@@ -4,6 +4,7 @@ const util = require('../lib/util');
 const { resolveRegistry, isPendingCategory } = require('./registry');
 const { synthesizeCompositeScore, compositeLabelOf, synthesizePositionLabel } = require('./scoring');
 const { purchaseStatusMeta, purchaseDecision, policyEligible, policyDecision } = require('./tradeConstraints');
+const scope = require('../lib/strategyScope');
 function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLimits, scoreConfig: AC, strategyConfig, now, today }) {
   allocation = Array.isArray(allocation) ? allocation : [];
   funds = Array.isArray(funds) ? funds : [];
@@ -12,6 +13,10 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
 
   // 1) 真实市场分 + 决策副作用（给 funds 挂 _dec / _marketScore，advice.js 决策卡复用，同源零漂移）
   funds.forEach(f => {
+    if (scope.isRecordOnly(f)) {
+      f._dec=scope.decision(f); f._marketScore=null; f._composite=null; f._purchaseStatusMeta=null; f._unsupported=null;
+      return;
+    }
     const resolved=resolveRegistry(f);
     const hit = f.profileState === 'needs_review' && !['broad300','nasdaq','activeEquity','goldDual','goldMonthly'].includes(resolved?.reg.type) ? null : resolved;
     if (!hit || hit.reg.enabled === false) {
@@ -62,6 +67,7 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
 
   // 2) eligible：policy=buy 且未暂停申购（仅 scoreMap.eligible 标注用，与分配无关）
   const eligible = funds.filter(f => {
+    if (scope.isRecordOnly(f)) return false;
     if (f._dec?.strategyVersion === 'gold-monthly-dca-v1') return false;
     if (f.category === 'dividend' && (!f._dec || f._dec.action == null)) return false;
     if (f._dec?.strategyVersion === 'hs300-dual-v1' && f._dec.action == null) return false;
@@ -77,6 +83,7 @@ function runDecisionPipeline({ allocation, policy, funds, valuationMap, dailyLim
   // 3) 综合分信号（前端决策页/复盘页兜底，唯一活输出）
   const scoreMap = {};
   funds.forEach(f => {
+    if (scope.isRecordOnly(f)) { scoreMap[f.code]={code:f.code,name:f.name,...scope.fields(f)}; return; }
     if(f._dec?.strategyVersion==='gold-monthly-dca-v1'){
       const dec=f._dec,m=dec.matrix,ps=f._purchaseStatusMeta||purchaseStatusMeta(f,now),limit=dailyLimits?.[f.code]??null;
       scoreMap[f.code]={code:f.code,name:f.name,marketScore:null,valueScore:null,momentumScore:null,

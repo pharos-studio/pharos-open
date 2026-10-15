@@ -11,28 +11,9 @@ function evidence(code='999801'){
   return e;
 }
 async function run(){
-  const identity=require('../services/activeEquityIdentity');
-  for(const code of ['016664','016665','012920']){
-    // 2026-10-08：四道门全部签署放行——采样、连续性、规则（含基金专属 qdiiCalendar）均已核验，
-    // 三只 QDII 正式出结果。这是门禁链走完，不是绕过。
-    const resolved=await identity.resolve(code);assert.equal(resolved.error,undefined,code+' 四门应已放行，实际：'+resolved.error);
-    const out=await D.forFund({code});
-    assert.equal(out.error,undefined,code+' 应出结果，实际：'+out.error);
-    assert.equal(out.context.error,undefined,code+' orderContext 不应有错：'+out.context.error);
-    assert.ok(out.result,'应产出策略结果');
-    for(const category of ['growth','broad','cycle','dividend']){
-      const fund={code,category,name:'masked',_activeEquityData:await D.forFund({code})};
-      assert.equal(R.resolveRegistry(fund).reg.type,'activeEquity');
-      // 放行后：四类 category 都应走完整通道并给出真实判断（QDII 线仅设买入通道，
-      // 落到 hold 时 executable=false 是**正确行为**，不是降级）。
-      for(const build of [B,tech]){const result=build(fund);
-        assert.ok(result.action,'应给出判断而非空值');
-        assert.equal(result.matrix.evidenceChecks.identity,true);
-        assert.equal(result.matrix.evidenceChecks.sampling,true);
-        assert.equal(result.matrix.evidenceChecks.continuity,true);
-        assert.equal(result.matrix.evidenceChecks.calendar,true,code+' 日历门应已放行');
-        if(result.action!=='buy')assert.equal(result.executable,false,code+' 非买入判断不应可执行');}
-    }
+  for(const code of ['016664','016665','012920'])for(const category of ['growth','broad','cycle','dividend']){
+    const fund={code,category,name:'masked'};assert.equal(R.resolveRegistry(fund).reg.type,'recordOnly');
+    for(const build of [B,tech]){const result=build(fund);assert.equal(result.action,null);assert.equal(result.marketState,'record_only');assert.equal(result.executable,false);}
   }
   assert.equal(I.isActiveEquityRoute({code:'999802',name:'合成主动混合（QDII）',fundType:'QDII-混合'}),true);
   for(const fund of [
@@ -40,13 +21,13 @@ async function run(){
     {code:'999804',name:'合成全球精选',market:'QDII',category:'broad',managementType:'active'},
     {code:'999805',name:'Synthetic global fund',market:'QDII',fundType:'QDII-equity',category:'dividend'},
     {code:'999807',name:'合成海外黄金资源混合（QDII）',market:'QDII',fundType:'混合型',category:'growth'},
-  ]){assert.equal(I.isActiveEquityRoute(fund),true);assert.equal(R.resolveRegistry(fund).reg.type,'activeEquity');assert.equal(tech(fund).action,null);assert.equal(tech(fund).unsupportedReason,'profile_unverified');}
+  ]){assert.equal(I.isActiveEquityRoute(fund),true);assert.equal(R.resolveRegistry(fund).reg.type,'recordOnly');assert.equal(tech(fund).action,null);assert.equal(tech(fund).unsupportedReason,null);}
   assert.equal(I.isActiveEquityRoute({code:'999806',name:'合成海外指数',market:'QDII',category:'growth',managementType:'active',fundType:'指数型'}),false);
   assert.equal(I.isActiveEquityRoute({code:'016452',name:'纳斯达克100指数（QDII）',fundType:'QDII-指数'}),false);
   assert.equal(I.isActiveEquityRoute({code:'016452',name:'masked',market:'QDII',category:'growth'}),false);
   assert.equal(R.resolveRegistry({code:'016452',name:'masked',market:'QDII',category:'growth'}).reg.type,'nasdaq');
   assert.equal(R.resolveRegistry({code:'999808',name:'合成纳斯达克100',indexCode:'NDX',market:'QDII',category:'growth'}).reg.type,'nasdaq');
-  assert.equal(R.resolveRegistry({code:'018391',name:'南方上海金ETF联接A',market:'A',category:'cycle'}).reg.type,'goldDual');
+  assert.equal(R.resolveRegistry({code:'018391',name:'南方上海金ETF联接A',market:'A',category:'cycle'}).reg.type,'goldMonthly');
   assert.equal(I.isActiveEquityRoute({name:'QDII债券基金'}),false);
   const e=evidence(),ctx=C.orderContext(F.NOW,e),raw=data(e.code),good=D.prepareInput(raw,e,ctx);
   assert(good.result,good.error);assert.equal(good.result.date,'2026-09-21');assert.equal(ctx.orderDate,'2026-09-24');
@@ -75,44 +56,43 @@ async function run(){
   const codes=['999801','999802'],writes=[];const shares=D.createService({now:()=>F.NOW,read:()=>null,write:(key)=>writes.push(key),fetchActions:async code=>data(code).actions,fetchText:async url=>{const u=new URL(url),snapshot=data(u.searchParams.get('fundCode')),n=Number(u.searchParams.get('pageIndex'));return JSON.stringify({TotalCount:snapshot.total,Data:{LSJZList:snapshot.history.slice((n-1)*20,n*20).map(r=>r.rawFields)}});}});
   const [a,c]=await Promise.all(codes.map(code=>shares.fetchFull(code)));assert.notEqual(a,c);assert.equal(a.code,codes[0]);assert.equal(c.code,codes[1]);assert.equal(writes.length,2);
   assert.equal(D.prepareInput(a,evidence(codes[1]),C.orderContext(F.NOW,evidence(codes[1]))).error,'nav_snapshot_integrity_invalid');
-  const publicDecision=B({code:e.code,_activeEquityData:good});assert(!JSON.stringify(publicDecision.matrix.identity).includes('availableAt'));assert.equal(publicDecision.matrix.evidenceChecks.calendar,true);
+  const historicalDecision=B.legacy({code:e.code,_activeEquityData:good});assert(!JSON.stringify(historicalDecision.matrix.identity).includes('availableAt'));assert.equal(historicalDecision.matrix.evidenceChecks.calendar,true);
   // Fixed synthetic trend path; exercise B through the same frozen signal function.
   const S=require('../lib/activeEquitySignal'),trend=Array.from({length:400},(_,i)=>({date:C.shift('2024-01-01',i),P:i<370?100+i*.1:i<397?137-(i-370)*.4:126.6+(i-396),dailyValid:true}));
   assert.equal(S.analyzeAt(trend,399).B.trigger,true);assert.equal(S.analyzeAt(F.rows(),319).A.trigger,true);
-  console.log('QDII：三份额路由、主动/指数边界、独立份额、日期与公告证据、完整性、时效和无回落通过');
+  console.log('QDII：实时仅记账；旧公式的独立份额、日期与公告证据、完整性纯计算保留通过');
 }
 function recap(){
   const code='016664',legacy={type:'buy',code,category:'growth',eventDate:'2026-09-01',amt:10,campaign:{id:'old-growth'},backfill:'done'},memory={'timing_state.json':{version:1,baselineDate:'2026-09-01',funds:{[code]:{lastVerdict:'add',campaignId:'old-growth'}}},'timing_samples.json':[legacy],'holdings.json':{funds:[{code,category:'growth',purchases:[{date:'2026-09-02',amount:10},{date:'2026-09-26',amount:20}]}]}};
   const old=JSON.stringify(legacy),oldCursor=JSON.stringify(memory['timing_state.json'].funds),purchases=JSON.stringify(memory['holdings.json']);let today='2026-09-24';
   T._forTest({today:()=>today,read:key=>memory[key],write:(key,value)=>memory[key]=structuredClone(value)});
-  try{assert.equal(T.buyScan(),0);const dec=kind=>({...B(F.fund(code,kind)),category:'growth',name:'合成QDII',blockedReason:null});T.onDecide({[code]:dec('waiting')});assert.equal(memory['timing_samples.json'].length,1);today='2026-09-25';T.onDecide({[code]:dec('candidate')});today='2026-09-28';assert.equal(T.buyScan(),1);const buy=memory['timing_samples.json'].at(-1);assert.equal(buy.strategyVersion,'active-equity-buy-v1');assert.match(buy.campaign.id,/active-equity-buy-v1/);assert.equal(JSON.stringify(memory['timing_samples.json'][0]),old);assert.equal(JSON.stringify(memory['timing_state.json'].funds),oldCursor);assert.equal(JSON.stringify(memory['holdings.json']),purchases);}finally{T._forTest();}
-  console.log('QDII复盘：首次基线、旧growth游标/样本/流水保留，新购买仅关联新版本通过');
+  try{assert.equal(T.buyScan(),0);const dec=kind=>({...B(F.fund(code,kind)),category:'growth',name:'合成QDII',blockedReason:null});T.onDecide({[code]:dec('waiting')});assert.equal(memory['timing_samples.json'].length,1);today='2026-09-25';T.onDecide({[code]:dec('candidate')});today='2026-09-28';assert.equal(T.buyScan(),0);assert.equal(memory['timing_samples.json'].length,1);assert.equal(JSON.stringify(memory['timing_samples.json'][0]),old);assert.equal(JSON.stringify(memory['timing_state.json'].funds),oldCursor);assert.equal(JSON.stringify(memory['holdings.json']),purchases);}finally{T._forTest();}
+  console.log('QDII复盘：旧growth游标/样本/流水保留，不新增策略购买样本通过');
 }
 async function api(){
   const config=require('../lib/config'),store=require('../lib/store'),util=require('../lib/util'),fetchers=require('../fetchers'),analysis=require('../engines/analysis'),advice=require('../engines/advice'),undo=[];
   const patch=(o,k,v)=>{const old=o[k];undo.push(()=>o[k]=old);o[k]=v;};
   const funds=['016664','016665','012920'].map(code=>({code,name:'合成QDII份额 '+code,market:'QDII',category:'growth',purchases:[],history:[{date:'2026-09-22',nav:1,dayChange:1}],purchaseStatus:{state:'open',updatedAt:F.NOW-1000}}));
   patch(Date,'now',()=>F.NOW);patch(config,'getConfig',()=>require('../../data/example/config.example.json'));patch(util,'todayStr',()=> '2026-09-24');patch(util,'shanghaiNow',()=>({ymd:'2026-09-24',hour:12,minute:0}));patch(util,'isTradingHours',()=>false);
-  patch(D,'forFund',D.createService({now:()=>F.NOW}).forFund);
+  patch(D,'forFund',async()=>{throw Error('record-only QDII invoked stopped history service');});
   patch(store,'readJSON',key=>key==='holdings.json'?{funds}:key==='categories.json'?require('../../data/example/categories.example.json'):{});
   for(const key of ['writeJSON','writeJSONSafe','writeDecisionHistory','appendSnapshot'])patch(store,key,()=>{throw Error('unexpected test write');});
   patch(fetchers,'fetchNavHistory',async code=>({history:funds.find(f=>f.code===code).history,failed:false}));patch(fetchers,'fetchValuation',async()=>{throw Error('QDII fell back to legacy valuation');});patch(fetchers,'fetchIndexPeHistory',async()=>{throw Error('QDII fell back to PE');});patch(fetchers,'fetchHoldings',async()=>({holdings:[],reportDate:null}));
   try{const built=await analysis.buildAnalysis();patch(analysis,'buildAnalysis',async()=>built);const out=await advice.buildAdvice('pm');
-    // 2026-10-08：日历门放行后，pm 组合里这三只 QDII 全部产出真实判断（hold），
-    // 不再挂 fund_calendar_unverified 降级视图。组合总数也随之从 3 升到 9。
+    // Even complete historical evidence does not re-enable the current strategy.
     const qdii=out.funds.filter(f=>['016664','016665','012920'].includes(f.code));
     assert.equal(qdii.length,3,'pm 组合应含三只 QDII');
     for(const f of qdii){
-      assert.equal(f.strategyVersion,'active-equity-buy-v1');
+      assert.equal(f.strategyVersion,'long-term-accumulation-v1');
       assert.equal(f.matrix.dataError,null,f.code+' 不应再有数据错误');
-      assert.ok(f.verdict,f.code+' 应给出判断');
+      assert.equal(f.verdict,null);assert.equal(f.marketState,'record_only');
       // QDII 线只设买入通道：非 buy 结论时不得可执行，评分位也不应被填
       if(f.verdict!=='buy')assert.equal(f.executable,false);
-      assert.ok((f.factors||[]).length>0,f.code+' 判据表应有内容');
+      assert.equal((f.factors||[]).length,0);
       // 市场判断已产生，组合层面的打分也应同步可见
       assert.equal(f.marketVerdict,f.verdict,f.code+' 市场判断与组合判断应一致');
     }
-    assert.equal(built.plan.scoreMap['016664'].marketVerdict,'hold');
+    assert.equal(built.plan.scoreMap['016664'].marketVerdict,null);
   }finally{undo.reverse().forEach(fn=>fn());}
   console.log('QDII正式分析/建议：三个旧growth份额走主动权益、空判断同源、无评分/旧估值/写入通过');
 }

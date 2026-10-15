@@ -70,6 +70,7 @@ export function addFundPanel() {
     msg.textContent = !category.value ? '未识别到基础类别，请从下拉中选择。'
       : d.confirmations.proxy ? '代理指数需确认后启用；不勾选则保存为不估算。'
       : '已自动选好基础分类，可直接添加；猜错可在此下拉或持仓页「重新识别」中修改。盘中估算仅为近似值。';
+    if (d.strategyScope === 'record_only') msg.textContent += ' 此基金仅记账：资产与收益保留，不生成新的策略信号；修改记账分类不会开启策略。';
     addBtn.disabled = hasFund(d.code);
   };
   const lookupCode = async value => {
@@ -83,7 +84,7 @@ export function addFundPanel() {
       if (ticket !== seq || code.value.trim() !== value) return;
       if (!d.found || !d.autoProfile) { msg.textContent = '没有找到该基金档案'; return; }
       show(d);
-      showDegraded(value, ticket);   // 未核验 → 给净值事实；已核验 → 后端回 fund_verified，这里不画
+      if (d.strategyScope !== 'record_only') showDegraded(value, ticket);
     } catch (e) {
       if (ticket === seq) msg.textContent = '查询失败：' + e.message;
     }

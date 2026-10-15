@@ -21,6 +21,14 @@ try {
     const label = [c.type, c.kind, c.scenario, c.variant].join('/');
     // Intentional rule replacement only. Non-HS300 immutable expectations are never regenerated.
     if(c.kind==='hs300') continue;
+    if(c.kind==='tech') {
+      const fund=fixture(c.kind,c.scenario ?? 2), live=decisions.buildTechDecision(fund,{},baseline.config);
+      assert.equal(live.marketState,'record_only');assert.equal(live.action,null);assert.equal(live.executable,false);
+      // Keep comparing the historical formula against its immutable capture.
+      if(c.type==='builder')assert.deepEqual(wire(require('../engines/strategies/tech').legacy(fund,{},c.useDefaults?{}:baseline.config)),c.expected,label+'/historical formula');
+      else if(c.type==='allocation') {const result=allocation.computeAllocation([],c.policy,[fund],0,0,{},c.limits);const sm=result.scoreMap[fund.code];assert.equal(sm.verdict,null);assert.equal(sm.marketScore,null);assert.equal(sm.eligible,false);}
+      checked++;continue;
+    }
     if (c.type === 'builder') {
       const fund = fixture(c.kind, c.scenario);
       assert.deepEqual(wire(builders[c.kind](fund, {}, c.useDefaults ? {} : baseline.config)), c.expected, label);
@@ -45,7 +53,10 @@ try {
     assert.equal(decisions.buildBroadGlobalDecision(misplaced,{},{}).action,null);
   }
   for (const c of require('./fixtures/strategy-generic.json').cases) {
-    assert.deepEqual(wire(decisions.buildFundDecision(c.signal, c.params)), c.expected, 'frozen generic/' + c.params.cheapBy);
+    if(c.params.cheapBy==='techDip') {
+      assert.deepEqual(wire(require('../engines/strategies/tech').buildSignalDecision(c.signal,c.params)),c.expected,'historical frozen techDip');
+      assert.equal(decisions.buildFundDecision(c.signal,c.params).marketState,'record_only');
+    } else assert.deepEqual(wire(decisions.buildFundDecision(c.signal, c.params)), c.expected, 'frozen generic/' + c.params.cheapBy);
     checked++;
   }
   // Former low-level consumers must receive exactly the strategy-owned result.
@@ -55,7 +66,8 @@ try {
     for (const pePercentile of [null, 25, 30, 70, 80, 85]) {
       const src = { pePercentile, drawdown: -20, stopFall: true, goldenState: true,
         trendWeak: true, erp: 0.02, pricePercentile: null, cheap: true, recent20dChange: 6 };
-      assert.deepEqual(decisions.buildFundDecision(src, { cheapBy }), builder(src, { cheapBy }));
+      if(cheapBy==='techDip')assert.equal(decisions.buildFundDecision(src,{cheapBy}).action,null);
+      else assert.deepEqual(decisions.buildFundDecision(src, { cheapBy }), builder(src, { cheapBy }));
     }
   }
 } finally {

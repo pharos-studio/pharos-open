@@ -14,11 +14,14 @@ function ok(name, cond) {
   else { fail++; console.log('  ✗ FAIL: ' + name); }
 }
 function mk(code, action, extra) {
-  const base = { _type: 'tech', dipReady: true, goldenState: false, stopFall: true, drawdown: -18, gate: 'pass' };
+  const base = { _type: 'broad', peZone:'cheap', erpZone:'high', dipReady: true, goldenState: false, stopFall: true, drawdown: -18, gate: 'pass' };
   const m = Object.assign(base, (extra && extra.matrix) || {});
-  return { code, action, name: code + '基', category: extra && extra.category ? extra.category : 'tech', matrix: m };
+  return { code, action, name: code + '基', category: extra && extra.category ? extra.category : 'broad', matrix: m };
 }
 
+const beforeStopped=JSON.stringify(mem);
+timing.onDecide({'STOPPED':mk('STOPPED','add',{category:'growth',matrix:{_type:'tech'}})},cfg);
+ok('旧主题输入不建立新游标或样本',JSON.stringify(mem)===beforeStopped);
 console.log('== 首采日基线（不记样本）==');
 let r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'add') }, cfg);
 ok('首采日返回 baseline=true', r.baseline === true && r.opened === 0);
@@ -67,14 +70,14 @@ ok('新战役 id 用新日期', timing.loadSamples()[2].campaign.id === 'DEMO01#
 
 console.log('== 多基金互不干扰 ==');
 NOW = '2026-09-21';
-r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold'), '008163': mk('008163', 'add', { category: 'growth', matrix: { _type: 'tech', dipReady: true, goldenState: false, gate: 'pass' } }) }, cfg);
+r = timing.onDecide({ 'DEMO01': mk('DEMO01', 'hold'), '008163': mk('008163', 'add', { category: 'broad', matrix: { _type: 'broad', dipReady: true, goldenState: false, gate: 'pass' } }) }, cfg);
 const s3 = timing.loadSamples();
 ok('008163 独立开战役', s3.some(x => x.code === '008163' && x.type === 'advice-open'));
 
 console.log('== buyScan 幂等 + 战役匹配 + 历史跳过 ==');
 mem['holdings.json'] = {
   funds: [
-    { code: 'DEMO01', name: 'A基', category: 'growth',
+    { code: 'DEMO01', name: 'A基', category: 'broad',
       purchases: [
         { date: '2026-09-25', amount: 100 },   // 落在活跃战役 09-20 内
         { date: '2026-09-15', amount: 200 },   // 战役窗口外（早于 09-20 open）
@@ -100,7 +103,7 @@ ok('openLedger 未回填时 rate=null、total=3', st.openLedger.total === 3 && s
 ok('closeLedger 未回填时 earlyRate=null、total=1', st.closeLedger.total === 1 && st.closeLedger.n === 0 && st.closeLedger.earlyRate === null);
 ok('候选空（未回填，命中率不可判）', Array.isArray(st.candidates) && st.candidates.length === 0);
 ok('rows.buy 战役内偏差 = 09-25 − 09-20 = 5', st.rows.buy.some(b => b.code === 'DEMO01' && b.date === '2026-09-25' && b.deviation === 5));
-ok('rows.close 含 open path join 标签', st.rows.close.length === 1 && st.rows.close[0].openPathLabel.indexOf('深跌') >= 0);
+ok('rows.close 含 open path join 标签', st.rows.close.length === 1 && st.rows.close[0].openPathLabel.indexOf('PE便宜') >= 0);
 ok('sampling note 带访问驱动声明', st.sampling.mode.indexOf('访问驱动') >= 0);
 
 console.log('== 通用 legacy 漏访场景（非黄金合成 DEMO-CYCLE-GAP，放在最后防干扰计数）==');

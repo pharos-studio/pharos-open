@@ -30,8 +30,10 @@ const { isHs300Route } = require('../lib/hs300Identity');
 const { isNasdaqRoute } = require('../lib/nasdaqIdentity');
 const { isActiveEquityRoute } = require('../lib/activeEquityIdentity');
 const { isGoldRoute } = require('../lib/goldIdentity');
+const scope = require('../lib/strategyScope');
 
 const REGISTRY = {
+  recordOnly: {builder:scope.decision,type:'recordOnly',label:'仅记账',scope:'identity'},
   goldMonthly: {builder:strategies.buildGoldMonthlyDecision,type:'goldMonthly',label:'黄金 · 每月定投',scope:'verified-own-share'},
   goldDual: {builder:strategies.buildGoldDualDecision,type:'goldDual',label:'国内黄金 · 双路径',scope:'verified-own-share'},
   activeEquity: { builder: strategies.buildActiveEquityDecision, type: 'activeEquity', label: '主动权益 · 买入判断', scope: 'verified-own-share' },
@@ -60,6 +62,7 @@ function baseCategoryOf(cat) { return cat; }
 //   ③ 按 category 命中（旧数据无 caliber → caliberOf 默认 broad='cn' → 命中 broad，行为与改动前逐位一致）
 function resolveRegistry(fund) {
   if (!fund) return null;
+  if (scope.isRecordOnly(fund)) return {key:'recordOnly',reg:REGISTRY.recordOnly};
   const byCode = REGISTRY[fund.code];
   if (byCode) return { key: fund.code, reg: byCode };
   // 仅系统基础类别可以命中；悬空旧分类会明确进入未归类状态。

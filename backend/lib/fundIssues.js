@@ -40,6 +40,7 @@ function makeIssue(fund, type, reasonCode, detail, nextStep) {
 
 function issueForFund(fund) {
   if (!fund || !fund.code) return null;
+  if (require('./strategyScope').isRecordOnly(fund)) return null;
   const reason = fund.unsupportedReason || fund.matrix?.dataError || null;
   if (reason === 'needs_review' || reason === 'unknown') {
     return makeIssue(fund, 'category', reason, '基金类别尚未识别。', '在基金详情中选择基础类别并重新识别。');

@@ -24,6 +24,7 @@ function alertAction(sig) {
   return /减仓|清理/.test(t) ? 'stop' : t.includes('加仓') ? 'add' : 'hold';
 }
 export function cardState(sig, { alert = false, fund } = {}) {
+  if (sig.marketState === 'record_only' || sig.strategyScope === 'record_only') return {action:null,market:'仅记账',constraint:null};
   const action = alert ? alertAction(sig) : Object.hasOwn(sig, 'marketVerdict') ? sig.marketVerdict : sig.verdict;
   const market = alert ? ACTION[action] : sig.unsupported
     ? FAILURE[sig.unsupportedReason] || sig.marketStateLabel || '未归类'
@@ -75,6 +76,10 @@ export function decisionStatusCard(sig, options = {}) {
 export function decisionDetailSections(sig, options = {}) {
   const state = cardState(sig, options), meta = options.alert ? options.fund || sig : sig;
   const wrap = el('div', { class: 'dec-detail' });
+  if (meta.marketState === 'record_only' || meta.strategyScope === 'record_only') {
+    wrap.appendChild(textNode('仅记录持仓与收益；不生成新的策略信号，旧历史按原版本保留。'));
+    return wrap;
+  }
   const simpleGold = options.simpleGold && meta.strategyVersion === 'gold-monthly-dca-v1';
   const explanations = [sig.matrix?.dataErrorLabel, options.alert ? sig.action : null].map(textNode).filter(Boolean);
   if (sig.valuationAnchor?.degraded) explanations.push(textNode('估值锚缺失，当前判断已降级；详见自动档案。'));

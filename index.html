@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pharos · 跑在你自己电脑上的基金看板</title>
-<meta name="description" content="Pharos：本地运行的基金投资看板。不预测涨跌、不替你决定金额，只把「现在贵不贵、能不能加」用可追溯的口径算清楚。零依赖、数据不出本机、MIT 开源。">
+<meta name="description" content="Pharos：本地运行的基金积累看板。记录投入、资产与收益，保留宽基、红利和黄金策略参考；主题行业与主动权益仅记账。零依赖、MIT 开源，不承诺本金或收益。">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0A1020">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Pharos · 跑在你自己电脑上的基金看板">
-<meta property="og:description" content="灯塔标示方位、提示暗礁，但它从不替你开船。不预测涨跌、不替你决定金额，只把「现在贵不贵、能不能加」用可追溯的口径算清楚。">
+<meta property="og:description" content="灯塔标示方位、提示暗礁，但它从不替你开船。记录长期积累，策略只供参考，金额与交易由你决定；不承诺本金或收益。">
 <meta property="og:locale" content="zh_CN">
 <link rel="icon" href="public/icon.svg">
 <link rel="stylesheet" href="landing/base.css">
@@ -58,10 +58,10 @@
   <div class="wrap grid">
     <div class="reveal">
       <p class="eyebrow">PHAROS · 跑在你自己电脑上</p>
-      <h1>你的基金看板</h1>
-      <p class="sub">它只算「现在贵不贵」，不猜明天涨不涨。</p>
+      <h1>记录你的长期积累</h1>
+      <p class="sub">看清投入、资产和收益，让积累有据可查。</p>
       <p class="quote">灯塔标示方位、提示暗礁，<br>但它从不替你开船。</p>
-      <p class="lede">不预测涨跌、不替你决定金额，只把「<b>现在贵不贵、能不能加</b>」用可追溯的口径算清楚 —— 数据全部留在本机，不上传、不注册、不联网存储。</p>
+      <p class="lede">为长期积累与复利目标提供参考：<b>宽基策略、红利与黄金月计划</b>照常保留，主题行业与主动权益仅记账。金额、节奏和交易由你决定，不承诺本金或收益；账户数据保存在本机。</p>
       <div class="btns">
         <a class="btn btn-p" href="#start">3 步开始使用</a>
         <a class="btn btn-s" href="https://github.com/pharos-studio/pharos-open">查看源码</a>
@@ -194,9 +194,9 @@
         <div class="n">概览 · 决策 · 持仓 · 配置 · 复盘 · 设置</div>
       </div>
       <div class="stat">
-        <div class="v tnum">5</div>
-        <div class="l">套估值口径</div>
-        <div class="n">按资产类别换尺子，不拿一套 PE 打天下</div>
+        <div class="v">长期</div>
+        <div class="l">积累与复盘</div>
+        <div class="n">策略参考与仅记账资产分别展示</div>
       </div>
       <div class="stat">
         <div class="v tnum">100%</div>
@@ -234,7 +234,7 @@
       <div class="stance">
         <div class="no">04</div>
         <h3>每个结论都能追溯</h3>
-        <p>决策卡写清触发路径与具体数值；复盘页有<b>上周对比</b>；算法阈值来自真实历史回测，不是拍脑袋。</p>
+        <p>决策页给出状态与原因，复盘页按需展开依据；月计划与每日买点分开，历史研究不代表未来收益。</p>
       </div>
     </div>
   </div>
@@ -274,32 +274,29 @@
       <h2>现在能不能加</h2>
     </header>
     <div class="feat reveal">
-          <p class="cap"><b>决策</b>：每天一眼看完「哪些能加、哪些别动，以及为什么」。</p>
-          <p class="ask">决定今天要不要出手、看哪几只。</p>
+          <p class="cap"><b>策略参考</b>：查看月计划、市场状态与独立交易限制。</p>
+          <p class="ask">长期积累，由你决定节奏与金额。</p>
           <div class="panel">
-            <div class="panel-head"><span class="t">每日决策信号</span><span class="r tnum">示意</span></div>
+            <div class="panel-head"><span class="t">长期积累 · 策略参考</span><span class="r tnum">示意</span></div>
             <div class="sig">
-              <span class="n">某宽基 / 红利类基金（示意）</span>
-              <span class="s">估58 · 动42</span>
-              <span class="badge b-add">加仓</span>
-              <span class="badge b-hold tnum">61.3</span>
+              <span class="n">某红利指数基金（示意）</span>
+              <span class="s">独立加投参考可展开</span>
+              <span class="badge b-add">每月定投，手动执行</span>
             </div>
             <div class="sig hold">
-              <span class="n">某主动成长类基金（示意）</span>
-              <span class="s">估71 · 动33</span>
-              <span class="badge b-hold">不动</span>
-              <span class="badge b-hold tnum">52.8</span>
+              <span class="n">某黄金ETF联接（示意）</span>
+              <span class="s">复盘展开政策阅读</span>
+              <span class="badge b-hold">每月定投，手动执行</span>
             </div>
             <div class="sig hold">
               <span class="n">某只暂停申购的 QDII（示意）</span>
               <span class="s">暂停申购</span>
-              <span class="badge b-stop">一票否决</span>
-              <span class="badge b-hold tnum">0</span>
+              <span class="badge b-hold">交易限制另列</span>
             </div>
             <ul class="legend">
-              <li><b>①</b><span>徽章先看硬约束：<b>暂停申购 / PE 总闸拦截</b>会直接把综合分打成 0，不是打折<span class="mk">1</span></span></li>
-              <li><b>②</b><span>综合分 0~100 = 估值分 V（便宜度）+ 动量分 M（趋势强度），「估X · 动Y」让你看清分数从哪来<span class="mk">2</span></span></li>
-              <li><b>③</b><span>这里只回答「能不能加」—— <b>买多少、什么时候买，看板不给建议</b><span class="mk">3</span></span></li>
+              <li><b>①</b><span>市场状态、月计划与<b>暂停申购和限额</b>分别展示，候选不等于可以申购。</span></li>
+              <li><b>②</b><span>主题行业和主动权益<b>仅记账</b>；持仓与历史保留，不生成新策略信号。</span></li>
+              <li><b>③</b><span>月计划不指定日期和金额；低位参考不保证买在低点，是否执行由你决定。</span></li>
             </ul>
           </div>
         </div>
@@ -362,7 +359,7 @@
               </div>
             </div>
             <ul class="legend">
-              <li><b>①</b><span>环形图按<b>策略线</b>分块（宽基 / 红利·低波 / 主题·行业 / 商品·对冲 / 债券 / 现金），显示当前实际占比；类别可以自己增删<span class="mk">1</span></span></li>
+              <li><b>①</b><span>环形图按<b>记账类别</b>分块（宽基 / 红利·低波 / 主题·行业 / 商品·对冲 / 债券 / 现金）；仅记账基金也计入资产与占比。</span></li>
               <li><b>②</b><span>穿透分析：把成长基金的季报「前十大持仓」摊开成旭日图，看到赛道层面的真实暴露<span class="mk">2</span></span></li>
               <li><b>③</b><span>页面常驻「披露覆盖 X%」—— <b>如实告诉你哪些没被穿透到</b>，不把已披露部分说成全部<span class="mk">3</span></span></li>
             </ul>
@@ -385,16 +382,16 @@
             <table class="mini">
               <thead><tr><th>维度</th><th>值</th><th>状态</th><th>上周</th></tr></thead>
               <tbody>
-                <tr><td>趋势回踩</td><td>达标</td><td><span class="dot d-mid"></span></td><td class="muted">↔ 上周 中性</td></tr>
-                <tr><td>股息率</td><td class="tnum">5.10%</td><td><span class="dot d-mid"></span></td><td class="muted">—</td></tr>
-                <tr><td>MA250</td><td>年线下方</td><td><span class="dot d-cheap"></span></td><td class="muted">↔ 上周 年线下方</td></tr>
+                <tr><td>红利月计划</td><td>每月定投</td><td>手动执行</td><td class="muted">不指定日期与金额</td></tr>
+                <tr><td>黄金政策</td><td>近期官方资料</td><td>阅读参考</td><td class="muted">按需展开</td></tr>
+                <tr><td>主题 / 主动权益</td><td>仅记账</td><td>历史保留</td><td class="muted">不生成新策略信号</td></tr>
               </tbody>
             </table>
-            <p class="small" style="margin:12px 0 0">结论：<b style="color:var(--text)">加仓</b> · 趋势回踩条件已满足；股息率 5.10% 仅供参考，不参与判断（展示样例，非实时建议） &nbsp;<span class="muted">↔ 上周 不动</span></p>
+            <p class="small" style="margin:12px 0 0">每月定投由你决定是否执行；政策与加投参考独立阅读，不自动改变计划（展示样例，非实时建议）。</p>
             <ul class="legend">
-              <li><b>①</b><span>每只基金拆成「信号理由 / 原始数据 / 估值信号表 / 结论」四段，可展开逐条看<span class="mk">1</span></span></li>
-              <li><b>②</b><span>信号表自带<b>「上周」列</b>，结论区标出「变化」—— 能看出判断是在什么时候转向的<span class="mk">2</span></span></li>
-              <li><b>③</b><span>综合分是 0 的时候会说明来源：「PE 总闸拦截」「暂停申购」还是「部分维度数据缺失」<span class="mk">3</span></span></li>
+              <li><b>①</b><span>每日复盘先说明当前情况与原因，指标、日期和旧版依据按需展开。</span></li>
+              <li><b>②</b><span>每月按手动录入流水汇总红利购买记录，不推断预算或定投完成度。</span></li>
+              <li><b>③</b><span>旧版记录按原版本解释，不与当前状态混用，也不表示停用策略重新开放。</span></li>
             </ul>
           </div>
         </div>
@@ -438,38 +435,38 @@
     <header class="sec-head reveal">
       <p class="eyebrow">算法</p>
       <h2>不同的资产，用不同的尺子</h2>
-      <p class="lede">「贵不贵」对红利、成长、黄金不是一回事。拿一套 PE 打天下，只会得到一个看着正常的错结论 —— 所以这里按资产类别换尺子，每套阈值都来自真实历史回测。</p>
+      <p class="lede">保留常见宽基与红利、黄金策略参考，不限固定四类。主题行业与主动权益只记资产；月计划与价格条件各按原规则运行，历史结果不保证未来收益。</p>
     </header>
 
     <table class="ruler reveal">
-      <caption class="small" style="text-align:left;padding:0 0 12px">五套口径的适用范围：<b style="color:var(--muted)">买之前先看「它用什么尺子」，就知道自己那只该挂哪条线。</b></caption>
+      <caption class="small" style="text-align:left;padding:0 0 12px">当前范围：<b style="color:var(--muted)">基金身份与记账分类分别判断，修改类别不能跳过策略限制。</b></caption>
       <thead>
         <tr><th>资产类别</th><th>用什么尺子量「贵不贵」</th><th>数据来自</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td>A 股宽基</td>
+          <td>普通 A 股宽基</td>
           <td>该指数<b style="color:var(--text)">自己的</b> PE 分位 × 中债 10 年 ERP（股债利差）</td>
           <td>乐咕指数估值 + 东财国债收益率</td>
         </tr>
         <tr>
-          <td>海外宽基</td>
+          <td>普通海外宽基</td>
           <td>滚动 156 周 PE 分位 <b style="color:var(--text)">∨</b> PE 回撤，× 美债 10 年</td>
           <td>蛋卷 PE 历史序列 + 东财美债收益率</td>
         </tr>
         <tr>
           <td>红利 · 低波</td>
-          <td>复权净值趋势回踩 + BIAS250 + 已完成周 RSI14<span class="dim"> — 仅适用国内红利指数类</span></td>
-          <td>完整复权净值；股息率仅参考</td>
+          <td>合格国内红利指数类每月定投；加投参考独立展开<span class="dim"> — 普通红利与红利低波均保留</span></td>
+          <td>官方身份；独立参考使用复权净值</td>
         </tr>
         <tr>
-          <td>主题 · 行业</td>
-          <td>只看基金自身净值：深度回撤 + 止跌确认 + 双均线位置<span class="dim"> — 不看行业、也不需要指数</span></td>
-          <td>东财历史净值</td>
+          <td>主题行业 / 主动权益</td>
+          <td>仅记账：持仓、收益、占比、流水和旧历史保留，不生成新策略信号</td>
+          <td>账户净值与已披露持仓</td>
         </tr>
         <tr>
-          <td>商品 · 对冲</td>
-          <td>自身净值的 250 日价格分位 + 三重均线位置<span class="dim"> — 不绑黄金这一种标的</span></td>
+          <td>黄金 / 其他商品</td>
+          <td>合格黄金ETF联接每月定投与政策阅读；其他商品保留原价格分位与趋势策略</td>
           <td>东财历史净值</td>
         </tr>
         <tr>
@@ -480,10 +477,11 @@
       </tbody>
     </table>
 
+    <p class="small">沪深300与纳指100专线使用基金复权净值及各自的PE、价格条件，ERP只作参考；详见<a href="docs/策略说明与状态.md">当前策略说明</a>。普通宽基仍沿用原策略。</p>
     <div class="two reveal">
       <figure>
         <img src="docs/img/four-engines-flow.svg" alt="历史附图：原五套算法规则，外观已统一；含已停用旧红利规则，未覆盖沪深300专线">
-        <figcaption>历史规则对照，仅统一外观；旧股息率规则已停用，当前红利趋势规则见独立图，当前细节见独立图</figcaption>
+        <figcaption>历史规则图：主题行业及主动权益已仅记账，旧红利规则已停用；现行范围以策略说明为准</figcaption>
       </figure>
       <figure>
         <img src="docs/img/decision-flow.svg" alt="决策状态输出目标结构：输入、正式策略路由、市场证据、交易约束、状态展示；尚未全量实现">

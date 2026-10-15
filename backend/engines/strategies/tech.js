@@ -71,7 +71,9 @@ function buildTechDecision(fund, valuationMap, config) {
   });
 }
 
-module.exports = buildTechDecision;
+// The old formula is retained explicitly for historical verification only.
+module.exports = function(fund) { return require('../../lib/strategyScope').decision(fund,'theme_sector'); };
+module.exports.legacy = buildTechDecision;
 
 
 // Low-level legacy signal contract, owned by this strategy.

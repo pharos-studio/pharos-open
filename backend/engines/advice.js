@@ -16,6 +16,7 @@ const util = require('../lib/util');
 const config = require('../lib/config');
 const timing = require('./timing'); // 买入时机复盘：战役状态机采集（am-only，不进校准统计的用户买入 = buyScan 处理）
 const fundIssues = require('../lib/fundIssues');
+const strategyScope = require('../lib/strategyScope');
 
 // factors 状态三态 helper：cheap=绿(偏便宜/有利买入) / expensive=红(偏贵/不利买入) / neutral=灰(信息项不判好坏)
 function maStatus(z) { return z === 'below' ? 'cheap' : z === 'above' ? 'expensive' : 'neutral'; }
@@ -257,7 +258,7 @@ async function buildAdvice(session = 'am') {
   const sig = cfg.signals || {};
   const policy = cfg.categoryPolicy || {};
   const dailyLimits = cfg.dailyLimits || {}; // 每日限购（0=暂停申购，null=无上限）
-  const thresholds = sig.fundThresholds || {};
+  const thresholds = Object.fromEntries(Object.entries(sig.fundThresholds || {}).filter(([code])=>!strategyScope.isRecordOnly(a.funds.find(f=>f.code===code))));
   const cooldownDays = sig.cooldownDays == null ? 7 : sig.cooldownDays;
   const today = util.todayStr();
   // 统一引擎结果（buildAnalysis 已算好挂在 a.plan 且 _dec/_marketScore 已挂在 a.funds[i]，见计划 §七 同引用查证）
@@ -296,7 +297,7 @@ async function buildAdvice(session = 'am') {
   }
   // 冻结类别的深度回撤 → 只做纪律提醒，禁止任何买入措辞
   const frozenDeep = a.funds
-    .filter(f => (policy[util.engineCategoryToBucket(f.category)] || 'buy') === 'frozen' && f.currentValue > 0)
+    .filter(f => !strategyScope.isRecordOnly(f) && (policy[util.engineCategoryToBucket(f.category)] || 'buy') === 'frozen' && f.currentValue > 0)
     .map(f => ({ f, dd: util.drawdownFromHigh(f.history.slice(0, 60)) }))
     .filter(x => x.dd != null && thresholds[x.f.code] != null && x.dd <= thresholds[x.f.code]);
   if (frozenDeep.length) {
@@ -326,6 +327,15 @@ async function buildAdvice(session = 'am') {
   const decMap = {}; // 买入时机复盘：am 会话收集全量基金当日判定（code → action/matrix/name/category），matrix 需带 _type
 
   for (const f of a.funds) {
+    if (strategyScope.isRecordOnly(f)) {
+      funds.push({code:f.code,name:f.name,category:f.category,caliber:util.caliberOf(f)||null,
+        categoryName:'仅记账',...strategyScope.fields(f),title:f.name+' · 仅记账',
+        detail:'主题行业与主动权益仅记录资产和收益，不生成新的策略信号；原有历史保留。',
+        conclusion:'仅记账；持仓、收益、占比和历史照常保留。',factors:[],matrix:strategyScope.decision(f).matrix,
+        currentValue:f.currentValue,latestNav:f.latestNav,latestDate:f.latestDate,
+        dayChange:f.dayChange == null?null:+f.dayChange.toFixed(2),profitPct:f.profitPct == null?null:+f.profitPct.toFixed(2)});
+      continue;
+    }
     const resolved=resolveRegistry(f);
     const hit = f.profileState === 'needs_review' && !['broad300','nasdaq','activeEquity','goldDual','goldMonthly'].includes(resolved?.reg.type) ? null : resolved;
     if (!hit || hit.reg.enabled === false) {
@@ -520,7 +530,7 @@ async function buildAdvice(session = 'am') {
   const trimPct = sig.trimProfitPct == null ? 12 : sig.trimProfitPct;
   for (const f of a.funds) {
     // This route is buy-only, including unknown admission states and frozen C shares.
-    if (require('../lib/activeEquityIdentity').isActiveEquityRoute(f)||require('../lib/goldIdentity').isGoldRoute(f)) continue;
+    if (strategyScope.isRecordOnly(f)||require('../lib/activeEquityIdentity').isActiveEquityRoute(f)||require('../lib/goldIdentity').isGoldRoute(f)) continue;
     if ((policy[util.engineCategoryToBucket(f.category)] || 'buy') !== 'frozen') continue;
     if (!f.currentValue || !f.principal) continue;
     if (!/C$/.test((f.name || '').trim())) continue; // 仅 C 类：按日计提销售服务费，长期持有更贵
@@ -592,7 +602,7 @@ async function buildAdvice(session = 'am') {
     // 周对比快照：取 7 天前决策快照的 {code:{factors,verdict}}，前端只渲染不自己算 diff。
     // 早期无历史时返回 {}（前端不显示对比列）。
     weekAgo: Object.fromEntries(Object.entries(pickWeekAgo(store.readDecisionHistory())).filter(([code,s])=>{
-      const current=funds.find(f=>f.code===code);return !current?.strategyVersion || current.strategyVersion===s.strategyVersion;
+      const current=funds.find(f=>f.code===code);return !strategyScope.isRecordOnly(current) && (!current?.strategyVersion || current.strategyVersion===s.strategyVersion);
     }))
     // 已删除：l2、l3、fundSnap、navDates（信息全部并入 funds[]；latestDate 即原净值日，见计划 §三 字段去向表）
   };

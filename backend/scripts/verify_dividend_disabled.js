@@ -55,7 +55,9 @@ for(const reference of [null,{value:0},{value:.09},{value:.01,asOf:'2001-01-01'}
   const r=pipeline({...base,dividendYieldReference:reference});assert.equal(r.marketVerdict,null);
 }
 for(const fund of [{...base,market:'QDII'},{...base,fundType:'混合型-偏股'},{...base,indexName:'DEMO 普通指数'},{...base,indexName:'恒生港股高股息指数'}]) {
-  const r=pipeline(fund);assert.equal(r.marketVerdict,null);assert.equal(r.unsupportedReason,'scope_unsupported');assert.equal(r.executable,false);
+  const r=pipeline(fund);assert.equal(r.marketVerdict,null);assert.equal(r.executable,false);
+  if(fund.fundType==='混合型-偏股'){assert.equal(r.marketState,'record_only');assert.equal(r.unsupportedReason,null);assert.equal(r.unsupported,false);}
+  else assert.equal(r.unsupportedReason,'scope_unsupported');
 }
 for(const fund of [{...base,indexCode:null},{...base,_dividendData:{error:'incomplete_week_close'}},{...base,_dividendData:null}]) {
   const r=pipeline(fund);assert.equal(r.marketVerdict,null);assert.equal(r.verdict,null);assert.equal(r.executable,false);

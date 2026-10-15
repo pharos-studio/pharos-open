@@ -75,6 +75,7 @@ export function fundCard(f, list, state) {
   if (feeTip) { fcMeta.textContent += ' · ' + feeTip.text; fcMeta.setAttribute('title', feeTip.title); }
   const statusTip = purchaseStatusNote(f);
   fcMeta.textContent += (f.fundType ? ' · ' + f.fundType : '') + (f.indexName ? ' · 跟踪 ' + f.indexName : '') + ' · ' + statusTip.text;
+  if (f.strategyScope === 'record_only' || f.marketState === 'record_only') fcMeta.appendChild(el('span', {class:'badge badge-muted record-only-badge',text:'仅记账'}));
   card.appendChild(el('div', { class: 'fc-head' }, [
     el('div', { class: 'fc-name', text: f.name }),
     fcMeta,

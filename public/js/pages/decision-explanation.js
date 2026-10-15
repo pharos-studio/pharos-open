@@ -50,6 +50,7 @@ function ordinaryFacts(factors) {
   return {facts, missing};
 }
 export function buildDecisionExplanation(sig = {}) {
+  if (sig.marketState === 'record_only' || sig.strategyScope === 'record_only') return {summary:'仅记录持仓与收益，历史记录保留。',current:'仅记账',reason:'主题行业与主动权益不再生成新的策略信号。',missing:'无需等待策略条件；持仓、收益和历史仍可查看。',paths:[]};
   const m = sig.matrix || {}, version = sig.strategyVersion || m.strategyVersion;
   const action = ['insufficient','profile_unverified','scope_unsupported'].includes(sig.marketState) ? null : Object.hasOwn(sig, 'marketVerdict') ? sig.marketVerdict : sig.verdict;
   const errorWords={profile_unverified:'当前基金身份尚未核验',scope_unsupported:'基金不在本策略支持范围',daily_sampling_unverified:'日频采样尚未核验',initialization_unverified:'序列起点或连续性尚未核验',fund_calendar_unverified:'基金日期和开放规则尚未核验',insufficient_adjusted_nav:'合格净值历史不足',insufficient_completed_weeks:'完整周数据不足',stale_nav_history:'净值历史已过期',calendar_unverified:'交易日历尚未核验',nav_calendar_coverage_gap:'开放日净值有缺口',release_pending:'规则尚待确认启用'};

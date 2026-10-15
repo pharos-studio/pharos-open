@@ -176,6 +176,8 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/dividend-reference' && req.method === 'GET') {
       if ([...u.searchParams.keys()].some(k => k !== 'code' || u.searchParams.getAll(k).length !== 1))
         return json(res, { error: 'invalid_query' }, 400);
+      const fund=(store.readJSON('holdings.json')?.funds||[]).find(f=>f.code===u.searchParams.get('code'));
+      if (require('./lib/strategyScope').isRecordOnly(fund)) return json(res,{code:fund.code,status:'record_only',label:'仅记账',...require('./lib/strategyScope').fields(fund)});
       try { return json(res, await require('./services/dividendReference').get(u.searchParams.get('code'))); }
       catch (e) { return json(res, { error: e.statusCode ? e.message : 'reference_unavailable' }, e.statusCode || 503); }
     }
@@ -289,6 +291,8 @@ const server = http.createServer(async (req, res) => {
       if (!/^\d{6}$/.test(code)) return json(res, { ok: false, degraded: false, error: 'code 须为 6 位数字' }, 400);
       const days = Math.min(1200, Math.max(60, Number(u.searchParams.get('days')) || 500));
       const entry = activeEquityIdentity.LEDGER.funds.find(e => e.code === code) || null;
+      const recorded = (store.readJSON('holdings.json')?.funds || []).find(f=>f.code===code) || {code};
+      if (require('./lib/strategyScope').isRecordOnly(recorded)) return json(res, {ok:true,degraded:false,...require('./lib/strategyScope').fields(recorded)});
       const gateError = entry ? activeEquityIdentity.eligibility(entry) : 'profile_unverified';
       if (!gateError) return json(res, { ok: true, degraded: false, reason: 'fund_verified', advicePath: '/api/advice' });
       const [profile, nav] = await Promise.all([

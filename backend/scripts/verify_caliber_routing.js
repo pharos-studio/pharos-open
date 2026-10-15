@@ -43,8 +43,8 @@ const CASES = [
   { f: { code: 'DEMO03', category: 'broad', caliber: 'us' },   key: 'broad:us',  type: 'broad',    label: '宽基·海外',          hasCal: 'us' },
   { f: { code: 'DEMO04', category: 'broad', caliber: 'cn' },   key: 'broad',     type: 'broad',    label: '宽基',              hasCal: 'cn' },
   { f: { code: 'DEMO05', category: 'dividend' },               key: 'dividend',  type: 'dividend', label: '红利·低波',          hasCal: null },
-  { f: { code: 'DEMO06', category: 'growth' },                 key: 'growth',    type: 'tech',     label: '主题·行业（高波动）', hasCal: null },
-  { f: { code: 'DEMO07', category: 'growth' },                 key: 'growth',    type: 'tech',     label: '主题·行业（高波动）', hasCal: null },
+  { f: { code: 'DEMO06', category: 'growth' },                 key: 'recordOnly', type: 'recordOnly', label: '仅记账', hasCal: null },
+  { f: { code: 'DEMO07', category: 'growth' },                 key: 'recordOnly', type: 'recordOnly', label: '仅记账', hasCal: null },
   { f: { code: 'DEMO08', category: 'cycle' },                  key: 'cycle',     type: 'cycle',    label: '商品·对冲',          hasCal: null }
 ];
 CASES.forEach(c => {

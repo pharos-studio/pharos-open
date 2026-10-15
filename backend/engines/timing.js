@@ -195,6 +195,13 @@ function groupKeyOf(category, p) {
 // decMap: { code: { action:'add'|'hold', name, category, matrix } }（am 会话收集）
 // 返回 { opened, closed, extended } 计数（供冒烟/日志）
 function onDecide(decMap, cfgOverride) {
+  // Reject stale callers as well as current API output. Never close or rewrite
+  // old campaigns merely because the strategy is now record only.
+  const scope = require('../lib/strategyScope');
+  const held = env.read('holdings.json')?.funds || [];
+  decMap = Object.fromEntries(Object.entries(decMap || {}).filter(([code,d]) =>
+    d?.strategyVersion !== ACTIVE_EQUITY_VERSION && d?.matrix?._type !== 'activeEquity' && d?.matrix?._type !== 'tech' &&
+    !scope.isRecordOnly({...d,code}) && !scope.isRecordOnly(held.find(f => f.code === code))));
   const cfg = cfgOverride || config.getConfig();
   const P = params(cfg);
   const today = env.today();
@@ -442,6 +449,7 @@ function buyScan(cfgOverride) {
   let added = 0,pricingCompleted=0;
 
   for (const fund of holdings.funds) {
+    if (require('../lib/strategyScope').isRecordOnly(fund)) continue;
     const code = fund.code;
     if(isGoldRoute(fund)&&!goldEnabled)continue;
     const purchases = Array.isArray(fund.purchases) ? fund.purchases : [];
@@ -508,6 +516,7 @@ function buyScan(cfgOverride) {
   // 幂等键只管"不重复建样本"，补附是对已有样本的安全更新（真战役外者保持 null）
   let relinked = 0;
   for (const s of samples) {
+    if (require('../lib/strategyScope').isRecordOnly(holdings.funds.find(f=>f.code===s.code)) || s.category==='growth' || s.strategyVersion===ACTIVE_EQUITY_VERSION) continue;
     if (s.type !== 'buy' || s.campaign || s.history) continue;
     if(s.strategyVersion===GOLD_VERSION&&!goldEnabled)continue;
     if(s.category==='dividend' && s.strategyVersion!==DIVIDEND_VERSION) continue;
@@ -549,7 +558,8 @@ async function runBackfill(cfgOverride) {
     const goldCodes=new Set(Object.keys(loadState().strategyFunds?.[GOLD_VERSION]||{}));
     for(const f of env.read('holdings.json')?.funds||[])if(isGoldRoute(f))goldCodes.add(f.code);
     for(const f of env.read('holdings.json')?.funds||[])if(isActiveEquityRoute(f))activeCodes.add(f.code);
-    const pending = samples.filter(s => s.strategyVersion!==GOLD_VERSION&&!goldCodes.has(s.code)&&!isGoldRoute({code:s.code})&&s.strategyVersion!==ACTIVE_EQUITY_VERSION&&!activeCodes.has(s.code)&&!isActiveEquityRoute({code:s.code})&&(s.backfill === 'pending' || [HS300_VERSION,NASDAQ_VERSION].includes(s.strategyVersion)&&s.backfill==='partial'));
+    const scope = require('../lib/strategyScope'), held = env.read('holdings.json')?.funds || [];
+    const pending = samples.filter(s => !scope.isRecordOnly(held.find(f=>f.code===s.code)) && !scope.isRecordOnly(s) && s.strategyVersion!==GOLD_VERSION&&!goldCodes.has(s.code)&&!isGoldRoute({code:s.code})&&s.strategyVersion!==ACTIVE_EQUITY_VERSION&&!activeCodes.has(s.code)&&!isActiveEquityRoute({code:s.code})&&(s.backfill === 'pending' || [HS300_VERSION,NASDAQ_VERSION].includes(s.strategyVersion)&&s.backfill==='partial'));
     if (!pending.length) return { done: goldBackfill.done };
     // 过早（事件日距今太近，还拿不到 T+30）→ 留待下次；粗判也要等 ≥10 自然日才有意义
     const due = pending.filter(s => util.daysBetween(s.eventDate, today) >= 10);

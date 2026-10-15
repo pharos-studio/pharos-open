@@ -29,7 +29,8 @@ export function fundSettings(state, code, liveFund) {
       quoteState === 'stale' ? '本次行情已过期，暂不估算' :
       quoteState === 'unavailable' ? '本次行情不可用，暂不估算' : '当前非盘中估算时段' }));
   }
-  if (fund.profileState === 'needs_review') box.appendChild(el('div', { text: '请先选择基金类别；选定类别只用于匹配策略，仍需通过基金身份与数据核验。', style: 'color:#b78b40' }));
+  if (fund.strategyScope === 'record_only' || fund.marketState === 'record_only' || liveFund?.strategyScope === 'record_only' || liveFund?.marketState === 'record_only') box.appendChild(el('div', {text:'仅记账；分类用于整理资产，修改分类不会恢复策略信号。',class:'hint'}));
+  else if (fund.profileState === 'needs_review') box.appendChild(el('div', { text: '请先选择基金类别；选定类别只用于匹配策略，仍需通过基金身份与数据核验。', style: 'color:#b78b40' }));
   const button = el('button', { class: 'btn', text: '重新识别自动档案', style: 'margin-top:5px;padding:3px 8px' });
   const detail = el('div', { class: 'hint', style: 'white-space:pre-wrap' });
   button.addEventListener('click', async () => {
@@ -40,11 +41,12 @@ export function fundSettings(state, code, liveFund) {
       if (!preview.canApply) detail.appendChild(el('div', { text: preview.warning || '数据源暂不可用，请稍后重试', style: 'color:#b78b40' }));
       const diffs = preview.diff || [];
       detail.appendChild(el('div', { text: diffs.length ? '变更预览：' : '档案字段无变化。' }));
-      const labels = { name: '名称', fundType: '基金类型', market: '市场', category: '基础分类', caliber: '口径',
+      const labels = { name: '名称', fundType: '基金类型', market: '市场', category: '基础分类', caliber: '口径', strategyScope:'策略用途',scopeReason:'适用原因',
         indexCode: '官方指数代码', indexName: '官方跟踪指数', trackIndex: '估值锚', estimateIndex: '盘中估算代码',
         estimateIndexName: '盘中估算名称', estimateLabel: '估算标签', estimateProvider: '行情来源',
         estimateRelation: '估算关系', estimateVerifiedAt: '行情验证时间', profileState: '档案状态' };
-      const pretty = value => value == null ? '空' : typeof value === 'number' && value > 1e12
+      const scopeWords={record_only:'仅记账',theme_sector:'主题行业',active_equity:'主动权益'};
+      const pretty = value => value == null ? '空' : Object.hasOwn(scopeWords,value) ? scopeWords[value] : typeof value === 'number' && value > 1e12
         ? new Date(value).toLocaleString('zh-CN') : String(value);
       diffs.forEach(d => detail.appendChild(el('div', { text: (labels[d.field] || d.field) + '：' + pretty(d.before) + ' → ' + pretty(d.after) })));
       const cat = el('select', {}, [el('option', { value: '', text: '请选择基础分类' }), ...CATS_FALLBACK.map(c => el('option', { value: c.key, text: c.name }))]);
@@ -52,6 +54,7 @@ export function fundSettings(state, code, liveFund) {
       // ★ 无条件显示：确认开关取消后若还按旧条件隐藏，
       //   老基金（含 profileState 为待确认的存量）将彻底失去改分类的入口。
       detail.appendChild(el('label', {}, [el('span', { text: '基础分类：' }), cat]));
+      detail.appendChild(el('div',{class:'hint',text:'分类用于整理资产，不代表策略资格；策略用途按本次自动档案重新核定。'}));
       const proxy = el('input', { type: 'checkbox' });
       if (preview.confirmations.proxy) detail.appendChild(el('label', {}, [proxy, el('span', { text: ' 确认使用代理指数' })]));
       const confirm = el('button', { class: 'btn btn-primary', text: '确认替换自动档案' });

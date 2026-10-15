@@ -59,16 +59,16 @@ const BUILTIN_PRESETS = [
   {
     id: 'dividend-cn', name: '红利·低波（A股）', category: 'dividend', supported: true,
     applies: '**仅适用 A 股红利/低波类基金**',
-    note: '参考带是中证红利 000922 的动态股息率。海外红利没有免费估值源，挂这条线会走常量兜底带',
+    note: '合格国内红利指数类显示每月定投计划，普通红利与红利低波均保留；独立加投参考按需展开。海外和主动红利不因此开放策略。',
   },
   {
-    id: 'theme', name: '主题·行业', category: 'growth', supported: true,
-    applies: '任何**高波动**资产：医药 / 消费 / 新能源 / 军工 / 半导体 / 港股科技 / 主动偏股基金',
-    note: '算法本质是「深度回撤抄底」，只看基金自身净值，**不需要跟踪指数、也不看行业**',
+    id: 'theme', name: '主题·行业（仅记账）', category: 'growth', supported: false, recordOnly: true,
+    applies: '单一主题行业与主动权益基金',
+    note: '仅记录持仓、收益、占比与购买流水，旧历史保留；不生成新的策略信号。修改记账分类不能绕过基金身份限制。',
   },
   {
     id: 'commodity', name: '商品·对冲', category: 'cycle', supported: true,
-    applies: '任何**商品**类基金：黄金 / 白银 / 原油 / 豆粕 / 有色 ETF',
+    applies: '商品类基金：黄金 / 白银 / 原油 / 豆粕 / 有色期货；不含相关产业股票指数',
     note: '只看自身净值的 250 日价格分位与三重均线，**不绑黄金这一种标的**',
   },
   {

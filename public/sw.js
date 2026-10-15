@@ -25,7 +25,8 @@
 // v44：每日黄金状态直接展开近期政策；每月页保留红利原流水。
 // v45：统一白话原因、双路径用户名称与条件性黄金政策解读。
 // v46：红利月定投卡片新增按需加载的独立加投参考。
-const CACHE = 'fund-board-v46';
+// v47：长期积累定位；主题行业与主动权益仅记账。
+const CACHE = 'fund-board-v47';
 const SHELL = [
   '/', '/index.html', '/style.css',
   '/js/app.js', '/js/store.js', '/js/api.js', '/js/util.js',

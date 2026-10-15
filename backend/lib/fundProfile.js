@@ -7,6 +7,7 @@ const store = require('./store');
 const schema = require('./schema');
 
 const FIELDS = ['name', 'fundType', 'market', 'category', 'caliber', 'indexCode', 'indexName', 'trackIndex',
+  'strategyScope', 'scopeReason',
   'estimateIndex', 'estimateIndexName', 'estimateLabel', 'estimateProvider', 'estimateRelation',
   'estimateVerifiedAt', 'profileState', 'profileUpdatedAt'];
 const TTL = 24 * 3600000;
@@ -30,6 +31,11 @@ function choiceIsValid(lookup, confirmations) {
 function selectedProfile(lookup, confirmations = {}) {
   if (!choiceIsValid(lookup, confirmations)) return null;
   const p = { ...lookup.autoProfile };
+  // Preserve the automatically identified participation scope when users only
+  // change their accounting category. This field is protected with the profile.
+  if (require('./strategyScope').isRecordOnly({...lookup.autoProfile,code:lookup.code})) {
+    p.strategyScope='record_only'; p.scopeReason=require('./strategyScope').reasonOf({...lookup.autoProfile,code:lookup.code});
+  }
   if (confirmations.category != null) {
     p.category = confirmations.category;
     p.caliber = p.category === 'broad' ? (p.market === 'QDII' ? 'us' : 'cn') : null;
@@ -86,11 +92,13 @@ async function compute(code) {
       p.estimateVerifiedAt = Date.now(); estimateStatus = 'available';
     } else if (estimateStatus !== 'temporarily_unavailable') estimateStatus = 'temporarily_unavailable';
   }
+  if (require('./strategyScope').isRecordOnly({...p,code})) {p.strategyScope='record_only';p.scopeReason=require('./strategyScope').reasonOf({...p,code});}
   const autoProfile = cleanProfile(p);
   // category 恒 false = 不再拦截确认（保留字段以稳定 payload）；推断不出时由后端 requireCategory 兜底。
   const confirmations = { category: false, proxy: relation === 'proxy' && !!quote };
   return {
     ok: true, found: true, code, ...base, autoProfile, confirmations,
+    ...(require('./strategyScope').isRecordOnly({...autoProfile,code}) ? {strategyScope:'record_only',marketState:'record_only',marketStateLabel:'仅记账'} : {}),
     confidence: { name: base.source === 'archive' ? 'archive' : 'list', category: catConfidence,
       market: base.type ? 'type' : 'list', caliber: catConfidence === 'unknown' ? 'unknown' : 'derived', estimate: quote ? relation : estimateStatus },
     estimateStatus,
@@ -146,6 +154,7 @@ function migrateFundRecords(holdings, catConfig, profiles, now = new Date().toIS
     if (hadEstimate && !f.estimateProvider) { f.estimateProvider = 'sina'; changed = true; }
     if (hadEstimate && !f.estimateIndexName && f.estimateLabel) { f.estimateIndexName = f.estimateLabel; changed = true; }
     if (p) for (const key of FIELDS) {
+      if (key === 'strategyScope' || key === 'scopeReason') continue; // Scope is saved only by explicit add/reidentify, never a bulk startup migration.
       if (hadEstimate && key.startsWith('estimate')) continue; // 旧新浪代码不得与新东财元数据拼成错误组合。
       if (f[key] == null && p[key] != null && key !== 'profileState') { f[key] = p[key]; changed = true; }
     }

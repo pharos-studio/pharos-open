@@ -119,6 +119,7 @@ export function renderDesktop(root, live, state) {
     autoInfo.appendChild(el('span', { text: '自动信息 · ' + [f.fundType, f.indexName ? ('跟踪 ' + f.indexName) : null, feeTip && feeTip.text, statusTip.text].filter(Boolean).join(' · '), title: [feeTip && feeTip.title, statusTip.title].filter(Boolean).join(' · ') }));
     nameCell.appendChild(autoInfo);
     nameCell.appendChild(fundSettings(state, f.code, f));
+    if (f.strategyScope === 'record_only' || f.marketState === 'record_only') nameCell.appendChild(el('span', {class:'badge badge-muted record-only-badge',text:'仅记账'}));
     tr.appendChild(el('td', {}, [nameCell]));
     const dayCell = el('td', { class: cls(f.dayChange) });
     dayCell.textContent = f.dayChange != null ? signPct(f.dayChange) : '—';

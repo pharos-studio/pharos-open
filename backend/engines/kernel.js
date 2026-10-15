@@ -12,6 +12,8 @@ function disabled() {
     unsupported:true,unsupportedReason:'rule_disabled',marketVerdict:null,verdict:null,eligible:false,executable:false };
 }
 function buildFundDecision(signalSource, params) {
+  if (params?.cheapBy === 'techDip') return require('../lib/strategyScope').decision(signalSource,'theme_sector');
+  if (require('../lib/strategyScope').isRecordOnly(signalSource)) return require('../lib/strategyScope').decision(signalSource);
   if(require('../lib/goldIdentity').isGoldRoute(signalSource))return require(require('../lib/goldMonthlyIdentity').enabled()?'./strategies/goldMonthly':'./strategies/goldDual')(signalSource);
   const builder = params && Object.hasOwn(builders, params.cheapBy) && builders[params.cheapBy];
   return builder ? builder(signalSource, params) : disabled();

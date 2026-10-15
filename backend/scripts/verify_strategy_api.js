@@ -63,10 +63,13 @@ async function snapshot() {
 if (require.main === module) snapshot().then(result => {
   const previous=JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/strategy-api.json'), 'utf8'));
   const hsCode='999001',oldCode=fixture('hs300',2).code;
-  const withoutHs=value=>{const copy=structuredClone(value);copy.analysis.funds=copy.analysis.funds.filter(f=>![hsCode,oldCode].includes(f.code));
-    copy.advice.funds=copy.advice.funds.filter(f=>![hsCode,oldCode].includes(f.code));for(const code of [hsCode,oldCode]){
+  const stopped='DEMO-tech';
+  const withoutHs=value=>{const copy=structuredClone(value);copy.analysis.funds=copy.analysis.funds.filter(f=>![hsCode,oldCode,stopped].includes(f.code));
+    copy.advice.funds=copy.advice.funds.filter(f=>![hsCode,oldCode,stopped].includes(f.code));for(const code of [hsCode,oldCode,stopped]){
       delete copy.analysis.plan.scoreMap[code];delete copy.advice.weekAgo[code];}return copy;};
   assert.deepEqual(withoutHs(result),withoutHs(previous));
+  const stoppedFund=result.advice.funds.find(f=>f.code===stopped),stoppedScore=result.analysis.plan.scoreMap[stopped];
+  assert.equal(stoppedFund.marketState,'record_only');assert.equal(stoppedFund.marketVerdict,null);assert.equal(stoppedFund.verdict,null);assert.equal(stoppedFund.score,null);assert.equal(stoppedScore.eligible,false);assert.equal(stoppedFund.executable,false);
   const h=result.advice.funds.find(f=>f.code===hsCode),sm=result.analysis.plan.scoreMap[hsCode];
   assert.equal(h.strategyVersion,'hs300-dual-v1');assert.equal(h.marketVerdict,sm.marketVerdict);
   assert.equal(h.route,'both');assert.equal(h.score,null);assert.equal(h.valueScore,null);
