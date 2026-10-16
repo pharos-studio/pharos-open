@@ -81,6 +81,12 @@ async function renderRoute() {
   // 同步挂载的局部占位（decision :26 / allocation :85 / review :38），故无空白期。
   try {
     await p.mod.render(view);
+    const mobileLive = store.getLive();
+    if (window.PharosMobile && mobileLive?.mobileOffline) {
+      const notice = document.createElement('div'); notice.className = 'hint'; notice.setAttribute('role', 'status');
+      notice.textContent = mobileLive.mobileNotice + (mobileLive.mobileAsOf ? ' 缓存保存于：' + new Date(mobileLive.mobileAsOf).toLocaleString('zh-CN') : '');
+      view.prepend(notice);
+    }
   } catch (e) {
     view.innerHTML = `<div class="error-box">页面渲染失败：${e.message}</div>`;
     console.error(e);
@@ -97,7 +103,9 @@ async function refreshAll() {
     try {
       await store.reloadLive();
     } catch (e) {
-      view.insertAdjacentHTML('afterbegin', `<div class="error-box">刷新失败：${e.message}（请检查设置页的后端地址/API Key）</div>`);
+      const err = document.createElement('div'); err.className = 'error-box';
+      err.textContent = '刷新失败：' + e.message + (window.PharosMobile ? '（本机记录仍保留，请检查网络后重试）' : '（请检查设置页的后端地址/API Key）');
+      view.prepend(err);
     }
     await renderRoute();
   } finally {
@@ -107,6 +115,7 @@ async function refreshAll() {
 }
 
 function registerSW() {
+  if (window.PharosMobile) return;
   if (!('serviceWorker' in navigator)) return;
   const h = location.hostname;
   // 仅在安全上下文注册：localhost 或 https；局域网 http 下跳过（不报错，仅无离线）
@@ -138,6 +147,7 @@ async function init() {
   setupSidebar();
   registerSW();
   $('#refreshBtn').addEventListener('click', refreshAll);
+  if (window.PharosMobile) window.addEventListener('pharos:resume', refreshAll);
   window.addEventListener('hashchange', renderRoute);
 
   // 首屏加载态：概览页给真骨架屏（页面形状本身就是「在加载」最好的说明），
@@ -148,6 +158,11 @@ async function init() {
   try {
     await store.bootstrap();
   } catch (e) {
+    if (window.PharosMobile) {
+      view.innerHTML = ''; const error = document.createElement('div'); error.className = 'error-box';
+      error.textContent = '本机看板未能启动：' + e.message + '。请检查Android System WebView是否已更新；账户数据仍保留在本机。';
+      view.appendChild(error); return;
+    }
     view.innerHTML = `
       <div class="error-box">
         无法连接后端：${e.message}<br/>

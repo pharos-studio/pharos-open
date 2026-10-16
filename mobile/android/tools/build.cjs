@@ -1,0 +1,32 @@
+'use strict';
+const fs = require('node:fs'), path = require('node:path');
+const { execFileSync } = require('node:child_process');
+const { build, ROOT } = require('./build-assets.cjs');
+const options = Object.fromEntries(process.argv.slice(2).reduce((out, item, index, items) => item.startsWith('--') ? [...out, [item.slice(2), items[index + 1]]] : out, []));
+const java = options['java-home'] || process.env.JAVA_HOME;
+const sdk = options.sdk || process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
+const tools = options['build-tools'] || (sdk && path.join(sdk, 'build-tools/35.0.0'));
+const platform = options.platform || (sdk && path.join(sdk, 'platforms/android-35/android.jar'));
+if (!java || !tools || !platform) throw Error('Specify --java-home JDK21 --platform android.jar --build-tools SDK_BUILD_TOOLS (or JAVA_HOME and ANDROID_HOME). No global installation is performed.');
+const run = (name, args) => { console.log(path.basename(name) + ' ' + args.filter(s => !String(s).includes('pass:')).join(' ')); execFileSync(name, args, { stdio: 'inherit', env: { ...process.env, JAVA_HOME: java, PATH: path.join(java, 'bin') + path.delimiter + process.env.PATH } }); };
+const out = path.join(ROOT, 'mobile/android/build'), assets = path.join(out, 'assets'), classes = path.join(out, 'classes'), dex = path.join(out, 'dex');
+// Only these generated subdirectories are replaced; user data and the local test keystore are preserved.
+for (const p of [assets, classes, dex]) fs.rmSync(p, { recursive: true, force: true });
+for (const p of [classes, dex]) fs.mkdirSync(p, { recursive: true });
+const result = build(assets);
+console.log(`Public asset manifest: ${result.files} inputs, ${result.modules} CommonJS modules`);
+const javaFiles = [path.join(ROOT, 'mobile/android/src/org/pharos/local/MainActivity.java')];
+run(path.join(java, 'bin/javac'), ['-encoding', 'UTF-8', '--release', '8', '-classpath', platform, '-d', classes, ...javaFiles]);
+function descendants(p) { return fs.readdirSync(p, { withFileTypes: true }).flatMap(e => e.isDirectory() ? descendants(path.join(p, e.name)) : [path.join(p, e.name)]); }
+run(path.join(tools, 'd8'), ['--min-api', '26', '--lib', platform, '--output', dex, ...descendants(classes).filter(p => p.endsWith('.class'))]);
+const unsigned = path.join(out, 'pharos-unsigned.apk'), aligned = path.join(out, 'pharos-aligned.apk'), apk = path.join(out, 'pharos-debug.apk');
+const debugManifest = path.join(out, 'AndroidManifest.debug.xml');
+fs.writeFileSync(debugManifest, fs.readFileSync(path.join(ROOT, 'mobile/android/AndroidManifest.xml'), 'utf8').replace('<application ', '<application android:debuggable="true" '));
+run(path.join(tools, 'aapt2'), ['link', '--manifest', debugManifest, '-I', platform, '--min-sdk-version', '26', '--target-sdk-version', '35', '--version-code', '100', '--version-name', '1.0-test', '-A', assets, '-o', unsigned]);
+run(path.join(java, 'bin/jar'), ['uf', unsigned, '-C', dex, 'classes.dex']);
+run(path.join(tools, 'zipalign'), ['-f', '-p', '4', unsigned, aligned]);
+const keystore = path.join(out, 'debug.keystore');
+if (!fs.existsSync(keystore)) run(path.join(java, 'bin/keytool'), ['-genkeypair', '-keystore', keystore, '-storepass', 'android', '-keypass', 'android', '-alias', 'androiddebugkey', '-dname', 'CN=Pharos Android Debug,O=Local Development,C=CN', '-keyalg', 'RSA', '-keysize', '2048', '-validity', '10000']);
+run(path.join(tools, 'apksigner'), ['sign', '--ks', keystore, '--ks-key-alias', 'androiddebugkey', '--ks-pass', 'pass:android', '--key-pass', 'pass:android', '--out', apk, aligned]);
+run(path.join(tools, 'apksigner'), ['verify', '--verbose', apk]);
+console.log('TEST APK (not a public release): ' + apk);

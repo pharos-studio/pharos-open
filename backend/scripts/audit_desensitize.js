@@ -87,6 +87,7 @@ const FORBIDDEN_PATHS = [
 //   又能保证「以后新增一份 docs/*.md 忘了归类」时默认被拒绝（宁可吵，不可静默漏）。
 const DOCS_ALLOWED = new Set([
   'docs/README.md',
+  'docs/android.md',
   'docs/使用指南.md',
   'docs/策略说明与状态.md',
   'docs/archive/README.md',

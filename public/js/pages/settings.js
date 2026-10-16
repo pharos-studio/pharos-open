@@ -7,7 +7,30 @@ import { el } from '../util.js';
 
 export async function render(root) {
   root.innerHTML = '';
+  if (api.isIndependentApp()) { root.appendChild(localPanel()); return; }
   root.appendChild(connectionPanel());
+}
+
+function localPanel() {
+  const p = el('div', { class: 'panel' });
+  p.appendChild(el('div', { class: 'panel-head', text: '本机数据与备份' }));
+  p.appendChild(el('p', { class: 'hint', text: '基金、流水与历史只保存在这台手机，不需要电脑或后端地址。联网时直接更新公开资料；离线显示已保存资料和缓存时间，过期行情不作为新候选。' }));
+  p.appendChild(el('p', { class: 'hint', text: '卸载应用、清除应用数据或丢失手机会丢失记录。请定期导出备份并保存在安全的位置。备份包含私人基金与流水，不含鉴权口令和行情缓存；请勿公开分享。' }));
+  const message = el('div', { class: 'hint', role: 'status', style: 'margin-top:12px' });
+  const out = el('button', { class: 'btn btn-primary', text: '导出备份' });
+  const input = el('button', { class: 'btn', text: '从备份恢复' });
+  async function run(fn) {
+    out.disabled = input.disabled = true; message.textContent = '正在处理…';
+    try { const result = await fn(); message.textContent = result ? '已完成。' : '已取消，本机数据保持原样。'; }
+    catch (e) { message.textContent = '未完成：' + e.message + '。原账户不会因校验失败被覆盖。'; }
+    finally { out.disabled = input.disabled = false; }
+  }
+  out.addEventListener('click', () => run(() => window.PharosMobile.exportBackup()));
+  input.addEventListener('click', () => run(() => window.PharosMobile.importBackup()));
+  p.appendChild(el('div', { class: 'btn-row' }, [out, input]));
+  p.appendChild(message);
+  p.appendChild(el('p', { class: 'hint', text: '恢复前会检查格式与内容，再请你确认覆盖。当前账户会另存应用内部保护副本；内部副本也会随卸载删除，不能代替导出的备份。安卓版与电脑版各自保存，不自动同步。' }));
+  return p;
 }
 
 /* ---------- 后端连接 ---------- */

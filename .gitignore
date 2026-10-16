@@ -53,3 +53,6 @@ docs/算法设计复盘手册.md
 #   （已实测 check-ignore 照样命中），但文件里不会出现该目录的字面名。
 #   否则脱敏审计会把这行本身判为泄露 —— 规则自相矛盾：必须忽略它，却不许出现它的名字。
 .work[b]uddy/
+
+# Android local build output and test signing material (never shipped as source).
+/mobile/android/build/

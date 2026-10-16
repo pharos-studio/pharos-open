@@ -4,10 +4,13 @@ import { getBackendUrl, getApiKey } from './store.js';
 // 是否运行在 Capacitor 打包的 App 内（此时 location.origin = http://localhost，指向 App 自己，
 // 不是电脑后端，必须由用户在「设置」里显式填写电脑局域网地址）。
 export function isNativeApp() {
+  if (isIndependentApp()) return true;
   return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
     ? window.Capacitor.isNativePlatform()
     : window.Capacitor && window.Capacitor.isNative);
 }
+
+export function isIndependentApp() { return !!window.PharosMobile; }
 
 const LOOPBACK = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
@@ -36,6 +39,7 @@ export function resolveBase() {
 const UNSET_MSG = '还没设置后端地址：请打开「设置 → 连接」，填入电脑的局域网地址（例如 http://192.168.1.5:3000），保存后下拉刷新。';
 
 async function request(path, opts = {}) {
+  if (isIndependentApp()) return window.PharosMobile.request(path, opts);
   let base;
   try {
     base = resolveBase();
